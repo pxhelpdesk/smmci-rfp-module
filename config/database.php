@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -63,6 +63,26 @@ return [
             ]) : [],
         ],
 
+        'mysql_rfp' => [
+            'driver' => 'mysql',
+            'url' => env('MYSQL_RFP_URL'),
+            'host' => env('MYSQL_RFP_HOST', '127.0.0.1'),
+            'port' => env('MYSQL_RFP_PORT', '3306'),
+            'database' => env('MYSQL_RFP_DATABASE', 'laravel'),
+            'username' => env('MYSQL_RFP_USERNAME', 'root'),
+            'password' => env('MYSQL_RFP_PASSWORD', ''),
+            'unix_socket' => env('MYSQL_RFP_SOCKET', ''),
+            'charset' => env('MYSQL_RFP_CHARSET', 'utf8mb4'),
+            'collation' => env('MYSQL_RFP_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
@@ -100,17 +120,17 @@ return [
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',
-            'url' => env('DB_URL'),
-            'host' => env('DB_HOST', 'localhost'),
-            'port' => env('DB_PORT', '1433'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
-            'charset' => env('DB_CHARSET', 'utf8'),
+            'url' => env('SQLSRV_SAP_URL'),
+            'host' => env('SQLSRV_SAP_HOST', 'localhost'),
+            'port' => env('SQLSRV_SAP_PORT', '1433'),
+            'database' => env('SQLSRV_SAP_DATABASE', 'laravel'),
+            'username' => env('SQLSRV_SAP_USERNAME', 'root'),
+            'password' => env('SQLSRV_SAP_PASSWORD', ''),
+            'charset' => env('SQLSRV_SAP_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+            // 'encrypt' => env('SQLSRV_SAP_ENCRYPT', 'yes'),
+            // 'trust_server_certificate' => env('SQLSRV_SAP_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
     ],
