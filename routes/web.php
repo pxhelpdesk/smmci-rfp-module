@@ -11,7 +11,7 @@ use Laravel\Fortify\Features;
 //     ]);
 // })->name('home');
 
-Route::get('/', function () { return redirect()->away('http://172.17.2.25:8001'); })->name('welcome');
+Route::get('/', function () { return redirect()->away('http://172.17.2.25:8001'); })->name('home');
 Route::get('/login', function () { return redirect()->away('http://172.17.2.25:8001/login'); })->name('login');
 Route::post('/logout', function () {
     Auth::logout();

@@ -24,14 +24,8 @@ class User extends Authenticatable
         'password_changed_at' => 'datetime',
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-    */
     protected $appends = ['name'];
 
-    /**
-     * Get the user's full name including suffix
-    */
     public function getNameAttribute(): string
     {
         $nameParts = array_filter([
