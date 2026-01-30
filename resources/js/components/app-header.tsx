@@ -69,6 +69,14 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+
+    // Use acronym if available, remove '(' and ')'
+    const displayInitials = auth.user.acronym
+        ? auth.user.acronym.replace(/[()]/g, '')
+        : getInitials(`${auth.user.first_name} ${auth.user.last_name}`);
+
+    const fullName = `${auth.user.first_name} ${auth.user.last_name}`;
+
     return (
         <>
             <div className="border-b border-sidebar-border/80">
@@ -224,10 +232,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     <Avatar className="size-8 overflow-hidden rounded-full">
                                         <AvatarImage
                                             src={auth.user.avatar}
-                                            alt={auth.user.name}
+                                            alt={fullName}
                                         />
                                         <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                                            {getInitials(auth.user.name)}
+                                            {displayInitials}
                                         </AvatarFallback>
                                     </Avatar>
                                 </Button>

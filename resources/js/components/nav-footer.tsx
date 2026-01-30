@@ -27,12 +27,16 @@ export function NavFooter({
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
                                 asChild
-                                className="text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100"
+                                className="text-sidebar-foreground hover:text-sidebar-foreground animate-pulse"
                             >
                                 <a
                                     href={toUrl(item.href)}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    className="animate-[breathing_2s_ease-in-out_infinite]"
+                                    style={{
+                                        animation: 'breathing 2s ease-in-out infinite'
+                                    }}
                                 >
                                     {item.icon && (
                                         <item.icon className="h-5 w-5" />
@@ -44,6 +48,16 @@ export function NavFooter({
                     ))}
                 </SidebarMenu>
             </SidebarGroupContent>
+            <style>{`
+                @keyframes breathing {
+                    0%, 100% {
+                        transform: scale(1);
+                    }
+                    50% {
+                        transform: scale(1.05);
+                    }
+                }
+            `}</style>
         </SidebarGroup>
     );
 }
