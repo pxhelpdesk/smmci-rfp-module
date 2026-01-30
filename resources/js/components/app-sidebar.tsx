@@ -1,9 +1,11 @@
 // components/app-sidebar.tsx
 import { Link } from '@inertiajs/react';
-import { GitBranch, LayoutGrid, Settings, Users, Shield } from 'lucide-react';
+import { GitBranch, LayoutGrid } from 'lucide-react';
+import { useState } from 'react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import { SystemUpdatesModal } from '@/components/system-updates-modal';
 import {
     Sidebar,
     SidebarContent,
@@ -25,37 +27,47 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Updates',
-        href: '#',
-        icon: GitBranch,
-    },
-];
-
 export function AppSidebar() {
+    const [showUpdates, setShowUpdates] = useState(false);
+
+    const footerNavItems: NavItem[] = [
+        {
+            title: 'System Updates',
+            href: '#',
+            icon: GitBranch,
+            onClick: () => setShowUpdates(true),
+        },
+    ];
+
     return (
-        <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
+        <>
+            <Sidebar collapsible="icon" variant="inset">
+                <SidebarHeader>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton size="lg" asChild>
+                                <Link href={dashboard()} prefetch>
+                                    <AppLogo />
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarHeader>
 
-            <SidebarContent>
-                <NavMain items={mainNavItems} />
-            </SidebarContent>
+                <SidebarContent>
+                    <NavMain items={mainNavItems} />
+                </SidebarContent>
 
-            <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
-                <NavUser />
-            </SidebarFooter>
-        </Sidebar>
+                <SidebarFooter>
+                    <NavFooter items={footerNavItems} className="mt-auto" />
+                    <NavUser />
+                </SidebarFooter>
+            </Sidebar>
+
+            <SystemUpdatesModal
+                open={showUpdates}
+                onOpenChange={setShowUpdates}
+            />
+        </>
     );
 }

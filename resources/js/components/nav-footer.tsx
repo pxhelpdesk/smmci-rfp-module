@@ -1,3 +1,4 @@
+// components/nav-footer.tsx
 import type { ComponentPropsWithoutRef } from 'react';
 import {
     SidebarGroup,
@@ -26,23 +27,31 @@ export function NavFooter({
                     {items.map((item) => (
                         <SidebarMenuItem key={item.title}>
                             <SidebarMenuButton
-                                asChild
+                                asChild={!item.onClick}
+                                onClick={item.onClick}
                                 className="text-sidebar-foreground hover:text-sidebar-foreground animate-pulse"
                             >
-                                <a
-                                    href={toUrl(item.href)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="animate-[breathing_2s_ease-in-out_infinite]"
-                                    style={{
-                                        animation: 'breathing 2s ease-in-out infinite'
-                                    }}
-                                >
-                                    {item.icon && (
-                                        <item.icon className="h-5 w-5" />
-                                    )}
-                                    <span>{item.title}</span>
-                                </a>
+                                {item.onClick ? (
+                                    // Button behavior for onClick
+                                    <>
+                                        {item.icon && <item.icon className="h-5 w-5" />}
+                                        <span>{item.title}</span>
+                                    </>
+                                ) : (
+                                    // Link behavior for href
+                                    <a
+                                        href={toUrl(item.href!)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="animate-[breathing_2s_ease-in-out_infinite]"
+                                        style={{
+                                            animation: 'breathing 2s ease-in-out infinite'
+                                        }}
+                                    >
+                                        {item.icon && <item.icon className="h-5 w-5" />}
+                                        <span>{item.title}</span>
+                                    </a>
+                                )}
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}
