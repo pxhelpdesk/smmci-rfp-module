@@ -1,6 +1,11 @@
+// types/auth.ts
 export type User = {
     id: number;
-    name: string;
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+    suffix?: string;
+    acronym?: string;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
