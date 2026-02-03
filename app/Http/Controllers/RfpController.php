@@ -17,8 +17,6 @@ class RfpController extends Controller
         $rfps = Rfp::with([
             'rfpForm:id,code,description',
             'sharedDescription:id,code,description',
-            'requestedBy:id,first_name,last_name,department_id',
-            'requestedBy.department:id,department',
             'items'
         ])->latest()->paginate(15);
 
@@ -57,10 +55,12 @@ class RfpController extends Controller
             'rfpForm',
             'sharedDescription',
             'items',
-            'requestedBy.department:id,department',
-            'recommendedBy.department:id,department',
-            'approvedBy.department:id,department',
-            'concurredBy.department:id,department'
+            'signs.user.department',
+            'logs.user.department',
+            'requestedBy.department',
+            'recommendedBy.department',
+            'approvedBy.department',
+            'concurredBy.department'
         ]);
 
         return Inertia::render('rfp/show', [
@@ -72,10 +72,10 @@ class RfpController extends Controller
     {
         $request->load([
             'items',
-            'requestedBy.department:id,department',
-            'recommendedBy.department:id,department',
-            'approvedBy.department:id,department',
-            'concurredBy.department:id,department'
+            'requestedBy.department',
+            'recommendedBy.department',
+            'approvedBy.department',
+            'concurredBy.department'
         ]);
 
         return Inertia::render('rfp/edit', [

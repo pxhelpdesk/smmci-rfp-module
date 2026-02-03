@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
     Card,
     CardContent,
@@ -26,9 +27,12 @@ type Props = {
     rfpForms: RfpForm[];
     sharedDescriptions: SharedDescription[];
     users: RfpUser[];
+    auth: {
+        user: RfpUser;
+    };
 };
 
-export default function Create({ rfpForms, sharedDescriptions, users }: Props) {
+export default function Create({ rfpForms, sharedDescriptions, users, auth }: Props) {
     const [accounts, setAccounts] = useState<SapAccount[]>([]);
     const [suppliers, setSuppliers] = useState<SapSupplier[]>([]);
     const [loadingAccounts, setLoadingAccounts] = useState(false);
@@ -39,11 +43,11 @@ export default function Create({ rfpForms, sharedDescriptions, users }: Props) {
         rfp_form_id: null as number | null,
         payee_type: 'Supplier',
         payee_card_code: null as string | null,
-        requested_by: null as number | null,
+        payee_invoice_number: '',
+        requested_by: auth.user.id,
         recommended_by: null as number | null,
         approved_by: null as number | null,
         concurred_by: null as number | null,
-        payee_invoice_number: '',
         gross_amount: '',
         is_vatable: true,
         vat_type: 'Inclusive',
@@ -54,7 +58,6 @@ export default function Create({ rfpForms, sharedDescriptions, users }: Props) {
         due_date: '',
         shared_description_id: null as number | null,
         purpose: '',
-        status: 'Draft',
         voucher_number: '',
         check_number: '',
         items: [] as Partial<RfpItem>[],
@@ -103,11 +106,6 @@ export default function Create({ rfpForms, sharedDescriptions, users }: Props) {
         post('/rfp/requests');
     };
 
-    const userOptions = users.map(u => ({
-        value: u.id,
-        label: `${u.first_name} ${u.last_name}${u.department ? ` - ${u.department.department}` : ''}`,
-    }));
-
     const rfpFormOptions = rfpForms.map(f => ({
         value: f.id,
         label: `${f.code} - ${f.description}`,
@@ -118,11 +116,16 @@ export default function Create({ rfpForms, sharedDescriptions, users }: Props) {
         label: `${s.code} - ${s.description}`,
     }));
 
+    const userOptions = users.map(u => ({
+        value: u.id,
+        label: `${u.first_name} ${u.last_name}${u.department ? ` - ${u.department.department}` : ''}`,
+    }));
+
     return (
         <AppLayout
             breadcrumbs={[
                 { title: 'Dashboard', href: '/dashboard' },
-                { title: 'RFP Requests', href: '/rfp/requests' },
+                { title: 'Requests', href: '/rfp/requests' },
                 { title: 'Create', href: '/rfp/requests/create' },
             ]}
         >
@@ -201,23 +204,6 @@ export default function Create({ rfpForms, sharedDescriptions, users }: Props) {
                                 />
                                 {errors.shared_description_id && <p className="text-xs text-destructive">{errors.shared_description_id}</p>}
                             </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="status" className="text-sm">Status</Label>
-                                <SelectUI value={data.status} onValueChange={(v) => setData('status', v as any)}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Draft">Draft</SelectItem>
-                                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                                        <SelectItem value="Final">Final</SelectItem>
-                                        <SelectItem value="Final with CV">Final with CV</SelectItem>
-                                        <SelectItem value="Paid">Paid</SelectItem>
-                                    </SelectContent>
-                                </SelectUI>
-                                {errors.status && <p className="text-xs text-destructive">{errors.status}</p>}
-                            </div>
                         </CardContent>
                     </Card>
 
@@ -268,177 +254,6 @@ export default function Create({ rfpForms, sharedDescriptions, users }: Props) {
                                     className="h-9"
                                 />
                                 {errors.payee_invoice_number && <p className="text-xs text-destructive">{errors.payee_invoice_number}</p>}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Approvers</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Requested By</Label>
-                                <Select
-                                    options={userOptions}
-                                    value={userOptions.find(u => u.value === data.requested_by)}
-                                    onChange={(opt) => setData('requested_by', opt?.value || null)}
-                                    isClearable
-                                    placeholder="Select user..."
-                                    className="text-sm"
-                                    styles={{
-                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                        menu: (base) => ({ ...base, fontSize: '14px' }),
-                                    }}
-                                />
-                                {errors.requested_by && <p className="text-xs text-destructive">{errors.requested_by}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Recommended By</Label>
-                                <Select
-                                    options={userOptions}
-                                    value={userOptions.find(u => u.value === data.recommended_by)}
-                                    onChange={(opt) => setData('recommended_by', opt?.value || null)}
-                                    isClearable
-                                    placeholder="Select user..."
-                                    className="text-sm"
-                                    styles={{
-                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                        menu: (base) => ({ ...base, fontSize: '14px' }),
-                                    }}
-                                />
-                                {errors.recommended_by && <p className="text-xs text-destructive">{errors.recommended_by}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Approved By</Label>
-                                <Select
-                                    options={userOptions}
-                                    value={userOptions.find(u => u.value === data.approved_by)}
-                                    onChange={(opt) => setData('approved_by', opt?.value || null)}
-                                    isClearable
-                                    placeholder="Select user..."
-                                    className="text-sm"
-                                    styles={{
-                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                        menu: (base) => ({ ...base, fontSize: '14px' }),
-                                    }}
-                                />
-                                {errors.approved_by && <p className="text-xs text-destructive">{errors.approved_by}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Concurred By</Label>
-                                <Select
-                                    options={userOptions}
-                                    value={userOptions.find(u => u.value === data.concurred_by)}
-                                    onChange={(opt) => setData('concurred_by', opt?.value || null)}
-                                    isClearable
-                                    placeholder="Select user..."
-                                    className="text-sm"
-                                    styles={{
-                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                        menu: (base) => ({ ...base, fontSize: '14px' }),
-                                    }}
-                                />
-                                {errors.concurred_by && <p className="text-xs text-destructive">{errors.concurred_by}</p>}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Financial Details</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="space-y-1.5">
-                                <Label htmlFor="currency" className="text-sm">Currency</Label>
-                                <SelectUI value={data.currency} onValueChange={(v) => setData('currency', v as any)}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Peso">Peso</SelectItem>
-                                        <SelectItem value="US Dollar">US Dollar</SelectItem>
-                                    </SelectContent>
-                                </SelectUI>
-                                {errors.currency && <p className="text-xs text-destructive">{errors.currency}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="gross_amount" className="text-sm">Gross Amount</Label>
-                                <Input
-                                    id="gross_amount"
-                                    type="number"
-                                    step="0.01"
-                                    value={data.gross_amount}
-                                    onChange={(e) => setData('gross_amount', e.target.value)}
-                                    className="h-9"
-                                />
-                                {errors.gross_amount && <p className="text-xs text-destructive">{errors.gross_amount}</p>}
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        id="is_vatable"
-                                        checked={data.is_vatable}
-                                        onChange={(e) => setData('is_vatable', e.target.checked)}
-                                        className="h-4 w-4"
-                                    />
-                                    <Label htmlFor="is_vatable" className="text-sm font-normal">Vatable</Label>
-                                </div>
-                                {data.is_vatable && (
-                                    <SelectUI value={data.vat_type} onValueChange={(v) => setData('vat_type', v as any)}>
-                                        <SelectTrigger className="h-9 w-32">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Inclusive">Inclusive</SelectItem>
-                                            <SelectItem value="Exclusive">Exclusive</SelectItem>
-                                        </SelectContent>
-                                    </SelectUI>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="down_payment" className="text-sm">Down Payment</Label>
-                                    <Input
-                                        id="down_payment"
-                                        type="number"
-                                        step="0.01"
-                                        value={data.down_payment}
-                                        onChange={(e) => setData('down_payment', e.target.value)}
-                                        className="h-9"
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="withholding_tax" className="text-sm">Withholding Tax</Label>
-                                    <Input
-                                        id="withholding_tax"
-                                        type="number"
-                                        step="0.01"
-                                        value={data.withholding_tax}
-                                        onChange={(e) => setData('withholding_tax', e.target.value)}
-                                        className="h-9"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="due_date" className="text-sm">Due Date</Label>
-                                <Input
-                                    id="due_date"
-                                    type="date"
-                                    value={data.due_date}
-                                    onChange={(e) => setData('due_date', e.target.value)}
-                                    className="h-9"
-                                />
-                                {errors.due_date && <p className="text-xs text-destructive">{errors.due_date}</p>}
                             </div>
                         </CardContent>
                     </Card>
@@ -504,6 +319,170 @@ export default function Create({ rfpForms, sharedDescriptions, users }: Props) {
                                 No items added yet. Click "Add Item" to begin.
                             </p>
                         )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Financial Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div className="grid md:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="currency" className="text-sm">Currency</Label>
+                                <SelectUI value={data.currency} onValueChange={(v) => setData('currency', v as any)}>
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Peso">Peso</SelectItem>
+                                        <SelectItem value="US Dollar">US Dollar</SelectItem>
+                                    </SelectContent>
+                                </SelectUI>
+                                {errors.currency && <p className="text-xs text-destructive">{errors.currency}</p>}
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="gross_amount" className="text-sm">Gross Amount</Label>
+                                <Input
+                                    id="gross_amount"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.gross_amount}
+                                    onChange={(e) => setData('gross_amount', e.target.value)}
+                                    className="h-9"
+                                />
+                                {errors.gross_amount && <p className="text-xs text-destructive">{errors.gross_amount}</p>}
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-sm">Vatable</Label>
+                                <div className="flex items-center gap-3 h-9">
+                                    <Switch
+                                        id="is_vatable"
+                                        checked={data.is_vatable}
+                                        onCheckedChange={(checked) => setData('is_vatable', checked)}
+                                    />
+                                    {data.is_vatable && (
+                                        <SelectUI value={data.vat_type} onValueChange={(v) => setData('vat_type', v as any)}>
+                                            <SelectTrigger className="h-9 flex-1">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Inclusive">Inclusive</SelectItem>
+                                                <SelectItem value="Exclusive">Exclusive</SelectItem>
+                                            </SelectContent>
+                                        </SelectUI>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="down_payment" className="text-sm">Down Payment</Label>
+                                <Input
+                                    id="down_payment"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.down_payment}
+                                    onChange={(e) => setData('down_payment', e.target.value)}
+                                    className="h-9"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="withholding_tax" className="text-sm">Withholding Tax</Label>
+                                <Input
+                                    id="withholding_tax"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.withholding_tax}
+                                    onChange={(e) => setData('withholding_tax', e.target.value)}
+                                    className="h-9"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="due_date" className="text-sm">Due Date</Label>
+                                <Input
+                                    id="due_date"
+                                    type="date"
+                                    value={data.due_date}
+                                    onChange={(e) => setData('due_date', e.target.value)}
+                                    className="h-9"
+                                />
+                                {errors.due_date && <p className="text-xs text-destructive">{errors.due_date}</p>}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Signers</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid md:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <Label className="text-sm">Requested By</Label>
+                            <Input
+                                value={`${auth.user.first_name} ${auth.user.last_name}${auth.user.department ? ` - ${auth.user.department.department}` : ''}`}
+                                disabled
+                                className="h-9 bg-muted"
+                            />
+                            {errors.requested_by && <p className="text-xs text-destructive">{errors.requested_by}</p>}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-sm">Recommended By</Label>
+                            <Select
+                                options={userOptions}
+                                value={userOptions.find(u => u.value === data.recommended_by)}
+                                onChange={(opt) => setData('recommended_by', opt?.value || null)}
+                                isClearable
+                                placeholder="Select user..."
+                                className="text-sm"
+                                styles={{
+                                    control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                    menu: (base) => ({ ...base, fontSize: '14px' }),
+                                }}
+                            />
+                            {errors.recommended_by && <p className="text-xs text-destructive">{errors.recommended_by}</p>}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-sm">Approved By</Label>
+                            <Select
+                                options={userOptions}
+                                value={userOptions.find(u => u.value === data.approved_by)}
+                                onChange={(opt) => setData('approved_by', opt?.value || null)}
+                                isClearable
+                                placeholder="Select user..."
+                                className="text-sm"
+                                styles={{
+                                    control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                    menu: (base) => ({ ...base, fontSize: '14px' }),
+                                }}
+                            />
+                            {errors.approved_by && <p className="text-xs text-destructive">{errors.approved_by}</p>}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-sm">Concurred By</Label>
+                            <Select
+                                options={userOptions}
+                                value={userOptions.find(u => u.value === data.concurred_by)}
+                                onChange={(opt) => setData('concurred_by', opt?.value || null)}
+                                isClearable
+                                placeholder="Select user..."
+                                className="text-sm"
+                                styles={{
+                                    control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                    menu: (base) => ({ ...base, fontSize: '14px' }),
+                                }}
+                            />
+                            {errors.concurred_by && <p className="text-xs text-destructive">{errors.concurred_by}</p>}
+                        </div>
                     </CardContent>
                 </Card>
 

@@ -31,7 +31,7 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'RFP Requests',
+        title: 'Requests',
         href: '/rfp/requests',
         icon: FileText,
     },

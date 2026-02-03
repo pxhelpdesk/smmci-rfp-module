@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { FileText, Plus, Search, Trash2 } from 'lucide-react';
+import { FileText, MoreVertical, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,13 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import type { Rfp } from '@/types';
 
@@ -61,17 +68,35 @@ export default function Index({ rfps }: Props) {
             rfp.rfp_form?.description.toLowerCase().includes(search.toLowerCase())
     );
 
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        });
+    };
+
+    const formatDateTime = (dateString: string) => {
+        return new Date(dateString).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
+
     return (
         <AppLayout
             breadcrumbs={[
                 { title: 'Dashboard', href: '/dashboard' },
-                { title: 'RFP Requests', href: '/rfp/requests' },
+                { title: 'Requests', href: '/rfp/requests' },
             ]}
         >
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">RFP Requests</h1>
+                        <h1 className="text-2xl font-semibold">Requests</h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
                             Manage request for payment documents
                         </p>
@@ -106,16 +131,17 @@ export default function Index({ rfps }: Props) {
                                 <TableHead>Area</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="w-[80px]"></TableHead>
+                                <TableHead>Created</TableHead>
+                                <TableHead>Updated</TableHead>
+                                <TableHead className="w-[60px]"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredRfps.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                                         <FileText className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                                        <p className="text-sm">No RFP requests found</p>
+                                        <p className="text-sm">No Requests found</p>
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -123,7 +149,7 @@ export default function Index({ rfps }: Props) {
                                     <TableRow key={rfp.id}>
                                         <TableCell className="font-medium">
                                             <Link
-                                                href={`/rfp/requests/${rfp.id}/edit`}
+                                                href={`/rfp/requests/${rfp.id}`}
                                                 className="hover:underline text-primary"
                                             >
                                                 {rfp.rfp_number}
@@ -166,34 +192,62 @@ export default function Index({ rfps }: Props) {
                                                 {rfp.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground">
-                                            {new Date(rfp.created_at).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric',
-                                            })}
+                                        <TableCell>
+                                            <div className="text-sm text-muted-foreground">
+                                                <div>{formatDate(rfp.created_at)}</div>
+                                                <div className="text-xs">
+                                                    {new Date(rfp.created_at).toLocaleTimeString('en-US', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
+                                                </div>
+                                            </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    asChild
-                                                    className="h-8 w-8 p-0"
-                                                >
-                                                    <Link href={`/rfp/requests/${rfp.id}/edit`}>
-                                                        <FileText className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setDeleteId(rfp.id)}
-                                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                            <div className="text-sm text-muted-foreground">
+                                                <div>{formatDate(rfp.updated_at)}</div>
+                                                <div className="text-xs">
+                                                    {new Date(rfp.updated_at).toLocaleTimeString('en-US', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
+                                                </div>
                                             </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 p-0"
+                                                    >
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/rfp/requests/${rfp.id}`}>
+                                                            <FileText className="h-4 w-4 mr-2" />
+                                                            View
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/rfp/requests/${rfp.id}/edit`}>
+                                                            <Pencil className="h-4 w-4 mr-2" />
+                                                            Edit
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        onClick={() => setDeleteId(rfp.id)}
+                                                        className="text-destructive focus:text-destructive"
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))

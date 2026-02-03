@@ -15,11 +15,12 @@ return new class extends Migration
             $table->foreignId('rfp_form_id')->nullable()->constrained('rfp_forms')->nullOnDelete();
             $table->enum('payee_type', ['Employee', 'Supplier'])->default('Supplier')->nullable();
             $table->string('payee_card_code')->nullable();
+            $table->string('payee_invoice_number')->nullable();
+
             $table->unsignedBigInteger('requested_by')->nullable();
             $table->unsignedBigInteger('recommended_by')->nullable();
             $table->unsignedBigInteger('approved_by')->nullable();
             $table->unsignedBigInteger('concurred_by')->nullable();
-            $table->string('payee_invoice_number')->nullable();
 
             $table->decimal('subtotal', 15, 2)->nullable();
             $table->decimal('gross_amount', 15, 2)->nullable();

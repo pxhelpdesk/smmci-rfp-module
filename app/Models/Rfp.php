@@ -13,8 +13,8 @@ class Rfp extends Model
 
     protected $fillable = [
         'rfp_number', 'area', 'rfp_form_id', 'payee_type', 'payee_card_code',
-        'requested_by', 'recommended_by', 'approved_by', 'concurred_by',
-        'payee_invoice_number', 'subtotal', 'gross_amount', 'is_vatable',
+        'payee_invoice_number', 'requested_by', 'recommended_by', 'approved_by',
+        'concurred_by', 'subtotal', 'gross_amount', 'is_vatable',
         'vat_type', 'down_payment', 'vat_amount', 'withholding_tax',
         'grand_total', 'currency', 'remarks', 'due_date', 'shared_description_id',
         'purpose', 'status', 'voucher_number', 'check_number'
@@ -46,6 +46,16 @@ class Rfp extends Model
     public function items()
     {
         return $this->hasMany(RfpItem::class);
+    }
+
+    public function signs()
+    {
+        return $this->hasMany(RfpSign::class);
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(RfpLog::class)->latest();
     }
 
     public function requestedBy()

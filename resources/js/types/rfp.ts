@@ -1,3 +1,4 @@
+// types/rfp.ts
 export type RfpForm = {
     id: number;
     code: string;
@@ -12,7 +13,7 @@ export type SharedDescription = {
 
 export type Department = {
     id: number;
-    name: string;
+    department: string;
 };
 
 export type RfpUser = {
@@ -32,6 +33,33 @@ export type RfpItem = {
     billed_amount: number | null;
 };
 
+export type RfpSign = {
+    id: number;
+    rfp_id: number;
+    code: string;
+    user_id: number;
+    user?: RfpUser;
+    user_type: 'Requested By' | 'Recommended By' | 'Approved By' | 'Concurred By';
+    is_signed: boolean;
+    remarks: string | null;
+    created_at: string;
+    updated_at: string;
+};
+
+export type RfpLog = {
+    id: number;
+    rfp_id: number;
+    code: string;
+    user_id: number;
+    user?: RfpUser;
+    from: string | null;
+    into: string | null;
+    details: string | null;
+    remarks: string | null;
+    created_at: string;
+    updated_at: string;
+};
+
 export type Rfp = {
     id: number;
     rfp_number: string;
@@ -40,6 +68,7 @@ export type Rfp = {
     rfp_form?: RfpForm;
     payee_type: 'Employee' | 'Supplier';
     payee_card_code: string | null;
+    payee_invoice_number: string | null;
     requested_by: number | null;
     requested_by_user?: RfpUser;
     recommended_by: number | null;
@@ -48,7 +77,6 @@ export type Rfp = {
     approved_by_user?: RfpUser;
     concurred_by: number | null;
     concurred_by_user?: RfpUser;
-    payee_invoice_number: string | null;
     subtotal: number | null;
     gross_amount: number | null;
     is_vatable: boolean;
@@ -67,6 +95,8 @@ export type Rfp = {
     voucher_number: string | null;
     check_number: string | null;
     items: RfpItem[];
+    signs?: RfpSign[];
+    logs?: RfpLog[];
     created_at: string;
     updated_at: string;
 };
