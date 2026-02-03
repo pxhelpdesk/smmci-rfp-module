@@ -1,3 +1,4 @@
+// types/navigation.ts
 import type { InertiaLinkProps } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -13,4 +14,5 @@ export type NavItem = {
     isActive?: boolean;
     items?: NavItem[];
     onClick?: () => void;
+    isExternal?: boolean
 };

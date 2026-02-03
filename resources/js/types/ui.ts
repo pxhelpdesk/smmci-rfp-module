@@ -1,3 +1,4 @@
+// types/ui.ts
 import type { ReactNode } from 'react';
 import type { BreadcrumbItem } from './navigation';
 

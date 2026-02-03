@@ -22,7 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        $middleware->append(\Spatie\CookieConsent\CookieConsentMiddleware::class);
+        $middleware->web(append: [
+            \Spatie\CookieConsent\CookieConsentMiddleware::class,
+        ]);
 
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

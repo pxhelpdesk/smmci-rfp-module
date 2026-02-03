@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
+use App\Http\Controllers\RfpController;
+use App\Http\Controllers\SapController;
 
 // Route::get('/', function () {
 //     return Inertia::render('welcome', [
@@ -25,7 +27,12 @@ Route::prefix('rfp')->group(function () {
         Route::get('dashboard', function () {
             return Inertia::render('dashboard');
         })->name('dashboard');
+
+        Route::resource('requests', RfpController::class);
+
+        Route::get('/api/sap/accounts', [SapController::class, 'getAccounts']);
+        Route::get('/api/sap/suppliers', [SapController::class, 'getSuppliers']);
     });
 });
 
-require __DIR__.'/settings.php';
+// require __DIR__.'/settings.php';

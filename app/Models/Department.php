@@ -9,4 +9,11 @@ class Department extends Model
     protected $connection = 'mysql';
 
     protected $table = 'departments';
+
+    protected $fillable = ['department'];
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }

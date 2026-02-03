@@ -47,14 +47,22 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     <SidebarMenuSub>
                                         {item.items.map((subItem) => (
                                             <SidebarMenuSubItem key={subItem.title}>
-                                                <SidebarMenuSubButton
-                                                    asChild
-                                                    isActive={!!(subItem.href && isCurrentUrl(subItem.href))}
-                                                >
-                                                    <Link href={subItem.href!} prefetch>
-                                                        <span>{subItem.title}</span>
-                                                    </Link>
-                                                </SidebarMenuSubButton>
+                                                {subItem.isExternal ? (
+                                                    <SidebarMenuSubButton asChild>
+                                                        <a href={subItem.href as string}>
+                                                            <span>{subItem.title}</span>
+                                                        </a>
+                                                    </SidebarMenuSubButton>
+                                                ) : (
+                                                    <SidebarMenuSubButton
+                                                        asChild
+                                                        isActive={!!(subItem.href && isCurrentUrl(subItem.href))}
+                                                    >
+                                                        <Link href={subItem.href!} prefetch>
+                                                            <span>{subItem.title}</span>
+                                                        </Link>
+                                                    </SidebarMenuSubButton>
+                                                )}
                                             </SidebarMenuSubItem>
                                         ))}
                                     </SidebarMenuSub>
@@ -64,16 +72,28 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                     ) : (
                         // Regular item without sub-items
                         <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton
-                                asChild
-                                isActive={!!(item.href && isCurrentUrl(item.href))}
-                                tooltip={{ children: item.title }}
-                            >
-                                <Link href={item.href!} prefetch>
-                                    {item.icon && <item.icon />}
-                                    <span>{item.title}</span>
-                                </Link>
-                            </SidebarMenuButton>
+                            {item.isExternal ? (
+                                <SidebarMenuButton
+                                    asChild
+                                    tooltip={{ children: item.title }}
+                                >
+                                    <a href={item.href as string}>
+                                        {item.icon && <item.icon />}
+                                        <span>{item.title}</span>
+                                    </a>
+                                </SidebarMenuButton>
+                            ) : (
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={!!(item.href && isCurrentUrl(item.href))}
+                                    tooltip={{ children: item.title }}
+                                >
+                                    <Link href={item.href!} prefetch>
+                                        {item.icon && <item.icon />}
+                                        <span>{item.title}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            )}
                         </SidebarMenuItem>
                     )
                 )}

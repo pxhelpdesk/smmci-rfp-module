@@ -1,6 +1,5 @@
-// components/app-sidebar.tsx
 import { Link } from '@inertiajs/react';
-import { GitBranch, LayoutGrid } from 'lucide-react';
+import { FileText, GitBranch, Home, LayoutGrid } from 'lucide-react';
 import { useState } from 'react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -21,9 +20,20 @@ import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
+        title: 'Home',
+        href: 'http://172.17.2.25:8001',
+        icon: Home,
+        isExternal: true,
+    },
+    {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'RFP Requests',
+        href: '/rfp/requests',
+        icon: FileText,
     },
 ];
 

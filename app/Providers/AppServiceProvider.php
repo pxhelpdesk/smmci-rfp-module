@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use App\Models\Rfp;
+use App\Observers\RfpObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,5 +45,7 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null
         );
+
+        Rfp::observe(RfpObserver::class);
     }
 }
