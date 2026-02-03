@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('rfp_id')->nullable()->constrained('rfps')->cascadeOnDelete();
             $table->string('account_code')->nullable();
+            $table->string('account_name')->nullable();
             $table->string('payment_type')->nullable();
             $table->decimal('billed_amount', 15, 2)->nullable();
             $table->timestamps();

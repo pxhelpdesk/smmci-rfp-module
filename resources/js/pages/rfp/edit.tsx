@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react';
+import { useForm, Head } from '@inertiajs/react';
 import { Save, X } from 'lucide-react';
 import { useState } from 'react';
 import Select from 'react-select';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Card,
     CardContent,
@@ -41,12 +41,13 @@ export default function Edit({ rfp, rfpForms, sharedDescriptions, users }: Props
         rfp_form_id: rfp.rfp_form_id,
         payee_type: rfp.payee_type,
         payee_card_code: rfp.payee_card_code,
+        payee_card_name: rfp.payee_card_name || '',
         payee_invoice_number: rfp.payee_invoice_number || '',
         requested_by: rfp.requested_by,
         recommended_by: rfp.recommended_by,
         approved_by: rfp.approved_by,
         concurred_by: rfp.concurred_by,
-        gross_amount: rfp.gross_amount?.toString() || '',
+        total_before_vat: rfp.total_before_vat?.toString() || '',
         is_vatable: rfp.is_vatable,
         vat_type: rfp.vat_type,
         down_payment: rfp.down_payment?.toString() || '',
@@ -62,6 +63,7 @@ export default function Edit({ rfp, rfpForms, sharedDescriptions, users }: Props
         items: rfp.items.map(item => ({
             id: item.id,
             account_code: item.account_code,
+            account_name: item.account_name,
             payment_type: item.payment_type,
             billed_amount: item.billed_amount,
         })) as Partial<RfpItem>[],
@@ -133,6 +135,7 @@ export default function Edit({ rfp, rfpForms, sharedDescriptions, users }: Props
                 { title: rfp.rfp_number, href: `/rfp/requests/${rfp.id}/edit` },
             ]}
         >
+            <Head title={`Edit ${rfp.rfp_number}`} />
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
@@ -234,9 +237,9 @@ export default function Edit({ rfp, rfpForms, sharedDescriptions, users }: Props
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="payee_type" className="text-sm">Payee Type</Label>
+                                <Label htmlFor="payee_type" className="text-sm">Type</Label>
                                 <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)}>
-                                    <SelectTrigger className="h-9">
+                                    <SelectTrigger className="h-9" disabled>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -248,11 +251,18 @@ export default function Edit({ rfp, rfpForms, sharedDescriptions, users }: Props
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-sm">Payee Card Code</Label>
+                                <Label className="text-sm">Supplier</Label>
                                 <Select
                                     options={suppliers}
                                     value={suppliers.find(s => s.value === data.payee_card_code)}
-                                    onChange={(opt) => setData('payee_card_code', opt?.value || null)}
+                                    onChange={(opt) => {
+                                        const updated = {
+                                            ...data,
+                                            payee_card_code: opt?.value || null,
+                                            payee_card_name: opt ? opt.label.split(' - ')[1] : null,
+                                        };
+                                        setData(updated as any);
+                                    }}
                                     onMenuOpen={() => !suppliers.length && loadSuppliers()}
                                     isLoading={loadingSuppliers}
                                     isClearable
@@ -292,11 +302,19 @@ export default function Edit({ rfp, rfpForms, sharedDescriptions, users }: Props
                     <CardContent className="space-y-2">
                         {data.items.map((item, index) => (
                             <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
-                                <div className="flex-1 space-y-2">
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
                                     <Select
                                         options={accounts}
                                         value={accounts.find(a => a.value === item.account_code)}
-                                        onChange={(opt) => updateItem(index, 'account_code', opt?.value || null)}
+                                        onChange={(opt) => {
+                                            const updated = [...data.items];
+                                            updated[index] = {
+                                                ...updated[index],
+                                                account_code: opt?.value || null,
+                                                account_name: opt ? opt.label.split(' - ')[1] : null,
+                                            };
+                                            setData('items', updated);
+                                        }}
                                         onMenuOpen={() => !accounts.length && loadAccounts()}
                                         isLoading={loadingAccounts}
                                         isClearable
@@ -307,22 +325,20 @@ export default function Edit({ rfp, rfpForms, sharedDescriptions, users }: Props
                                             menu: (base) => ({ ...base, fontSize: '14px' }),
                                         }}
                                     />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <Input
-                                            placeholder="Payment type"
-                                            value={item.payment_type || ''}
-                                            onChange={(e) => updateItem(index, 'payment_type', e.target.value)}
-                                            className="h-9"
-                                        />
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="Amount"
-                                            value={item.billed_amount || ''}
-                                            onChange={(e) => updateItem(index, 'billed_amount', parseFloat(e.target.value) || null)}
-                                            className="h-9"
-                                        />
-                                    </div>
+                                    <Input
+                                        placeholder="Payment type"
+                                        value={item.payment_type || ''}
+                                        onChange={(e) => updateItem(index, 'payment_type', e.target.value)}
+                                        className="h-9"
+                                    />
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="Amount"
+                                        value={item.billed_amount || ''}
+                                        onChange={(e) => updateItem(index, 'billed_amount', parseFloat(e.target.value) || null)}
+                                        className="h-9"
+                                    />
                                 </div>
                                 <Button
                                     type="button"
@@ -364,25 +380,25 @@ export default function Edit({ rfp, rfpForms, sharedDescriptions, users }: Props
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="gross_amount" className="text-sm">Gross Amount</Label>
+                                <Label htmlFor="total_before_vat" className="text-sm">Total Before VAT</Label>
                                 <Input
-                                    id="gross_amount"
+                                    id="total_before_vat"
                                     type="number"
                                     step="0.01"
-                                    value={data.gross_amount}
-                                    onChange={(e) => setData('gross_amount', e.target.value)}
+                                    value={data.total_before_vat}
+                                    onChange={(e) => setData('total_before_vat', e.target.value)}
                                     className="h-9"
                                 />
-                                {errors.gross_amount && <p className="text-xs text-destructive">{errors.gross_amount}</p>}
+                                {errors.total_before_vat && <p className="text-xs text-destructive">{errors.total_before_vat}</p>}
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Vatable</Label>
                                 <div className="flex items-center gap-3 h-9">
-                                    <Switch
+                                    <Checkbox
                                         id="is_vatable"
                                         checked={data.is_vatable}
-                                        onCheckedChange={(checked) => setData('is_vatable', checked)}
+                                        onCheckedChange={(checked) => setData('is_vatable', checked as boolean)}
                                     />
                                     {data.is_vatable && (
                                         <SelectUI value={data.vat_type} onValueChange={(v) => setData('vat_type', v as any)}>
@@ -541,26 +557,28 @@ export default function Edit({ rfp, rfpForms, sharedDescriptions, users }: Props
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <Label htmlFor="purpose" className="text-sm">Purpose</Label>
-                            <Textarea
-                                id="purpose"
-                                value={data.purpose}
-                                onChange={(e) => setData('purpose', e.target.value)}
-                                rows={2}
-                                className="resize-none"
-                            />
-                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="purpose" className="text-sm">Purpose</Label>
+                                <Textarea
+                                    id="purpose"
+                                    value={data.purpose}
+                                    onChange={(e) => setData('purpose', e.target.value)}
+                                    rows={2}
+                                    className="resize-none"
+                                />
+                            </div>
 
-                        <div className="space-y-1.5">
-                            <Label htmlFor="remarks" className="text-sm">Remarks</Label>
-                            <Textarea
-                                id="remarks"
-                                value={data.remarks}
-                                onChange={(e) => setData('remarks', e.target.value)}
-                                rows={2}
-                                className="resize-none"
-                            />
+                            <div className="space-y-1.5">
+                                <Label htmlFor="remarks" className="text-sm">Remarks</Label>
+                                <Textarea
+                                    id="remarks"
+                                    value={data.remarks}
+                                    onChange={(e) => setData('remarks', e.target.value)}
+                                    rows={2}
+                                    className="resize-none"
+                                />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

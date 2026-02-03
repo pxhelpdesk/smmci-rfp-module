@@ -57,7 +57,7 @@ class RfpObserver
         }
 
         $significantFields = [
-            'gross_amount', 'is_vatable', 'vat_type', 'down_payment',
+            'total_before_vat', 'is_vatable', 'vat_type', 'down_payment',
             'withholding_tax', 'currency', 'due_date', 'rfp_form_id',
             'shared_description_id', 'payee_card_code', 'requested_by',
             'recommended_by', 'approved_by', 'concurred_by'
@@ -96,21 +96,22 @@ class RfpObserver
 
     private function calculateTotals(Rfp $rfp): void
     {
-        if ($rfp->relationLoaded('items')) {
-            $rfp->subtotal = $rfp->items->sum('billed_amount');
-        }
+        // TODO: Uncomment when ready for auto-calculation from items
+        // if ($rfp->relationLoaded('items')) {
+        //     $rfp->total_before_vat = $rfp->items->sum('billed_amount');
+        // }
 
-        if ($rfp->is_vatable && $rfp->gross_amount) {
+        if ($rfp->is_vatable && $rfp->total_before_vat) {
             if ($rfp->vat_type === 'Inclusive') {
-                $rfp->vat_amount = $rfp->gross_amount * 0.12 / 1.12;
+                $rfp->vat_amount = $rfp->total_before_vat * 0.12 / 1.12;
             } else {
-                $rfp->vat_amount = $rfp->gross_amount * 0.12;
+                $rfp->vat_amount = $rfp->total_before_vat * 0.12;
             }
         } else {
             $rfp->vat_amount = 0;
         }
 
-        $rfp->grand_total = ($rfp->gross_amount ?? 0)
+        $rfp->grand_total = ($rfp->total_before_vat ?? 0)
             + ($rfp->vat_type === 'Exclusive' ? $rfp->vat_amount : 0)
             + ($rfp->withholding_tax ?? 0)
             - ($rfp->down_payment ?? 0);

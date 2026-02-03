@@ -46,7 +46,7 @@ class RfpController extends Controller
             $rfp->save();
         }
 
-        return redirect()->route('requests.index');
+        return redirect()->route('requests.index')->with('success', "RFP {$rfp->rfp_number} created successfully.");
     }
 
     public function show(Rfp $request)
@@ -78,8 +78,15 @@ class RfpController extends Controller
             'concurredBy.department'
         ]);
 
+        // Convert to array and ensure approver fields are IDs only
+        $rfpData = $request->toArray();
+        $rfpData['requested_by'] = $request->requested_by;
+        $rfpData['recommended_by'] = $request->recommended_by;
+        $rfpData['approved_by'] = $request->approved_by;
+        $rfpData['concurred_by'] = $request->concurred_by;
+
         return Inertia::render('rfp/edit', [
-            'rfp' => $request,
+            'rfp' => $rfpData,
             'rfpForms' => RfpForm::select('id', 'code', 'description')->get(),
             'sharedDescriptions' => SharedDescription::select('id', 'code', 'description')->get(),
             'users' => User::select('id', 'first_name', 'last_name', 'department_id')
@@ -90,21 +97,31 @@ class RfpController extends Controller
 
     public function update(UpdateRfpRequest $updateRequest, Rfp $request)
     {
-        $request->update($updateRequest->validated());
+        $validated = $updateRequest->validated();
 
-        if ($updateRequest->has('items')) {
+        // Extract items before updating
+        $items = $validated['items'] ?? [];
+        unset($validated['items']);
+
+        // Update RFP
+        $request->update($validated);
+
+        // Update items
+        if (!empty($items)) {
             $request->items()->delete();
-            $request->items()->createMany($updateRequest->items);
+            $request->items()->createMany($items);
             $request->load('items');
             $request->save();
         }
 
-        return redirect()->route('requests.index');
+        return redirect()->route('requests.show', $request->id)->with('success', "RFP {$request->rfp_number} updated successfully.");
     }
 
     public function destroy(Rfp $request)
     {
+        $rfpNumber = $request->rfp_number;
         $request->delete();
-        return redirect()->route('requests.index');
+
+        return redirect()->route('requests.index')->with('success', "RFP {$rfpNumber} deleted successfully.");
     }
 }

@@ -29,6 +29,7 @@ export type RfpItem = {
     id?: number;
     rfp_id?: number;
     account_code: string | null;
+    account_name: string | null;
     payment_type: string | null;
     billed_amount: number | null;
 };
@@ -68,6 +69,7 @@ export type Rfp = {
     rfp_form?: RfpForm;
     payee_type: 'Employee' | 'Supplier';
     payee_card_code: string | null;
+    payee_card_name: string | null;
     payee_invoice_number: string | null;
     requested_by: number | null;
     requested_by_user?: RfpUser;
@@ -77,8 +79,7 @@ export type Rfp = {
     approved_by_user?: RfpUser;
     concurred_by: number | null;
     concurred_by_user?: RfpUser;
-    subtotal: number | null;
-    gross_amount: number | null;
+    total_before_vat: number | null;
     is_vatable: boolean;
     vat_type: 'Inclusive' | 'Exclusive';
     down_payment: number | null;

@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, Head } from '@inertiajs/react';
 import { FileText, MoreVertical, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
@@ -93,6 +93,7 @@ export default function Index({ rfps }: Props) {
                 { title: 'Requests', href: '/rfp/requests' },
             ]}
         >
+            <Head title="RFP Requests" />
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>

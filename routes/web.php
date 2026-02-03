@@ -30,8 +30,9 @@ Route::prefix('rfp')->group(function () {
 
         Route::resource('requests', RfpController::class);
 
-        Route::get('/api/sap/accounts', [SapController::class, 'getAccounts']);
-        Route::get('/api/sap/suppliers', [SapController::class, 'getSuppliers']);
+        // SAP API routes
+        Route::get('/api/accounts', [SapController::class, 'getAccounts']);
+        Route::get('/api/suppliers', [SapController::class, 'getSuppliers']);
     });
 });
 

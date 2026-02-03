@@ -11,7 +11,7 @@ class RfpItem extends Model
 
     protected $connection = 'mysql_rfp';
 
-    protected $fillable = ['rfp_id', 'account_code', 'payment_type', 'billed_amount'];
+    protected $fillable = ['rfp_id', 'account_code', 'account_name', 'payment_type', 'billed_amount'];
 
     protected $casts = [
         'billed_amount' => 'decimal:2'

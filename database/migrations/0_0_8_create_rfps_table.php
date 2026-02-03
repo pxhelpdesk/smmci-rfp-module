@@ -15,6 +15,7 @@ return new class extends Migration
             $table->foreignId('rfp_form_id')->nullable()->constrained('rfp_forms')->nullOnDelete();
             $table->enum('payee_type', ['Employee', 'Supplier'])->default('Supplier')->nullable();
             $table->string('payee_card_code')->nullable();
+            $table->string('payee_card_name')->nullable();
             $table->string('payee_invoice_number')->nullable();
 
             $table->unsignedBigInteger('requested_by')->nullable();
@@ -23,7 +24,7 @@ return new class extends Migration
             $table->unsignedBigInteger('concurred_by')->nullable();
 
             $table->decimal('subtotal', 15, 2)->nullable();
-            $table->decimal('gross_amount', 15, 2)->nullable();
+            $table->decimal('total_before_vat', 15, 2)->nullable();
             $table->boolean('is_vatable')->default(true)->nullable();
             $table->enum('vat_type', ['Inclusive', 'Exclusive'])->default('Inclusive')->nullable();
             $table->decimal('down_payment', 15, 2)->nullable();

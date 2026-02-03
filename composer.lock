@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d3a5f11b3032decf2b35e26660d2e6bf",
+    "content-hash": "9243a452b2b19e0582dba0985177acf6",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -63,16 +63,16 @@
         },
         {
             "name": "brick/math",
-            "version": "0.14.1",
+            "version": "0.14.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/brick/math.git",
-                "reference": "f05858549e5f9d7bb45875a75583240a38a281d0"
+                "reference": "a8b53e6cc4d3a336543f042a4dfa0e3f2f2356a4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/brick/math/zipball/f05858549e5f9d7bb45875a75583240a38a281d0",
-                "reference": "f05858549e5f9d7bb45875a75583240a38a281d0",
+                "url": "https://api.github.com/repos/brick/math/zipball/a8b53e6cc4d3a336543f042a4dfa0e3f2f2356a4",
+                "reference": "a8b53e6cc4d3a336543f042a4dfa0e3f2f2356a4",
                 "shasum": ""
             },
             "require": {
@@ -111,7 +111,7 @@
             ],
             "support": {
                 "issues": "https://github.com/brick/math/issues",
-                "source": "https://github.com/brick/math/tree/0.14.1"
+                "source": "https://github.com/brick/math/tree/0.14.4"
             },
             "funding": [
                 {
@@ -119,7 +119,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-11-24T14:40:29+00:00"
+            "time": "2026-02-02T16:57:31+00:00"
         },
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -3484,16 +3484,16 @@
         },
         {
             "name": "psy/psysh",
-            "version": "v0.12.18",
+            "version": "v0.12.19",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bobthecow/psysh.git",
-                "reference": "ddff0ac01beddc251786fe70367cd8bbdb258196"
+                "reference": "a4f766e5c5b6773d8399711019bb7d90875a50ee"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/ddff0ac01beddc251786fe70367cd8bbdb258196",
-                "reference": "ddff0ac01beddc251786fe70367cd8bbdb258196",
+                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/a4f766e5c5b6773d8399711019bb7d90875a50ee",
+                "reference": "a4f766e5c5b6773d8399711019bb7d90875a50ee",
                 "shasum": ""
             },
             "require": {
@@ -3557,9 +3557,9 @@
             ],
             "support": {
                 "issues": "https://github.com/bobthecow/psysh/issues",
-                "source": "https://github.com/bobthecow/psysh/tree/v0.12.18"
+                "source": "https://github.com/bobthecow/psysh/tree/v0.12.19"
             },
-            "time": "2025-12-17T14:35:46+00:00"
+            "time": "2026-01-30T17:33:13+00:00"
         },
         {
             "name": "ralouphie/getallheaders",
@@ -7145,145 +7145,6 @@
             "time": "2025-03-19T14:43:43+00:00"
         },
         {
-            "name": "laravel/boost",
-            "version": "v2.0.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/boost.git",
-                "reference": "6f7a9f70c1b2cc5fcef1585e8aa04b8546f150e9"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/boost/zipball/6f7a9f70c1b2cc5fcef1585e8aa04b8546f150e9",
-                "reference": "6f7a9f70c1b2cc5fcef1585e8aa04b8546f150e9",
-                "shasum": ""
-            },
-            "require": {
-                "guzzlehttp/guzzle": "^7.9",
-                "illuminate/console": "^11.45.3|^12.41.1",
-                "illuminate/contracts": "^11.45.3|^12.41.1",
-                "illuminate/routing": "^11.45.3|^12.41.1",
-                "illuminate/support": "^11.45.3|^12.41.1",
-                "laravel/mcp": "^0.5.1",
-                "laravel/prompts": "^0.3.10",
-                "laravel/roster": "^0.2.9",
-                "php": "^8.2"
-            },
-            "require-dev": {
-                "laravel/pint": "^1.27.0",
-                "mockery/mockery": "^1.6.12",
-                "orchestra/testbench": "^9.15.0|^10.6",
-                "pestphp/pest": "^2.36.0|^3.8.4|^4.1.5",
-                "phpstan/phpstan": "^2.1.27",
-                "rector/rector": "^2.1"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Laravel\\Boost\\BoostServiceProvider"
-                    ]
-                },
-                "branch-alias": {
-                    "dev-master": "1.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laravel\\Boost\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Laravel Boost accelerates AI-assisted development by providing the essential context and structure that AI needs to generate high-quality, Laravel-specific code.",
-            "homepage": "https://github.com/laravel/boost",
-            "keywords": [
-                "ai",
-                "dev",
-                "laravel"
-            ],
-            "support": {
-                "issues": "https://github.com/laravel/boost/issues",
-                "source": "https://github.com/laravel/boost"
-            },
-            "time": "2026-01-28T13:53:50+00:00"
-        },
-        {
-            "name": "laravel/mcp",
-            "version": "v0.5.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/mcp.git",
-                "reference": "39b9791b989927642137dd5b55dde0529f1614f9"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/mcp/zipball/39b9791b989927642137dd5b55dde0529f1614f9",
-                "reference": "39b9791b989927642137dd5b55dde0529f1614f9",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "illuminate/console": "^10.49.0|^11.45.3|^12.41.1",
-                "illuminate/container": "^10.49.0|^11.45.3|^12.41.1",
-                "illuminate/contracts": "^10.49.0|^11.45.3|^12.41.1",
-                "illuminate/http": "^10.49.0|^11.45.3|^12.41.1",
-                "illuminate/json-schema": "^12.41.1",
-                "illuminate/routing": "^10.49.0|^11.45.3|^12.41.1",
-                "illuminate/support": "^10.49.0|^11.45.3|^12.41.1",
-                "illuminate/validation": "^10.49.0|^11.45.3|^12.41.1",
-                "php": "^8.1"
-            },
-            "require-dev": {
-                "laravel/pint": "^1.20",
-                "orchestra/testbench": "^8.36|^9.15|^10.8",
-                "pestphp/pest": "^2.36.0|^3.8.4|^4.1.0",
-                "phpstan/phpstan": "^2.1.27",
-                "rector/rector": "^2.2.4"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "Mcp": "Laravel\\Mcp\\Server\\Facades\\Mcp"
-                    },
-                    "providers": [
-                        "Laravel\\Mcp\\Server\\McpServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laravel\\Mcp\\": "src/",
-                    "Laravel\\Mcp\\Server\\": "src/Server/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Taylor Otwell",
-                    "email": "taylor@laravel.com"
-                }
-            ],
-            "description": "Rapidly build MCP servers for your Laravel applications.",
-            "homepage": "https://github.com/laravel/mcp",
-            "keywords": [
-                "laravel",
-                "mcp"
-            ],
-            "support": {
-                "issues": "https://github.com/laravel/mcp/issues",
-                "source": "https://github.com/laravel/mcp"
-            },
-            "time": "2026-01-26T10:25:21+00:00"
-        },
-        {
             "name": "laravel/pail",
             "version": "v1.2.4",
             "source": {
@@ -7428,67 +7289,6 @@
                 "source": "https://github.com/laravel/pint"
             },
             "time": "2026-01-05T16:49:17+00:00"
-        },
-        {
-            "name": "laravel/roster",
-            "version": "v0.2.9",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/roster.git",
-                "reference": "82bbd0e2de614906811aebdf16b4305956816fa6"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/roster/zipball/82bbd0e2de614906811aebdf16b4305956816fa6",
-                "reference": "82bbd0e2de614906811aebdf16b4305956816fa6",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/console": "^10.0|^11.0|^12.0",
-                "illuminate/contracts": "^10.0|^11.0|^12.0",
-                "illuminate/routing": "^10.0|^11.0|^12.0",
-                "illuminate/support": "^10.0|^11.0|^12.0",
-                "php": "^8.1|^8.2",
-                "symfony/yaml": "^6.4|^7.2"
-            },
-            "require-dev": {
-                "laravel/pint": "^1.14",
-                "mockery/mockery": "^1.6",
-                "orchestra/testbench": "^8.22.0|^9.0|^10.0",
-                "pestphp/pest": "^2.0|^3.0",
-                "phpstan/phpstan": "^2.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Laravel\\Roster\\RosterServiceProvider"
-                    ]
-                },
-                "branch-alias": {
-                    "dev-master": "1.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laravel\\Roster\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Detect packages & approaches in use within a Laravel project",
-            "homepage": "https://github.com/laravel/roster",
-            "keywords": [
-                "dev",
-                "laravel"
-            ],
-            "support": {
-                "issues": "https://github.com/laravel/roster/issues",
-                "source": "https://github.com/laravel/roster"
-            },
-            "time": "2025-10-20T09:56:46+00:00"
         },
         {
             "name": "laravel/sail",
@@ -8578,28 +8378,28 @@
         },
         {
             "name": "phpunit/php-file-iterator",
-            "version": "5.1.0",
+            "version": "5.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-file-iterator.git",
-                "reference": "118cfaaa8bc5aef3287bf315b6060b1174754af6"
+                "reference": "2f3a64888c814fc235386b7387dd5b5ed92ad903"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-file-iterator/zipball/118cfaaa8bc5aef3287bf315b6060b1174754af6",
-                "reference": "118cfaaa8bc5aef3287bf315b6060b1174754af6",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-file-iterator/zipball/2f3a64888c814fc235386b7387dd5b5ed92ad903",
+                "reference": "2f3a64888c814fc235386b7387dd5b5ed92ad903",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.2"
             },
             "require-dev": {
-                "phpunit/phpunit": "^11.0"
+                "phpunit/phpunit": "^11.3"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-main": "5.0-dev"
+                    "dev-main": "5.1-dev"
                 }
             },
             "autoload": {
@@ -8627,15 +8427,27 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/php-file-iterator/issues",
                 "security": "https://github.com/sebastianbergmann/php-file-iterator/security/policy",
-                "source": "https://github.com/sebastianbergmann/php-file-iterator/tree/5.1.0"
+                "source": "https://github.com/sebastianbergmann/php-file-iterator/tree/5.1.1"
             },
             "funding": [
                 {
                     "url": "https://github.com/sebastianbergmann",
                     "type": "github"
+                },
+                {
+                    "url": "https://liberapay.com/sebastianbergmann",
+                    "type": "liberapay"
+                },
+                {
+                    "url": "https://thanks.dev/u/gh/sebastianbergmann",
+                    "type": "thanks_dev"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/phpunit/php-file-iterator",
+                    "type": "tidelift"
                 }
             ],
-            "time": "2024-08-27T05:02:59+00:00"
+            "time": "2026-02-02T13:52:54+00:00"
         },
         {
             "name": "phpunit/php-invoker",
@@ -10046,24 +9858,24 @@
         },
         {
             "name": "ta-tikoma/phpunit-architecture-test",
-            "version": "0.8.5",
+            "version": "0.8.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ta-tikoma/phpunit-architecture-test.git",
-                "reference": "cf6fb197b676ba716837c886baca842e4db29005"
+                "reference": "ad48430b92901fd7d003fdaf2d7b139f96c0906e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ta-tikoma/phpunit-architecture-test/zipball/cf6fb197b676ba716837c886baca842e4db29005",
-                "reference": "cf6fb197b676ba716837c886baca842e4db29005",
+                "url": "https://api.github.com/repos/ta-tikoma/phpunit-architecture-test/zipball/ad48430b92901fd7d003fdaf2d7b139f96c0906e",
+                "reference": "ad48430b92901fd7d003fdaf2d7b139f96c0906e",
                 "shasum": ""
             },
             "require": {
                 "nikic/php-parser": "^4.18.0 || ^5.0.0",
                 "php": "^8.1.0",
-                "phpdocumentor/reflection-docblock": "^5.3.0",
-                "phpunit/phpunit": "^10.5.5  || ^11.0.0 || ^12.0.0",
-                "symfony/finder": "^6.4.0 || ^7.0.0"
+                "phpdocumentor/reflection-docblock": "^5.3.0 || ^6.0.0",
+                "phpunit/phpunit": "^10.5.5 || ^11.0.0 || ^12.0.0",
+                "symfony/finder": "^6.4.0 || ^7.0.0 || ^8.0.0"
             },
             "require-dev": {
                 "laravel/pint": "^1.13.7",
@@ -10099,9 +9911,9 @@
             ],
             "support": {
                 "issues": "https://github.com/ta-tikoma/phpunit-architecture-test/issues",
-                "source": "https://github.com/ta-tikoma/phpunit-architecture-test/tree/0.8.5"
+                "source": "https://github.com/ta-tikoma/phpunit-architecture-test/tree/0.8.6"
             },
-            "time": "2025-04-20T20:23:40+00:00"
+            "time": "2026-01-30T07:16:00+00:00"
         },
         {
             "name": "theseer/tokenizer",
