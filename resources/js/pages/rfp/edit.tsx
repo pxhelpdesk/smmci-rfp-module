@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { Rfp, RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccount, SapSupplier } from '@/types';
+import type { Rfp, RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
 
 type Props = {
     rfp: Rfp;
@@ -30,8 +30,8 @@ type Props = {
 };
 
 export default function Edit({ rfp, categories, currencies }: Props) {
-    const [accounts, setAccounts] = useState<SapAccount[]>([]);
-    const [suppliers, setSuppliers] = useState<SapSupplier[]>([]);
+    const [accounts, setAccounts] = useState<SapAccountOption[]>([]);
+    const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [usages, setUsages] = useState<RfpUsage[]>([]);
     const [loadingAccounts, setLoadingAccounts] = useState(false);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);

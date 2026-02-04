@@ -109,12 +109,24 @@ export type Rfp = {
     updated_at: string;
 };
 
-export type SapAccount = {
+// SAP Data Types
+export type SapAccountOption = {
+    value: string;
+    label: string;
+};
+
+export type SapSupplierOption = {
     value: string;
     label: string;
 };
 
 export type SapSupplier = {
-    value: string;
-    label: string;
+    id: number;
+    card_code: string;
+    card_name: string;
+    address: string | null;
+    tin: string | null;
+    last_synced_at: string | null;
+    created_at: string;
+    updated_at: string;
 };

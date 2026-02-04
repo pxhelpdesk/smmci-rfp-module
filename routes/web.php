@@ -9,6 +9,7 @@ use App\Http\Controllers\RfpUsageController;
 use App\Http\Controllers\RfpCurrencyController;
 use App\Http\Controllers\RfpController;
 use App\Http\Controllers\SapController;
+use App\Http\Controllers\SapSupplierController;
 
 // Route::get('/', function () {
 //     return Inertia::render('welcome', [
@@ -78,6 +79,8 @@ Route::prefix('rfp')->group(function () {
         // Get usages by category (for dropdown)
         Route::get('usages/category/{categoryId}', [RfpController::class, 'getUsagesByCategory'])
             ->name('rfp.usages.by-category');
+
+        Route::get('suppliers', [SapSupplierController::class, 'index'])->name('suppliers.index');
 
         // SAP API routes
         Route::get('/api/accounts', [SapController::class, 'getAccounts']);

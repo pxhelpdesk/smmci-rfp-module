@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccount, SapSupplier } from '@/types';
+import type { RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
 
 type Props = {
     categories: RfpCategory[];
@@ -29,8 +29,8 @@ type Props = {
 };
 
 export default function Create({ categories, currencies }: Props) {
-    const [accounts, setAccounts] = useState<SapAccount[]>([]);
-    const [suppliers, setSuppliers] = useState<SapSupplier[]>([]);
+    const [accounts, setAccounts] = useState<SapAccountOption[]>([]);
+    const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [usages, setUsages] = useState<RfpUsage[]>([]);
     const [loadingAccounts, setLoadingAccounts] = useState(false);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);

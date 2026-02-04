@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\DB;
+use App\Models\SapSupplier;
 
 class SapController extends Controller
 {
@@ -22,15 +23,12 @@ class SapController extends Controller
 
     public function getSuppliers()
     {
-        $suppliers = DB::connection('sqlsrv')
-            ->table('OCRD')
-            ->where('CardType', 'S')
-            ->where('FrozenFor', 'N')
-            ->select('CardCode', 'CardName')
+        $suppliers = SapSupplier::select('card_code', 'card_name')
+            ->orderBy('card_name')
             ->get()
             ->map(fn($supplier) => [
-                'value' => $supplier->CardCode,
-                'label' => "{$supplier->CardCode} - {$supplier->CardName}"
+                'value' => $supplier->card_code,
+                'label' => "{$supplier->card_code} - {$supplier->card_name}"
             ]);
 
         return response()->json($suppliers);
