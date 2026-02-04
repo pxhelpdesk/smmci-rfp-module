@@ -25,6 +25,7 @@ class SapController extends Controller
         $suppliers = DB::connection('sqlsrv')
             ->table('OCRD')
             ->where('CardType', 'S')
+            ->where('FrozenFor', 'N')
             ->select('CardCode', 'CardName')
             ->get()
             ->map(fn($supplier) => [

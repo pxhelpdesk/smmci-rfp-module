@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
+use App\Models\User;
 
 class RfpSign extends Model
 {
@@ -16,25 +16,14 @@ class RfpSign extends Model
         'rfp_id',
         'code',
         'user_id',
-        'user_type',
         'is_signed',
-        'remarks'
+        'details',
+        'remarks',
     ];
 
     protected $casts = [
-        'is_signed' => 'boolean'
+        'is_signed' => 'boolean',
     ];
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($sign) {
-            if (!$sign->code) {
-                $sign->code = 'SIGN-' . strtoupper(Str::random(12));
-            }
-        });
-    }
 
     public function rfp()
     {
@@ -44,7 +33,6 @@ class RfpSign extends Model
     public function user()
     {
         return $this->setConnection('mysql')
-            ->belongsTo(User::class)
-            ->select('id', 'first_name', 'last_name', 'department_id');
+            ->belongsTo(User::class, 'user_id');
     }
 }

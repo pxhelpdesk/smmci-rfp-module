@@ -43,11 +43,19 @@ type Props = {
 };
 
 const statusColors = {
-    Draft: 'bg-gray-100 text-gray-800',
-    Cancelled: 'bg-red-100 text-red-800',
-    Final: 'bg-blue-100 text-blue-800',
-    'Final with CV': 'bg-purple-100 text-purple-800',
-    Paid: 'bg-green-100 text-green-800',
+    cancelled: 'bg-red-100 text-red-800',
+    draft: 'bg-gray-100 text-gray-800',
+    for_approval: 'bg-yellow-100 text-yellow-800',
+    approved: 'bg-blue-100 text-blue-800',
+    paid: 'bg-green-100 text-green-800',
+};
+
+const statusLabels = {
+    cancelled: 'Cancelled',
+    draft: 'Draft',
+    for_approval: 'For Approval',
+    approved: 'Approved',
+    paid: 'Paid',
 };
 
 export default function Index({ rfps }: Props) {
@@ -65,7 +73,9 @@ export default function Index({ rfps }: Props) {
     const filteredRfps = rfps.data.filter(
         (rfp) =>
             rfp.rfp_number.toLowerCase().includes(search.toLowerCase()) ||
-            rfp.rfp_form?.description.toLowerCase().includes(search.toLowerCase())
+            rfp.usage?.description.toLowerCase().includes(search.toLowerCase()) ||
+            rfp.supplier_name?.toLowerCase().includes(search.toLowerCase()) ||
+            rfp.employee_name?.toLowerCase().includes(search.toLowerCase())
     );
 
     const formatDate = (dateString: string) => {
@@ -76,14 +86,13 @@ export default function Index({ rfps }: Props) {
         });
     };
 
-    const formatDateTime = (dateString: string) => {
-        return new Date(dateString).toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+    const formatCurrency = (amount: number | null, currencyCode: string) => {
+        if (!amount) return '₱0.00';
+        const currency = currencyCode === 'PHP' ? 'PHP' : currencyCode === 'USD' ? 'USD' : 'PHP';
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: currency,
+        }).format(amount);
     };
 
     return (
@@ -114,7 +123,7 @@ export default function Index({ rfps }: Props) {
                     <div className="relative flex-1 max-w-sm">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search by RFP number or form..."
+                            placeholder="Search by RFP number, usage, or payee..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="pl-8 h-9"
@@ -127,9 +136,10 @@ export default function Index({ rfps }: Props) {
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-[130px]">RFP Number</TableHead>
-                                <TableHead>Form</TableHead>
+                                <TableHead>Usage</TableHead>
                                 <TableHead>Payee</TableHead>
                                 <TableHead>Area</TableHead>
+                                <TableHead>Due Date</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Created</TableHead>
@@ -140,7 +150,7 @@ export default function Index({ rfps }: Props) {
                         <TableBody>
                             {filteredRfps.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                                         <FileText className="h-12 w-12 mx-auto mb-2 opacity-20" />
                                         <p className="text-sm">No Requests found</p>
                                     </TableCell>
@@ -159,10 +169,10 @@ export default function Index({ rfps }: Props) {
                                         <TableCell>
                                             <div className="max-w-[200px]">
                                                 <p className="text-xs text-muted-foreground">
-                                                    {rfp.rfp_form?.code}
+                                                    {rfp.usage?.code}
                                                 </p>
                                                 <p className="text-sm truncate">
-                                                    {rfp.rfp_form?.description}
+                                                    {rfp.usage?.description}
                                                 </p>
                                             </div>
                                         </TableCell>
@@ -170,19 +180,23 @@ export default function Index({ rfps }: Props) {
                                             <div>
                                                 <p className="text-sm">{rfp.payee_type}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {rfp.payee_card_code}
+                                                    {rfp.payee_type === 'Supplier'
+                                                        ? rfp.supplier_code
+                                                        : rfp.employee_code}
                                                 </p>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <span className="text-sm">{rfp.area}</span>
                                         </TableCell>
+                                        <TableCell>
+                                            <div className="text-sm text-muted-foreground">
+                                                {formatDate(rfp.due_date)}
+                                            </div>
+                                        </TableCell>
                                         <TableCell className="text-right font-medium">
                                             <div className="text-sm">
-                                                {new Intl.NumberFormat('en-PH', {
-                                                    style: 'currency',
-                                                    currency: rfp.currency === 'Peso' ? 'PHP' : 'USD',
-                                                }).format(Number(rfp.grand_total || 0))}
+                                                {formatCurrency(rfp.grand_total_amount, rfp.currency?.code || 'PHP')}
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -190,7 +204,7 @@ export default function Index({ rfps }: Props) {
                                                 variant="secondary"
                                                 className={statusColors[rfp.status]}
                                             >
-                                                {rfp.status}
+                                                {statusLabels[rfp.status]}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
@@ -287,7 +301,7 @@ export default function Index({ rfps }: Props) {
                         <AlertDialogTitle>Delete RFP Request</AlertDialogTitle>
                         <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete the RFP
-                            request and all associated items.
+                            request and all associated details.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { FileText, GitBranch, Home, LayoutGrid } from 'lucide-react';
+import { FileText, GitBranch, Home, LayoutGrid, Layers, FolderTree, DollarSign } from 'lucide-react';
 import { useState } from 'react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -34,6 +34,27 @@ const mainNavItems: NavItem[] = [
         title: 'Requests',
         href: '/rfp/requests',
         icon: FileText,
+    },
+    {
+        title: 'Setup',
+        icon: Layers,
+        items: [
+            {
+                title: 'Categories',
+                href: '/rfp/categories',
+                icon: FolderTree,
+            },
+            {
+                title: 'Usages',
+                href: '/rfp/usages',
+                icon: Layers,
+            },
+            {
+                title: 'Currencies',
+                href: '/rfp/currencies',
+                icon: DollarSign,
+            },
+        ],
     },
 ];
 

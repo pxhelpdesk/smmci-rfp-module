@@ -21,60 +21,87 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { RfpForm, SharedDescription, RfpUser, SapAccount, SapSupplier, RfpItem } from '@/types';
+import type { RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccount, SapSupplier } from '@/types';
 
 type Props = {
-    rfpForms: RfpForm[];
-    sharedDescriptions: SharedDescription[];
-    users: RfpUser[];
-    auth: {
-        user: RfpUser;
-    };
+    categories: RfpCategory[];
+    currencies: RfpCurrency[];
 };
 
-export default function Create({ rfpForms, sharedDescriptions, users, auth }: Props) {
+export default function Create({ categories, currencies }: Props) {
     const [accounts, setAccounts] = useState<SapAccount[]>([]);
     const [suppliers, setSuppliers] = useState<SapSupplier[]>([]);
+    const [usages, setUsages] = useState<RfpUsage[]>([]);
     const [loadingAccounts, setLoadingAccounts] = useState(false);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+    const [loadingUsages, setLoadingUsages] = useState(false);
 
-    const { data, setData, post, processing, errors } = useForm({
-        area: 'Mine Site',
-        rfp_form_id: null as number | null,
-        payee_type: 'Supplier',
-        payee_card_code: null as string | null,
-        payee_card_name: null as string | null,
-        payee_invoice_number: '',
-        requested_by: auth.user.id,
-        recommended_by: null as number | null,
-        approved_by: null as number | null,
-        concurred_by: null as number | null,
-        total_before_vat: '',
-        is_vatable: true,
-        vat_type: 'Inclusive',
-        down_payment: '',
-        withholding_tax: '',
-        currency: 'Peso',
-        remarks: '',
+    const { data, setData, post, processing, errors } = useForm<{
+        ap_no: string;
+        due_date: string;
+        rr_no: string;
+        po_no: string;
+        area: 'Head Office' | 'Mine Site';
+        payee_type: 'Employee' | 'Supplier';
+        employee_code: string;
+        employee_name: string;
+        supplier_code: string | null;
+        supplier_name: string | null;
+        vendor_ref: string;
+        rfp_currency_id: number | null;
+        rfp_usage_id: number | null;
+        rfp_category_id: number | null;
+        total_before_vat_amount: string;
+        less_down_payment_amount: string;
+        is_vatable: boolean;
+        vat_type: 'inclusive' | 'exclusive';
+        vat_amount: string;
+        wtax_amount: string;
+        grand_total_amount: string;
+        remarks: string;
+        details: Partial<RfpDetail>[];
+    }>({
+        ap_no: '',
         due_date: '',
-        shared_description_id: null as number | null,
-        purpose: '',
-        voucher_number: '',
-        check_number: '',
-        items: [] as Partial<RfpItem>[],
+        rr_no: '',
+        po_no: '',
+        area: 'Mine Site',
+        payee_type: 'Supplier',
+        employee_code: '',
+        employee_name: '',
+        supplier_code: null,
+        supplier_name: null,
+        vendor_ref: '',
+        rfp_currency_id: null,
+        rfp_usage_id: null,
+        rfp_category_id: null,
+        total_before_vat_amount: '',
+        less_down_payment_amount: '',
+        is_vatable: true,
+        vat_type: 'inclusive',
+        vat_amount: '',
+        wtax_amount: '',
+        grand_total_amount: '',
+        remarks: '',
+        details: [{
+            account_code: null,
+            account_name: null,
+            description: null,
+            total_amount: null
+        }],
     });
 
-    const loadAccounts = async () => {
-        setLoadingAccounts(true);
-        try {
-            const res = await fetch('/rfp/api/accounts');
-            const data = await res.json();
-            setAccounts(data);
-        } catch (error) {
-            console.error('Failed to load accounts', error);
-        }
-        setLoadingAccounts(false);
-    };
+    // const loadAccounts = async () => {
+    //     setLoadingAccounts(true);
+    //     try {
+    //         const res = await fetch('/rfp/api/accounts');
+    //         const data = await res.json();
+    //         setAccounts(data);
+    //     } catch (error) {
+    //         console.error('Failed to load accounts', error);
+    //     }
+    //     setLoadingAccounts(false);
+    // };
 
     const loadSuppliers = async () => {
         setLoadingSuppliers(true);
@@ -88,18 +115,35 @@ export default function Create({ rfpForms, sharedDescriptions, users, auth }: Pr
         setLoadingSuppliers(false);
     };
 
-    const addItem = () => {
-        setData('items', [...data.items, { account_code: null, payment_type: '', billed_amount: null }]);
+    const loadUsages = async (categoryId: number) => {
+        setLoadingUsages(true);
+        try {
+            const res = await fetch(`/rfp/usages/category/${categoryId}`);
+            const data = await res.json();
+            setUsages(data);
+        } catch (error) {
+            console.error('Failed to load usages', error);
+        }
+        setLoadingUsages(false);
     };
 
-    const removeItem = (index: number) => {
-        setData('items', data.items.filter((_, i) => i !== index));
+    const addDetail = () => {
+        setData('details', [...data.details, {
+            account_code: null,
+            account_name: null,
+            description: null,
+            total_amount: null
+        }]);
     };
 
-    const updateItem = (index: number, field: keyof RfpItem, value: any) => {
-        const updated = [...data.items];
+    const removeDetail = (index: number) => {
+        setData('details', data.details.filter((_, i) => i !== index));
+    };
+
+    const updateDetail = (index: number, field: keyof RfpDetail, value: any) => {
+        const updated = [...data.details];
         updated[index] = { ...updated[index], [field]: value };
-        setData('items', updated);
+        setData('details', updated);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -107,19 +151,19 @@ export default function Create({ rfpForms, sharedDescriptions, users, auth }: Pr
         post('/rfp/requests');
     };
 
-    const rfpFormOptions = rfpForms.map(f => ({
-        value: f.id,
-        label: `${f.code} - ${f.description}`,
+    const categoryOptions = categories.map(c => ({
+        value: c.id,
+        label: `${c.code} - ${c.name}`,
     }));
 
-    const sharedDescOptions = sharedDescriptions.map(s => ({
-        value: s.id,
-        label: `${s.code} - ${s.description}`,
-    }));
-
-    const userOptions = users.map(u => ({
+    const usageOptions = usages.map(u => ({
         value: u.id,
-        label: `${u.first_name} ${u.last_name}${u.department ? ` - ${u.department.department}` : ''}`,
+        label: `${u.code} - ${u.description}`,
+    }));
+
+    const currencyOptions = currencies.map(c => ({
+        value: c.id,
+        label: `${c.code} - ${c.name}`,
     }));
 
     return (
@@ -131,6 +175,7 @@ export default function Create({ rfpForms, sharedDescriptions, users, auth }: Pr
             ]}
         >
             <Head title="Create RFP Request" />
+
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
@@ -174,37 +219,46 @@ export default function Create({ rfpForms, sharedDescriptions, users, auth }: Pr
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-sm">RFP Form</Label>
+                                <Label className="text-sm">Category</Label>
                                 <Select
-                                    options={rfpFormOptions}
-                                    value={rfpFormOptions.find(o => o.value === data.rfp_form_id)}
-                                    onChange={(opt) => setData('rfp_form_id', opt?.value || null)}
+                                    options={categoryOptions}
+                                    value={categoryOptions.find(o => o.value === data.rfp_category_id)}
+                                    onChange={(opt) => {
+                                        setData('rfp_category_id', opt?.value || null);
+                                        setData('rfp_usage_id', null);
+                                        setUsages([]);
+                                        if (opt?.value) {
+                                            loadUsages(opt.value);
+                                        }
+                                    }}
                                     isClearable
-                                    placeholder="Select form..."
+                                    placeholder="Select category..."
                                     className="text-sm"
                                     styles={{
                                         control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
                                         menu: (base) => ({ ...base, fontSize: '14px' }),
                                     }}
                                 />
-                                {errors.rfp_form_id && <p className="text-xs text-destructive">{errors.rfp_form_id}</p>}
+                                {errors.rfp_category_id && <p className="text-xs text-destructive">{errors.rfp_category_id}</p>}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-sm">Shared Description</Label>
+                                <Label className="text-sm">Usage</Label>
                                 <Select
-                                    options={sharedDescOptions}
-                                    value={sharedDescOptions.find(o => o.value === data.shared_description_id)}
-                                    onChange={(opt) => setData('shared_description_id', opt?.value || null)}
+                                    options={usageOptions}
+                                    value={usageOptions.find(o => o.value === data.rfp_usage_id)}
+                                    onChange={(opt) => setData('rfp_usage_id', opt?.value || null)}
                                     isClearable
-                                    placeholder="Select description..."
+                                    isDisabled={!data.rfp_category_id || loadingUsages}
+                                    isLoading={loadingUsages}
+                                    placeholder="Select usage..."
                                     className="text-sm"
                                     styles={{
                                         control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
                                         menu: (base) => ({ ...base, fontSize: '14px' }),
                                     }}
                                 />
-                                {errors.shared_description_id && <p className="text-xs text-destructive">{errors.shared_description_id}</p>}
+                                {errors.rfp_usage_id && <p className="text-xs text-destructive">{errors.rfp_usage_id}</p>}
                             </div>
                         </CardContent>
                     </Card>
@@ -217,7 +271,7 @@ export default function Create({ rfpForms, sharedDescriptions, users, auth }: Pr
                             <div className="space-y-1.5">
                                 <Label htmlFor="payee_type" className="text-sm">Type</Label>
                                 <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)}>
-                                    <SelectTrigger className="h-9" disabled>
+                                    <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -228,41 +282,68 @@ export default function Create({ rfpForms, sharedDescriptions, users, auth }: Pr
                                 {errors.payee_type && <p className="text-xs text-destructive">{errors.payee_type}</p>}
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Supplier</Label>
-                                <Select
-                                    options={suppliers}
-                                    value={suppliers.find(s => s.value === data.payee_card_code)}
-                                    onChange={(opt) => {
-                                        setData({
-                                            ...data,
-                                            payee_card_code: opt?.value || null,
-                                            payee_card_name: opt?.label ? opt.label.split(' - ')[1] : null,
-                                        } as any);
-                                    }}
-                                    onMenuOpen={() => !suppliers.length && loadSuppliers()}
-                                    isLoading={loadingSuppliers}
-                                    isClearable
-                                    placeholder="Select supplier..."
-                                    className="text-sm"
-                                    styles={{
-                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                        menu: (base) => ({ ...base, fontSize: '14px' }),
-                                    }}
-                                />
-                                {errors.payee_card_code && <p className="text-xs text-destructive">{errors.payee_card_code}</p>}
-                            </div>
+                            {data.payee_type === 'Supplier' ? (
+                                <>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-sm">Supplier</Label>
+                                        <Select
+                                            options={suppliers}
+                                            value={suppliers.find(s => s.value === data.supplier_code)}
+                                            onChange={(opt) => {
+                                                setData({
+                                                    ...data,
+                                                    supplier_code: opt?.value || null,
+                                                    supplier_name: opt?.label ? opt.label.split(' - ')[1] : null,
+                                                } as any);
+                                            }}
+                                            onMenuOpen={() => !suppliers.length && loadSuppliers()}
+                                            isLoading={loadingSuppliers}
+                                            isClearable
+                                            placeholder="Select supplier..."
+                                            className="text-sm"
+                                            styles={{
+                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                                menu: (base) => ({ ...base, fontSize: '14px' }),
+                                            }}
+                                        />
+                                        {errors.supplier_code && <p className="text-xs text-destructive">{errors.supplier_code}</p>}
+                                    </div>
 
-                            <div className="space-y-1.5">
-                                <Label htmlFor="payee_invoice_number" className="text-sm">Invoice Number</Label>
-                                <Input
-                                    id="payee_invoice_number"
-                                    value={data.payee_invoice_number}
-                                    onChange={(e) => setData('payee_invoice_number', e.target.value)}
-                                    className="h-9"
-                                />
-                                {errors.payee_invoice_number && <p className="text-xs text-destructive">{errors.payee_invoice_number}</p>}
-                            </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="vendor_ref" className="text-sm">Vendor Reference</Label>
+                                        <Input
+                                            id="vendor_ref"
+                                            value={data.vendor_ref}
+                                            onChange={(e) => setData('vendor_ref', e.target.value)}
+                                            className="h-9"
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="employee_code" className="text-sm">Employee Code</Label>
+                                        <Input
+                                            id="employee_code"
+                                            value={data.employee_code}
+                                            onChange={(e) => setData('employee_code', e.target.value)}
+                                            className="h-9"
+                                        />
+                                        {errors.employee_code && <p className="text-xs text-destructive">{errors.employee_code}</p>}
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="employee_name" className="text-sm">Employee Name</Label>
+                                        <Input
+                                            id="employee_name"
+                                            value={data.employee_name}
+                                            onChange={(e) => setData('employee_name', e.target.value)}
+                                            className="h-9"
+                                        />
+                                        {errors.employee_name && <p className="text-xs text-destructive">{errors.employee_name}</p>}
+                                    </div>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -270,149 +351,24 @@ export default function Create({ rfpForms, sharedDescriptions, users, auth }: Pr
                 <Card>
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">Items</CardTitle>
-                            <Button type="button" size="sm" variant="outline" onClick={addItem}>
-                                Add Item
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        {data.items.map((item, index) => (
-                            <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
-                                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
-                                    <Select
-                                        options={accounts}
-                                        value={accounts.find(a => a.value === item.account_code)}
-                                        onChange={(opt) => {
-                                            const updated = [...data.items];
-                                            updated[index] = {
-                                                ...updated[index],
-                                                account_code: opt?.value || null,
-                                                account_name: opt ? opt.label.split(' - ')[1] : null,
-                                            };
-                                            setData('items', updated);
-                                        }}
-                                        onMenuOpen={() => !accounts.length && loadAccounts()}
-                                        isLoading={loadingAccounts}
-                                        isClearable
-                                        placeholder="Select account..."
-                                        className="text-sm"
-                                        styles={{
-                                            control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                            menu: (base) => ({ ...base, fontSize: '14px' }),
-                                        }}
-                                    />
-                                    <Input
-                                        placeholder="Payment type"
-                                        value={item.payment_type || ''}
-                                        onChange={(e) => updateItem(index, 'payment_type', e.target.value)}
-                                        className="h-9"
-                                    />
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="Amount"
-                                        value={item.billed_amount || ''}
-                                        onChange={(e) => updateItem(index, 'billed_amount', parseFloat(e.target.value) || null)}
-                                        className="h-9"
-                                    />
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeItem(index)}
-                                    className="text-destructive hover:text-destructive"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ))}
-                        {data.items.length === 0 && (
-                            <p className="text-sm text-muted-foreground text-center py-6">
-                                No items added yet. Click "Add Item" to begin.
+                            <CardTitle className="text-base">Document Information</CardTitle>
+                            <p className="text-xs text-muted-foreground">
+                                Today: {new Date().toLocaleDateString('en-US', {
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    year: 'numeric',
+                                })}
                             </p>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Financial Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="grid md:grid-cols-3 gap-3">
-                            <div className="space-y-1.5">
-                                <Label htmlFor="currency" className="text-sm">Currency</Label>
-                                <SelectUI value={data.currency} onValueChange={(v) => setData('currency', v as any)}>
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Peso">Peso</SelectItem>
-                                        <SelectItem value="US Dollar">US Dollar</SelectItem>
-                                    </SelectContent>
-                                </SelectUI>
-                                {errors.currency && <p className="text-xs text-destructive">{errors.currency}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="total_before_vat" className="text-sm">Total Before VAT</Label>
-                                <Input
-                                    id="total_before_vat"
-                                    type="number"
-                                    step="0.01"
-                                    value={data.total_before_vat}
-                                    onChange={(e) => setData('total_before_vat', e.target.value)}
-                                    className="h-9"
-                                />
-                                {errors.total_before_vat && <p className="text-xs text-destructive">{errors.total_before_vat}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Vatable</Label>
-                                <div className="flex items-center gap-3 h-9">
-                                    <Checkbox
-                                        id="is_vatable"
-                                        checked={data.is_vatable}
-                                        onCheckedChange={(checked) => setData('is_vatable', checked as boolean)}
-                                    />
-                                    {data.is_vatable && (
-                                        <SelectUI value={data.vat_type} onValueChange={(v) => setData('vat_type', v as any)}>
-                                            <SelectTrigger className="h-9 flex-1">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Inclusive">Inclusive</SelectItem>
-                                                <SelectItem value="Exclusive">Exclusive</SelectItem>
-                                            </SelectContent>
-                                        </SelectUI>
-                                    )}
-                                </div>
-                            </div>
                         </div>
-
-                        <div className="grid md:grid-cols-3 gap-3">
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-4 gap-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="down_payment" className="text-sm">Down Payment</Label>
+                                <Label htmlFor="ap_no" className="text-sm">AP Number</Label>
                                 <Input
-                                    id="down_payment"
-                                    type="number"
-                                    step="0.01"
-                                    value={data.down_payment}
-                                    onChange={(e) => setData('down_payment', e.target.value)}
-                                    className="h-9"
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="withholding_tax" className="text-sm">Withholding Tax</Label>
-                                <Input
-                                    id="withholding_tax"
-                                    type="number"
-                                    step="0.01"
-                                    value={data.withholding_tax}
-                                    onChange={(e) => setData('withholding_tax', e.target.value)}
+                                    id="ap_no"
+                                    value={data.ap_no}
+                                    onChange={(e) => setData('ap_no', e.target.value)}
                                     className="h-9"
                                 />
                             </div>
@@ -428,74 +384,231 @@ export default function Create({ rfpForms, sharedDescriptions, users, auth }: Pr
                                 />
                                 {errors.due_date && <p className="text-xs text-destructive">{errors.due_date}</p>}
                             </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="rr_no" className="text-sm">RR Number</Label>
+                                <Input
+                                    id="rr_no"
+                                    value={data.rr_no}
+                                    onChange={(e) => setData('rr_no', e.target.value)}
+                                    className="h-9"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="po_no" className="text-sm">PO Number</Label>
+                                <Input
+                                    id="po_no"
+                                    value={data.po_no}
+                                    onChange={(e) => setData('po_no', e.target.value)}
+                                    className="h-9"
+                                />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Signers</CardTitle>
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">Details</CardTitle>
+                            {/* <Button type="button" size="sm" variant="outline" onClick={addDetail}>
+                                Add Detail
+                            </Button> */}
+                        </div>
                     </CardHeader>
-                    <CardContent className="grid md:grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <Label className="text-sm">Requested By</Label>
-                            <Input
-                                value={`${auth.user.first_name} ${auth.user.last_name}${auth.user.department ? ` - ${auth.user.department.department}` : ''}`}
-                                disabled
-                                className="h-9 bg-muted"
-                            />
-                            {errors.requested_by && <p className="text-xs text-destructive">{errors.requested_by}</p>}
+                    <CardContent className="space-y-2">
+                        {data.details.length > 0 && (
+                            <div className="flex gap-2 px-3 pb-2">
+                                {/* <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2"> */}
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {/* <p className="text-xs font-medium text-muted-foreground">Account</p> */}
+                                    <p className="text-xs font-medium text-muted-foreground">Description</p>
+                                    <p className="text-xs font-medium text-muted-foreground">Total</p>
+                                </div>
+                                {data.details.length > 1 && <div className="w-9"></div>}
+                            </div>
+                        )}
+
+                        {data.details.map((detail, index) => (
+                            <div key={index} className="flex gap-2 items-start px-3">
+                                {/* <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2"> */}
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {/* <Select
+                                        options={accounts}
+                                        value={accounts.find(a => a.value === detail.account_code)}
+                                        onChange={(opt) => {
+                                            const updated = [...data.details];
+                                            updated[index] = {
+                                                ...updated[index],
+                                                account_code: opt?.value || null,
+                                                account_name: opt ? opt.label.split(' - ')[1] : null,
+                                            };
+                                            setData('details', updated);
+                                        }}
+                                        onMenuOpen={() => !accounts.length && loadAccounts()}
+                                        isLoading={loadingAccounts}
+                                        isClearable
+                                        placeholder="Select account..."
+                                        className="text-sm"
+                                        styles={{
+                                            control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                            menu: (base) => ({ ...base, fontSize: '14px' }),
+                                        }}
+                                    /> */}
+                                    <div className="space-y-1">
+                                        <Input
+                                            // placeholder="Description"
+                                            value={detail.description || ''}
+                                            onChange={(e) => updateDetail(index, 'description', e.target.value)}
+                                            className="h-9"
+                                        />
+                                        {errors[`details.${index}.description`] && (
+                                            <p className="text-xs text-destructive">
+                                                {errors[`details.${index}.description`]}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Input
+                                            type="number"
+                                            step="0.01"
+                                            // placeholder="Total"
+                                            value={detail.total_amount || ''}
+                                            onChange={(e) => updateDetail(index, 'total_amount', parseFloat(e.target.value) || null)}
+                                            className="h-9"
+                                        />
+                                        {errors[`details.${index}.total_amount`] && (
+                                            <p className="text-xs text-destructive">
+                                                {errors[`details.${index}.total_amount`]}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                {data.details.length > 1 && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => removeDetail(index)}
+                                        className="text-destructive hover:text-destructive h-9 w-9 p-0"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Financial Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {/* <div className="grid md:grid-cols-3 gap-3"> */}
+                        <div className="grid md:grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-sm">Currency</Label>
+                                <Select
+                                    options={currencyOptions}
+                                    value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
+                                    onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
+                                    placeholder="Select currency..."
+                                    className="text-sm"
+                                    styles={{
+                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                        menu: (base) => ({ ...base, fontSize: '14px' }),
+                                    }}
+                                />
+                                {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
+                            </div>
+
+                            {/* <div className="space-y-1.5">
+                                <Label htmlFor="total_before_vat_amount" className="text-sm">Total Before VAT</Label>
+                                <Input
+                                    id="total_before_vat_amount"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.total_before_vat_amount}
+                                    onChange={(e) => setData('total_before_vat_amount', e.target.value)}
+                                    className="h-9"
+                                />
+                                {errors.total_before_vat_amount && <p className="text-xs text-destructive">{errors.total_before_vat_amount}</p>}
+                            </div> */}
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="less_down_payment_amount" className="text-sm">Down Payment</Label>
+                                <Input
+                                    id="less_down_payment_amount"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.less_down_payment_amount}
+                                    onChange={(e) => setData('less_down_payment_amount', e.target.value)}
+                                    className="h-9"
+                                />
+                            </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <Label className="text-sm">Recommended By</Label>
-                            <Select
-                                options={userOptions}
-                                value={userOptions.find(u => u.value === data.recommended_by)}
-                                onChange={(opt) => setData('recommended_by', opt?.value || null)}
-                                isClearable
-                                placeholder="Select user..."
-                                className="text-sm"
-                                styles={{
-                                    control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                    menu: (base) => ({ ...base, fontSize: '14px' }),
-                                }}
-                            />
-                            {errors.recommended_by && <p className="text-xs text-destructive">{errors.recommended_by}</p>}
-                        </div>
+                        {/* <div className="grid md:grid-cols-4 gap-3"> */}
+                        <div className="grid md:grid-cols-2 gap-3">
+                            {/* <div className="space-y-1.5">
+                                <Label className="text-sm">Vatable</Label>
+                                <div className="flex items-center gap-3 h-9">
+                                    <Checkbox
+                                        id="is_vatable"
+                                        checked={data.is_vatable}
+                                        onCheckedChange={(checked) => setData('is_vatable', checked as boolean)}
+                                    />
+                                    {data.is_vatable && (
+                                        <SelectUI value={data.vat_type} onValueChange={(v) => setData('vat_type', v as any)}>
+                                            <SelectTrigger className="h-9 flex-1">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="inclusive">Inclusive</SelectItem>
+                                                <SelectItem value="exclusive">Exclusive</SelectItem>
+                                            </SelectContent>
+                                        </SelectUI>
+                                    )}
+                                </div>
+                            </div>
 
-                        <div className="space-y-1.5">
-                            <Label className="text-sm">Approved By</Label>
-                            <Select
-                                options={userOptions}
-                                value={userOptions.find(u => u.value === data.approved_by)}
-                                onChange={(opt) => setData('approved_by', opt?.value || null)}
-                                isClearable
-                                placeholder="Select user..."
-                                className="text-sm"
-                                styles={{
-                                    control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                    menu: (base) => ({ ...base, fontSize: '14px' }),
-                                }}
-                            />
-                            {errors.approved_by && <p className="text-xs text-destructive">{errors.approved_by}</p>}
-                        </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="vat_amount" className="text-sm">VAT Amount</Label>
+                                <Input
+                                    id="vat_amount"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.vat_amount}
+                                    onChange={(e) => setData('vat_amount', e.target.value)}
+                                    className="h-9"
+                                />
+                            </div> */}
 
-                        <div className="space-y-1.5">
-                            <Label className="text-sm">Concurred By</Label>
-                            <Select
-                                options={userOptions}
-                                value={userOptions.find(u => u.value === data.concurred_by)}
-                                onChange={(opt) => setData('concurred_by', opt?.value || null)}
-                                isClearable
-                                placeholder="Select user..."
-                                className="text-sm"
-                                styles={{
-                                    control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                    menu: (base) => ({ ...base, fontSize: '14px' }),
-                                }}
-                            />
-                            {errors.concurred_by && <p className="text-xs text-destructive">{errors.concurred_by}</p>}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="wtax_amount" className="text-sm">Withholding Tax</Label>
+                                <Input
+                                    id="wtax_amount"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.wtax_amount}
+                                    onChange={(e) => setData('wtax_amount', e.target.value)}
+                                    className="h-9"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="grand_total_amount" className="text-sm">Grand Total</Label>
+                                <Input
+                                    id="grand_total_amount"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.grand_total_amount}
+                                    onChange={(e) => setData('grand_total_amount', e.target.value)}
+                                    className="h-9"
+                                />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -504,51 +617,16 @@ export default function Create({ rfpForms, sharedDescriptions, users, auth }: Pr
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Additional Information</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label htmlFor="voucher_number" className="text-sm">Voucher Number</Label>
-                                <Input
-                                    id="voucher_number"
-                                    value={data.voucher_number}
-                                    onChange={(e) => setData('voucher_number', e.target.value)}
-                                    className="h-9"
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="check_number" className="text-sm">Check Number</Label>
-                                <Input
-                                    id="check_number"
-                                    value={data.check_number}
-                                    onChange={(e) => setData('check_number', e.target.value)}
-                                    className="h-9"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label htmlFor="purpose" className="text-sm">Purpose</Label>
-                                <Textarea
-                                    id="purpose"
-                                    value={data.purpose}
-                                    onChange={(e) => setData('purpose', e.target.value)}
-                                    rows={2}
-                                    className="resize-none"
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="remarks" className="text-sm">Remarks</Label>
-                                <Textarea
-                                    id="remarks"
-                                    value={data.remarks}
-                                    onChange={(e) => setData('remarks', e.target.value)}
-                                    rows={2}
-                                    className="resize-none"
-                                />
-                            </div>
+                    <CardContent>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="remarks" className="text-sm">Remarks</Label>
+                            <Textarea
+                                id="remarks"
+                                value={data.remarks}
+                                onChange={(e) => setData('remarks', e.target.value)}
+                                rows={3}
+                                className="resize-none"
+                            />
                         </div>
                     </CardContent>
                 </Card>

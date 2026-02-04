@@ -8,9 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('rfp_logs', function (Blueprint $table) {
+        Schema::connection('mysql_rfp')->create('rfp_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rfp_id')->nullable()->constrained('rfps')->cascadeOnDelete();
+            $table->foreignId('rfp_id')->constrained('rfps')->cascadeOnDelete();
             $table->string('code')->unique()->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->string('from')->nullable();
@@ -24,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('rfp_logs');
+        Schema::connection('mysql_rfp')->dropIfExists('rfp_logs');
     }
 };

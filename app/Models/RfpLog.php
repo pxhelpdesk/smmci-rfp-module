@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
+use App\Models\User;
 
 class RfpLog extends Model
 {
@@ -19,19 +19,8 @@ class RfpLog extends Model
         'from',
         'into',
         'details',
-        'remarks'
+        'remarks',
     ];
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($log) {
-            if (!$log->code) {
-                $log->code = 'LOG-' . strtoupper(Str::random(12));
-            }
-        });
-    }
 
     public function rfp()
     {
@@ -41,7 +30,6 @@ class RfpLog extends Model
     public function user()
     {
         return $this->setConnection('mysql')
-            ->belongsTo(User::class)
-            ->select('id', 'first_name', 'last_name', 'department_id');
+            ->belongsTo(User::class, 'user_id');
     }
 }

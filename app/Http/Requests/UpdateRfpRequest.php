@@ -15,35 +15,34 @@ class UpdateRfpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'area' => 'nullable|in:Head Office,Mine Site',
-            'rfp_form_id' => 'nullable|exists:mysql_rfp.rfp_forms,id',
-            'payee_type' => 'nullable|in:Employee,Supplier',
-            'payee_card_code' => 'nullable|string',
-            'payee_card_name' => 'nullable|string',
-            'payee_invoice_number' => 'nullable|string',
-            'requested_by' => 'nullable|exists:users,id',
-            'recommended_by' => 'nullable|exists:users,id',
-            'approved_by' => 'nullable|exists:users,id',
-            'concurred_by' => 'nullable|exists:users,id',
-            'total_before_vat' => 'nullable|numeric',
+            'ap_no' => 'nullable|string',
+            'due_date' => 'required|date|after:today',
+            'rr_no' => 'nullable|string',
+            'po_no' => 'nullable|string',
+            'area' => 'required|in:Head Office,Mine Site',
+            'payee_type' => 'required|in:Employee,Supplier',
+            'employee_code' => 'nullable|string',
+            'employee_name' => 'nullable|string',
+            'supplier_code' => 'nullable|string',
+            'supplier_name' => 'nullable|string',
+            'vendor_ref' => 'nullable|string',
+            'rfp_currency_id' => 'required|exists:mysql_rfp.rfp_currencies,id',
+            'rfp_usage_id' => 'required|exists:mysql_rfp.rfp_usages,id',
+            'total_before_vat_amount' => 'nullable|numeric',
+            'less_down_payment_amount' => 'nullable|numeric',
             'is_vatable' => 'nullable|boolean',
-            'vat_type' => 'nullable|in:Inclusive,Exclusive',
-            'down_payment' => 'nullable|numeric',
-            'withholding_tax' => 'nullable|numeric',
-            'currency' => 'nullable|in:Peso,US Dollar',
+            'vat_type' => 'nullable|in:inclusive,exclusive',
+            'vat_amount' => 'nullable|numeric',
+            'wtax_amount' => 'nullable|numeric',
+            'grand_total_amount' => 'nullable|numeric',
             'remarks' => 'nullable|string',
-            'due_date' => 'nullable|date|after:today',
-            'shared_description_id' => 'nullable|exists:mysql_rfp.shared_descriptions,id',
-            'purpose' => 'nullable|string',
-            'status' => 'nullable|in:Draft,Cancelled,Final,Final with CV,Paid',
-            'voucher_number' => 'nullable|string',
-            'check_number' => 'nullable|string',
-            'items' => 'nullable|array',
-            'items.*.id' => 'sometimes|exists:mysql_rfp.rfp_items,id',
-            'items.*.account_code' => 'nullable|string',
-            'items.*.account_name' => 'nullable|string',
-            'items.*.payment_type' => 'nullable|string',
-            'items.*.billed_amount' => 'nullable|numeric',
+            'status' => 'nullable|in:cancelled,draft,for_approval,approved,paid',
+            'details' => 'required|array|min:1',
+            'details.*.id' => 'sometimes|exists:mysql_rfp.rfp_details,id',
+            'details.*.account_code' => 'nullable|string',
+            'details.*.account_name' => 'nullable|string',
+            'details.*.description' => 'required|string',
+            'details.*.total_amount' => 'required|numeric|min:0.01',
         ];
     }
 
@@ -51,6 +50,16 @@ class UpdateRfpRequest extends FormRequest
     {
         return [
             'due_date.after' => 'The due date must be a future date.',
+            'due_date.required' => 'The due date is required.',
+            'area.required' => 'The area is required.',
+            'payee_type.required' => 'The payee type is required.',
+            'rfp_currency_id.required' => 'The currency is required.',
+            'rfp_usage_id.required' => 'The usage is required.',
+            'details.required' => 'At least one detail item is required.',
+            'details.min' => 'At least one detail item is required.',
+            'details.*.description.required' => 'Description is required for each detail.',
+            'details.*.total_amount.required' => 'Amount is required for each detail.',
+            'details.*.total_amount.min' => 'Amount must be greater than zero.',
         ];
     }
 
@@ -62,11 +71,16 @@ class UpdateRfpRequest extends FormRequest
 
     protected function prepareForValidation()
     {
-        // Remove items that don't have essential data
-        if ($this->has('items')) {
+        // Remove completely empty details (all fields null/empty)
+        if ($this->has('details')) {
             $this->merge([
-                'items' => collect($this->items)
-                    ->filter(fn($item) => !empty($item))
+                'details' => collect($this->details)
+                    ->filter(function($item) {
+                        return !empty($item['account_code']) ||
+                            !empty($item['account_name']) ||
+                            !empty($item['description']) ||
+                            !empty($item['total_amount']);
+                    })
                     ->values()
                     ->toArray()
             ]);

@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('rfp_signs', function (Blueprint $table) {
+        Schema::connection('mysql_rfp')->create('rfp_signs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rfp_id')->nullable()->constrained('rfps')->cascadeOnDelete();
+            $table->foreignId('rfp_id')->constrained('rfps')->cascadeOnDelete();
             $table->string('code')->unique()->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
-            $table->enum('user_type', ['Requested By', 'Recommended By', 'Approved By', 'Concurred By'])->nullable();
-            $table->boolean('is_signed')->default(false)->nullable();
+            $table->boolean('is_signed')->default(false);
+            $table->text('details')->nullable();
             $table->text('remarks')->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -23,6 +23,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('rfp_signs');
+        Schema::connection('mysql_rfp')->dropIfExists('rfp_signs');
     }
 };

@@ -8,10 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('rfp_forms', function (Blueprint $table) {
+        Schema::connection('mysql_rfp')->create('rfp_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique()->nullable();
+            $table->string('code')->unique();
+            $table->string('name');
             $table->text('description')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });
@@ -19,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('rfp_forms');
+        Schema::connection('mysql_rfp')->dropIfExists('rfp_categories');
     }
 };

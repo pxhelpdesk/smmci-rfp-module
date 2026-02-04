@@ -1,15 +1,4 @@
 // types/rfp.ts
-export type RfpForm = {
-    id: number;
-    code: string;
-    description: string;
-};
-
-export type SharedDescription = {
-    id: number;
-    code: string;
-    description: string;
-};
 
 export type Department = {
     id: number;
@@ -25,23 +14,48 @@ export type RfpUser = {
     name: string;
 };
 
-export type RfpItem = {
+export type RfpCurrency = {
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+    is_active: boolean;
+};
+
+export type RfpCategory = {
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+    is_active: boolean;
+};
+
+export type RfpUsage = {
+    id: number;
+    rfp_category_id: number;
+    category?: RfpCategory;
+    code: string;
+    description: string;
+    is_active: boolean;
+};
+
+export type RfpDetail = {
     id?: number;
     rfp_id?: number;
     account_code: string | null;
     account_name: string | null;
-    payment_type: string | null;
-    billed_amount: number | null;
+    description: string | null;
+    total_amount: number | null;
 };
 
 export type RfpSign = {
     id: number;
     rfp_id: number;
-    code: string;
-    user_id: number;
+    code: string | null;
+    user_id: number | null;
     user?: RfpUser;
-    user_type: 'Requested By' | 'Recommended By' | 'Approved By' | 'Concurred By';
     is_signed: boolean;
+    details: string | null;
     remarks: string | null;
     created_at: string;
     updated_at: string;
@@ -50,8 +64,8 @@ export type RfpSign = {
 export type RfpLog = {
     id: number;
     rfp_id: number;
-    code: string;
-    user_id: number;
+    code: string | null;
+    user_id: number | null;
     user?: RfpUser;
     from: string | null;
     into: string | null;
@@ -63,39 +77,32 @@ export type RfpLog = {
 
 export type Rfp = {
     id: number;
+    ap_no: string | null;
+    due_date: string;
+    rr_no: string | null;
+    po_no: string | null;
     rfp_number: string;
     area: 'Head Office' | 'Mine Site';
-    rfp_form_id: number | null;
-    rfp_form?: RfpForm;
     payee_type: 'Employee' | 'Supplier';
-    payee_card_code: string | null;
-    payee_card_name: string | null;
-    payee_invoice_number: string | null;
-    requested_by: number | null;
-    requested_by_user?: RfpUser;
-    recommended_by: number | null;
-    recommended_by_user?: RfpUser;
-    approved_by: number | null;
-    approved_by_user?: RfpUser;
-    concurred_by: number | null;
-    concurred_by_user?: RfpUser;
-    total_before_vat: number | null;
+    employee_code: string | null;
+    employee_name: string | null;
+    supplier_code: string | null;
+    supplier_name: string | null;
+    vendor_ref: string | null;
+    rfp_currency_id: number;
+    currency?: RfpCurrency;
+    rfp_usage_id: number;
+    usage?: RfpUsage;
+    total_before_vat_amount: number | null;
+    less_down_payment_amount: number | null;
     is_vatable: boolean;
-    vat_type: 'Inclusive' | 'Exclusive';
-    down_payment: number | null;
+    vat_type: 'inclusive' | 'exclusive';
     vat_amount: number | null;
-    withholding_tax: number | null;
-    grand_total: number | null;
-    currency: 'Peso' | 'US Dollar';
+    wtax_amount: number | null;
+    grand_total_amount: number | null;
     remarks: string | null;
-    due_date: string | null;
-    shared_description_id: number | null;
-    shared_description?: SharedDescription;
-    purpose: string | null;
-    status: 'Draft' | 'Cancelled' | 'Final' | 'Final with CV' | 'Paid';
-    voucher_number: string | null;
-    check_number: string | null;
-    items: RfpItem[];
+    status: 'cancelled' | 'draft' | 'for_approval' | 'approved' | 'paid';
+    details: RfpDetail[];
     signs?: RfpSign[];
     logs?: RfpLog[];
     created_at: string;

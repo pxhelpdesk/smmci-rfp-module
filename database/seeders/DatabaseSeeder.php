@@ -9,8 +9,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            RfpFormSeeder::class,
-            SharedDescriptionSeeder::class,
+            RfpCurrencySeeder::class,
+            RfpCategorySeeder::class,
+            RfpUsageSeeder::class,
         ]);
     }
 }

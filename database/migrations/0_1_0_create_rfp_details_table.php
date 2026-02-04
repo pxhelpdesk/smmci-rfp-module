@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('rfp_items', function (Blueprint $table) {
+        Schema::connection('mysql_rfp')->create('rfp_details', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rfp_id')->nullable()->constrained('rfps')->cascadeOnDelete();
+            $table->foreignId('rfp_id')->constrained('rfps')->cascadeOnDelete();
             $table->string('account_code')->nullable();
             $table->string('account_name')->nullable();
-            $table->string('payment_type')->nullable();
-            $table->decimal('billed_amount', 15, 2)->nullable();
+            $table->text('description');
+            $table->decimal('total_amount', 15, 2);
             $table->timestamps();
             $table->softDeletes();
         });
@@ -22,6 +22,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('rfp_items');
+        Schema::connection('mysql_rfp')->dropIfExists('rfp_details');
     }
 };

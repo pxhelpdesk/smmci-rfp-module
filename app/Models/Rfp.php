@@ -12,40 +12,67 @@ class Rfp extends Model
     protected $connection = 'mysql_rfp';
 
     protected $fillable = [
-        'rfp_number', 'area', 'rfp_form_id', 'payee_type', 'payee_card_code', 'payee_card_name',
-        'payee_invoice_number', 'requested_by', 'recommended_by', 'approved_by',
-        'concurred_by', 'subtotal', 'total_before_vat', 'is_vatable',
-        'vat_type', 'down_payment', 'vat_amount', 'withholding_tax',
-        'grand_total', 'currency', 'remarks', 'due_date', 'shared_description_id',
-        'purpose', 'status', 'voucher_number', 'check_number'
+        'ap_no',
+        'due_date',
+        'rr_no',
+        'po_no',
+        'rfp_number',
+        'area',
+        'payee_type',
+        'employee_code',
+        'employee_name',
+        'supplier_code',
+        'supplier_name',
+        'vendor_ref',
+        'rfp_currency_id',
+        'rfp_usage_id',
+        'total_before_vat_amount',
+        'less_down_payment_amount',
+        'is_vatable',
+        'vat_type',
+        'vat_amount',
+        'wtax_amount',
+        'grand_total_amount',
+        'remarks',
+        'status',
     ];
 
     protected $casts = [
-        'is_vatable' => 'boolean',
         'due_date' => 'date',
-        'subtotal' => 'decimal:2',
-        'total_before_vat' => 'decimal:2',
-        'down_payment' => 'decimal:2',
+        'is_vatable' => 'boolean',
+        'total_before_vat_amount' => 'decimal:2',
+        'less_down_payment_amount' => 'decimal:2',
         'vat_amount' => 'decimal:2',
-        'withholding_tax' => 'decimal:2',
-        'grand_total' => 'decimal:2'
+        'wtax_amount' => 'decimal:2',
+        'grand_total_amount' => 'decimal:2',
     ];
 
-    protected $with = ['rfpForm', 'sharedDescription', 'items'];
-
-    public function rfpForm()
+    // Relationships
+    public function currency()
     {
-        return $this->belongsTo(RfpForm::class);
+        return $this->belongsTo(RfpCurrency::class, 'rfp_currency_id');
     }
 
-    public function sharedDescription()
+    public function usage()
     {
-        return $this->belongsTo(SharedDescription::class);
+        return $this->belongsTo(RfpUsage::class, 'rfp_usage_id');
     }
 
-    public function items()
+    public function category()
     {
-        return $this->hasMany(RfpItem::class);
+        return $this->hasOneThrough(
+            RfpCategory::class,
+            RfpUsage::class,
+            'id',
+            'id',
+            'rfp_usage_id',
+            'rfp_category_id'
+        );
+    }
+
+    public function details()
+    {
+        return $this->hasMany(RfpDetail::class);
     }
 
     public function signs()
@@ -56,33 +83,5 @@ class Rfp extends Model
     public function logs()
     {
         return $this->hasMany(RfpLog::class)->latest();
-    }
-
-    public function requestedBy()
-    {
-        return $this->setConnection('mysql')
-            ->belongsTo(User::class, 'requested_by')
-            ->select('id', 'first_name', 'last_name', 'department_id');
-    }
-
-    public function recommendedBy()
-    {
-        return $this->setConnection('mysql')
-            ->belongsTo(User::class, 'recommended_by')
-            ->select('id', 'first_name', 'last_name', 'department_id');
-    }
-
-    public function approvedBy()
-    {
-        return $this->setConnection('mysql')
-            ->belongsTo(User::class, 'approved_by')
-            ->select('id', 'first_name', 'last_name', 'department_id');
-    }
-
-    public function concurredBy()
-    {
-        return $this->setConnection('mysql')
-            ->belongsTo(User::class, 'concurred_by')
-            ->select('id', 'first_name', 'last_name', 'department_id');
     }
 }
