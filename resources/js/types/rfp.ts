@@ -93,6 +93,7 @@ export type RfpRequest = {
     currency?: RfpCurrency;
     rfp_usage_id: number;
     usage?: RfpUsage;
+    details_subtotal_amount: number | null;
     total_before_vat_amount: number | null;
     less_down_payment_amount: number | null;
     is_vatable: boolean;

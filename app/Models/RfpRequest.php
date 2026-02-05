@@ -26,6 +26,7 @@ class RfpRequest extends Model
         'vendor_ref',
         'rfp_currency_id',
         'rfp_usage_id',
+        'details_subtotal_amount',
         'total_before_vat_amount',
         'less_down_payment_amount',
         'is_vatable',
@@ -43,6 +44,7 @@ class RfpRequest extends Model
     protected $casts = [
         'due_date' => 'date',
         'is_vatable' => 'boolean',
+        'details_subtotal_amount' => 'decimal:2',
         'total_before_vat_amount' => 'decimal:2',
         'less_down_payment_amount' => 'decimal:2',
         'vat_amount' => 'decimal:2',

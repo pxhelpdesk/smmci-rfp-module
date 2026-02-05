@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, FileCheck, Trash2, Users, Activity, Printer } from 'lucide-react';
+import { ArrowLeft, Edit, FileCheck, Trash2, Users, Activity, Printer, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import AppLayout from '@/layouts/app-layout';
@@ -31,14 +31,30 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs-custom';
 import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
-import type { RfpRequest } from '@/types';
+import type { RfpRequest, RfpLog } from '@/types';
 import { toast } from 'sonner';
 import { formatDate, formatDateTime, formatAmount } from '@/lib/formatters';
 
 type Props = {
     rfp_request: RfpRequest;
+    logs: {
+        data: RfpLog[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    };
 };
 
 const statusColors = {
@@ -57,9 +73,10 @@ const statusLabels = {
     paid: 'Paid',
 };
 
-export default function Show({ rfp_request }: Props) {
+export default function Show({ rfp_request, logs }: Props) {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [previewPdf, setPreviewPdf] = useState<string | null>(null);
+    const [expandedLogIds, setExpandedLogIds] = useState<Set<number>>(new Set());
 
     const handleDelete = () => {
         router.delete(`/rfp/requests/${rfp_request.id}`, {
@@ -102,6 +119,85 @@ export default function Show({ rfp_request }: Props) {
             URL.revokeObjectURL(previewPdf);
         }
         setPreviewPdf(null);
+    };
+
+    const toggleLogExpand = (logId: number) => {
+        setExpandedLogIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(logId)) {
+                newSet.delete(logId);
+            } else {
+                newSet.add(logId);
+            }
+            return newSet;
+        });
+    };
+
+    const parseLogDetails = (details: string | null) => {
+        if (!details) return null;
+        try {
+            return JSON.parse(details);
+        } catch {
+            return null;
+        }
+    };
+
+    const renderLogsPaginationItems = () => {
+        const items = [];
+        const currentPage = logs.current_page;
+        const lastPage = logs.last_page;
+
+        // Always show first page
+        items.push(
+            <PaginationItem key={1}>
+                <PaginationLink
+                    href={`/rfp/requests/${rfp_request.id}?logs_page=1#logs`}
+                    isActive={currentPage === 1}
+                >
+                    1
+                </PaginationLink>
+            </PaginationItem>
+        );
+
+        // Show ellipsis if needed
+        if (currentPage > 3) {
+            items.push(<PaginationEllipsis key="ellipsis-start" />);
+        }
+
+        // Show pages around current page
+        for (let i = Math.max(2, currentPage - 1); i <= Math.min(lastPage - 1, currentPage + 1); i++) {
+            items.push(
+                <PaginationItem key={i}>
+                    <PaginationLink
+                        href={`/rfp/requests/${rfp_request.id}?logs_page=${i}#logs`}
+                        isActive={currentPage === i}
+                    >
+                        {i}
+                    </PaginationLink>
+                </PaginationItem>
+            );
+        }
+
+        // Show ellipsis if needed
+        if (currentPage < lastPage - 2) {
+            items.push(<PaginationEllipsis key="ellipsis-end" />);
+        }
+
+        // Always show last page if there's more than 1 page
+        if (lastPage > 1) {
+            items.push(
+                <PaginationItem key={lastPage}>
+                    <PaginationLink
+                        href={`/rfp/requests/${rfp_request.id}?logs_page=${lastPage}#logs`}
+                        isActive={currentPage === lastPage}
+                    >
+                        {lastPage}
+                    </PaginationLink>
+                </PaginationItem>
+            );
+        }
+
+        return items;
     };
 
     return (
@@ -158,23 +254,23 @@ export default function Show({ rfp_request }: Props) {
                     <Badge variant="outline">{rfp_request.area}</Badge>
                 </div>
 
-                <Tabs defaultValue="details">
+                <Tabs defaultValue="request">
                     <TabsList variant="line">
-                        <TabsTrigger value="details">
+                        <TabsTrigger value="request">
                             <FileCheck className="h-4 w-4" />
-                            Details
+                            Request
                         </TabsTrigger>
-                        <TabsTrigger value="signers">
+                        <TabsTrigger value="signatories">
                             <Users className="h-4 w-4" />
-                            Signers
+                            Signatories
                         </TabsTrigger>
                         <TabsTrigger value="logs">
                             <Activity className="h-4 w-4" />
-                            Activity Logs
+                            Logs
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="details" className="space-y-4 mt-4">
+                    <TabsContent value="request" className="space-y-4 mt-4">
                         <div className="grid gap-4 md:grid-cols-2">
                             <Card>
                                 <CardHeader className="pb-3">
@@ -428,7 +524,7 @@ export default function Show({ rfp_request }: Props) {
                         )}
                     </TabsContent>
 
-                    <TabsContent value="signers" className="mt-4">
+                    <TabsContent value="signatories" className="mt-4">
                         <Card>
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-base">Signatories</CardTitle>
@@ -482,60 +578,142 @@ export default function Show({ rfp_request }: Props) {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="logs" className="mt-4">
+                    <TabsContent value="logs" className="mt-4" id="logs">
                         <Card>
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-base">Activity History</CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="space-y-4">
                                 <div className="border rounded-lg">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
+                                                <TableHead className="w-[50px]"></TableHead>
                                                 <TableHead>User</TableHead>
                                                 <TableHead>From</TableHead>
                                                 <TableHead>To</TableHead>
                                                 <TableHead>Date</TableHead>
-                                                <TableHead>Details</TableHead>
                                                 <TableHead>Remarks</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {!rfp_request.logs || rfp_request.logs.length === 0 ? (
+                                            {!logs.data || logs.data.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                                                        No activity logs found
+                                                        No logs found
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                rfp_request.logs.map((log) => (
-                                                    <TableRow key={log.id}>
-                                                        <TableCell className="font-medium">
-                                                            {log.user?.name || 'System'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {log.from ? (
-                                                                <Badge variant="outline">{log.from}</Badge>
-                                                            ) : 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {log.into ? (
-                                                                <Badge variant="outline">{log.into}</Badge>
-                                                            ) : 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {formatDateTime(log.created_at)}
-                                                        </TableCell>
-                                                        <TableCell>{log.details || 'N/A'}</TableCell>
-                                                        <TableCell className="text-muted-foreground">
-                                                            {log.remarks || 'N/A'}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
+                                                logs.data.map((log) => {
+                                                    const parsedDetails = parseLogDetails(log.details);
+                                                    const isExpanded = expandedLogIds.has(log.id);
+                                                    const hasDetails = parsedDetails && Array.isArray(parsedDetails) && parsedDetails.length > 0;
+
+                                                    return (
+                                                        <>
+                                                            <TableRow key={log.id}>
+                                                                <TableCell>
+                                                                    {hasDetails && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-6 w-6 p-0"
+                                                                            onClick={() => toggleLogExpand(log.id)}
+                                                                        >
+                                                                            {isExpanded ? (
+                                                                                <ChevronDown className="h-4 w-4" />
+                                                                            ) : (
+                                                                                <ChevronRight className="h-4 w-4" />
+                                                                            )}
+                                                                        </Button>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="font-medium">
+                                                                    {log.user?.name || 'System'}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {log.from ? (
+                                                                        <Badge variant="outline">{log.from}</Badge>
+                                                                    ) : 'N/A'}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {log.into ? (
+                                                                        <Badge variant="outline">{log.into}</Badge>
+                                                                    ) : 'N/A'}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {formatDateTime(log.created_at)}
+                                                                </TableCell>
+                                                                <TableCell className="text-muted-foreground">
+                                                                    {log.remarks || 'N/A'}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                            {isExpanded && hasDetails && (
+                                                                <TableRow>
+                                                                    <TableCell colSpan={6} className="bg-muted/50 p-0">
+                                                                        <div className="px-12 py-3">
+                                                                            <p className="text-xs font-medium text-muted-foreground mb-2">
+                                                                                Changes:
+                                                                            </p>
+                                                                            <div className="border rounded-md bg-background">
+                                                                                <table className="w-full text-xs">
+                                                                                    <thead className="bg-muted/50">
+                                                                                        <tr>
+                                                                                            <th className="px-3 py-2 text-left font-medium w-[25%]">Field</th>
+                                                                                            <th className="px-3 py-2 text-left font-medium w-[37.5%]">Old Value</th>
+                                                                                            <th className="px-3 py-2 text-left font-medium w-[37.5%]">New Value</th>
+                                                                                        </tr>
+                                                                                    </thead>
+                                                                                    <tbody>
+                                                                                        {parsedDetails.map((change: any, idx: number) => (
+                                                                                            <tr key={idx} className="border-t">
+                                                                                                <td className="px-3 py-2 font-medium">
+                                                                                                    {change.field}
+                                                                                                </td>
+                                                                                                <td className="px-3 py-2 text-muted-foreground break-words">
+                                                                                                    {change.old}
+                                                                                                </td>
+                                                                                                <td className="px-3 py-2 text-primary break-words">
+                                                                                                    {change.new}
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        ))}
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                        </div>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })
                                             )}
                                         </TableBody>
                                     </Table>
                                 </div>
+
+                                {logs.last_page > 1 && (
+                                    <Pagination>
+                                        <PaginationContent>
+                                            <PaginationItem>
+                                                <PaginationPrevious
+                                                    href={logs.current_page > 1 ? `/rfp/requests/${rfp_request.id}?logs_page=${logs.current_page - 1}#logs` : '#'}
+                                                    className={logs.current_page === 1 ? 'pointer-events-none opacity-50' : ''}
+                                                />
+                                            </PaginationItem>
+
+                                            {renderLogsPaginationItems()}
+
+                                            <PaginationItem>
+                                                <PaginationNext
+                                                    href={logs.current_page < logs.last_page ? `/rfp/requests/${rfp_request.id}?logs_page=${logs.current_page + 1}#logs` : '#'}
+                                                    className={logs.current_page === logs.last_page ? 'pointer-events-none opacity-50' : ''}
+                                                />
+                                            </PaginationItem>
+                                        </PaginationContent>
+                                    </Pagination>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>

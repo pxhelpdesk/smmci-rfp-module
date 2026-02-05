@@ -7,7 +7,7 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\RfpCategoryController;
 use App\Http\Controllers\RfpUsageController;
 use App\Http\Controllers\RfpCurrencyController;
-use App\Http\Controllers\RfpRequestController;
+use App\Http\Controllers\RfpController;
 use App\Http\Controllers\SapController;
 use App\Http\Controllers\SapSupplierController;
 
@@ -33,7 +33,7 @@ Route::prefix('rfp')->group(function () {
         })->name('dashboard');
 
         // Requests
-        Route::resource('requests', RfpRequestController::class)->names([
+        Route::resource('requests', RfpController::class)->names([
             'index' => 'rfp.requests.index',
             'create' => 'rfp.requests.create',
             'store' => 'rfp.requests.store',
@@ -44,11 +44,11 @@ Route::prefix('rfp')->group(function () {
         ]);
 
         // Get usages by category (for dropdown)
-        Route::get('usages/category/{categoryId}', [RfpRequestController::class, 'getUsagesByCategory'])
+        Route::get('usages/category/{categoryId}', [RfpController::class, 'getUsagesByCategory'])
             ->name('rfp.usages.by-category');
 
         // Track print action
-        Route::post('requests/{request}/track-print', [RfpRequestController::class, 'trackPrint'])
+        Route::post('requests/{request}/track-print', [RfpController::class, 'trackPrint'])
             ->name('rfp.requests.track-print');
 
         // Categories

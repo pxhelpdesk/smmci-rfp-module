@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('rr_no')->nullable();
             $table->string('po_no')->nullable();
 
+            $table->decimal('details_subtotal_amount', 15, 2)->nullable();
             $table->decimal('total_before_vat_amount', 15, 2)->nullable();
             $table->decimal('less_down_payment_amount', 15, 2)->nullable();
             $table->boolean('is_vatable')->default(true);

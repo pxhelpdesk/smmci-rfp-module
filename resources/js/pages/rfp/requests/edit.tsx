@@ -1,6 +1,6 @@
 import { useForm, Head } from '@inertiajs/react';
 import { Save, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Select from 'react-select';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,23 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { RfpRequest, RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
+
+type ChangeLog = {
+    field: string;
+    old: string;
+    new: string;
+};
 
 type Props = {
     rfp_request: RfpRequest;
@@ -39,13 +55,51 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
     const [loadingAccounts, setLoadingAccounts] = useState(false);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
     const [loadingUsages, setLoadingUsages] = useState(false);
+    const [showLogDialog, setShowLogDialog] = useState(false);
+    const [logRemarks, setLogRemarks] = useState('');
+    const [detectedChanges, setDetectedChanges] = useState<ChangeLog[]>([]);
 
-    // Load initial usages if category exists
-    useState(() => {
+    const loadUsages = async (categoryId: number) => {
+        setLoadingUsages(true);
+        try {
+            const res = await fetch(`/rfp/usages/category/${categoryId}`);
+            const data = await res.json();
+            setUsages(data);
+        } catch (error) {
+            console.error('Failed to load usages', error);
+        }
+        setLoadingUsages(false);
+    };
+
+    const loadSuppliers = async () => {
+        setLoadingSuppliers(true);
+        try {
+            const res = await fetch('/rfp/api/suppliers');
+            const data = await res.json();
+            setSuppliers(data);
+        } catch (error) {
+            console.error('Failed to load suppliers', error);
+        }
+        setLoadingSuppliers(false);
+    };
+
+    // const loadAccounts = async () => {
+    //     setLoadingAccounts(true);
+    //     try {
+    //         const res = await fetch('/rfp/api/accounts');
+    //         const data = await res.json();
+    //         setAccounts(data);
+    //     } catch (error) {
+    //         console.error('Failed to load accounts', error);
+    //     }
+    //     setLoadingAccounts(false);
+    // };
+
+    useEffect(() => {
         if (rfp_request.usage?.rfp_category_id) {
             loadUsages(rfp_request.usage.rfp_category_id);
         }
-    });
+    }, []);
 
     const { data, setData, put, processing, errors } = useForm<{
         ap_no: string;
@@ -71,6 +125,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         grand_total_amount: string;
         remarks: string;
         details: Partial<RfpDetail>[];
+        log_remarks?: string;
     }>({
         ap_no: rfp_request.ap_no || '',
         due_date: rfp_request.due_date || '',
@@ -110,41 +165,62 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
             }],
     });
 
-    // const loadAccounts = async () => {
-    //     setLoadingAccounts(true);
-    //     try {
-    //         const res = await fetch('/rfp/api/accounts');
-    //         const data = await res.json();
-    //         setAccounts(data);
-    //     } catch (error) {
-    //         console.error('Failed to load accounts', error);
-    //     }
-    //     setLoadingAccounts(false);
-    // };
+    // Detect changes when form data changes
+    useEffect(() => {
+        const changes: ChangeLog[] = [];
 
-    const loadSuppliers = async () => {
-        setLoadingSuppliers(true);
-        try {
-            const res = await fetch('/rfp/api/suppliers');
-            const data = await res.json();
-            setSuppliers(data);
-        } catch (error) {
-            console.error('Failed to load suppliers', error);
-        }
-        setLoadingSuppliers(false);
-    };
+        const formatDisplayValue = (field: string, value: any) => {
+            if (!value) return 'N/A';
 
-    const loadUsages = async (categoryId: number) => {
-        setLoadingUsages(true);
-        try {
-            const res = await fetch(`/rfp/usages/category/${categoryId}`);
-            const data = await res.json();
-            setUsages(data);
-        } catch (error) {
-            console.error('Failed to load usages', error);
-        }
-        setLoadingUsages(false);
-    };
+            // Format dates to YYYY-MM-DD only
+            if (field === 'due_date') {
+                return value.split('T')[0];
+            }
+
+            return value;
+        };
+
+        const checkField = (field: string, label: string, oldVal: any, newVal: any) => {
+            let oldStr = oldVal?.toString() || '';
+            let newStr = newVal?.toString() || '';
+
+            // Special handling for dates - normalize to YYYY-MM-DD format
+            if (field === 'due_date') {
+                if (oldVal) {
+                    oldStr = oldVal.split('T')[0];
+                }
+                if (newVal) {
+                    newStr = newVal.split('T')[0];
+                }
+            }
+
+            if (oldStr !== newStr) {
+                changes.push({
+                    field: label,
+                    old: formatDisplayValue(field, oldVal),
+                    new: formatDisplayValue(field, newVal),
+                });
+            }
+        };
+
+        checkField('ap_no', 'AP Number', rfp_request.ap_no, data.ap_no);
+        checkField('due_date', 'Due Date', rfp_request.due_date, data.due_date);
+        checkField('rr_no', 'RR Number', rfp_request.rr_no, data.rr_no);
+        checkField('po_no', 'PO Number', rfp_request.po_no, data.po_no);
+        checkField('area', 'Area', rfp_request.area, data.area);
+        checkField('employee_code', 'Employee Code', rfp_request.employee_code, data.employee_code);
+        checkField('employee_name', 'Employee Name', rfp_request.employee_name, data.employee_name);
+        checkField('supplier_code', 'Supplier Code', rfp_request.supplier_code, data.supplier_code);
+        checkField('vendor_ref', 'Vendor Reference', rfp_request.vendor_ref, data.vendor_ref);
+        checkField('rfp_currency_id', 'Currency', rfp_request.rfp_currency_id, data.rfp_currency_id);
+        checkField('rfp_usage_id', 'Usage', rfp_request.rfp_usage_id, data.rfp_usage_id);
+        checkField('less_down_payment_amount', 'Down Payment', rfp_request.less_down_payment_amount, data.less_down_payment_amount);
+        checkField('wtax_amount', 'Withholding Tax', rfp_request.wtax_amount, data.wtax_amount);
+        checkField('grand_total_amount', 'Grand Total', rfp_request.grand_total_amount, data.grand_total_amount);
+        checkField('remarks', 'Remarks', rfp_request.remarks, data.remarks);
+
+        setDetectedChanges(changes);
+    }, [data]);
 
     const addDetail = () => {
         setData('details', [...data.details, {
@@ -167,7 +243,27 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/rfp/requests/${rfp_request.id}`);
+
+        if (detectedChanges.length > 0) {
+            setShowLogDialog(true);
+        } else {
+            // If no changes, submit directly without log
+            put(`/rfp/requests/${rfp_request.id}`);
+        }
+    };
+
+    const handleConfirmUpdate = () => {
+        setShowLogDialog(false);
+
+        // Update form data with log_remarks
+        setData('log_remarks', logRemarks);
+
+        // Submit on next tick to ensure state is updated
+        setTimeout(() => {
+            put(`/rfp/requests/${rfp_request.id}`, {
+                preserveScroll: true,
+            });
+        }, 0);
     };
 
     const categoryOptions = categories.map(c => ({
@@ -210,7 +306,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                 Cancel
                             </a>
                         </Button>
-                        <Button type="submit" size="sm" disabled={processing}>
+                        <Button type="submit" size="sm" disabled={processing || detectedChanges.length === 0}>
                             <Save className="h-4 w-4 mr-1.5" />
                             Update
                         </Button>
@@ -630,6 +726,68 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                     </CardContent>
                 </Card>
             </form>
+
+            {/* Change Log Alert Dialog */}
+            <AlertDialog open={showLogDialog} onOpenChange={setShowLogDialog}>
+                <AlertDialogContent className="max-w-3xl p-0">
+                    <AlertDialogHeader className="px-6 pt-6 pb-3">
+                        <AlertDialogTitle>Confirm Update</AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-3 pt-2">
+                                <p>The following changes will be logged:</p>
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div className="px-6 space-y-3">
+                        <div className="border rounded-lg max-h-60 overflow-y-auto">
+                            <table className="w-full text-sm table-fixed">
+                                <thead className="bg-muted sticky top-0">
+                                    <tr>
+                                        <th className="px-3 py-2 text-left font-medium w-[25%]">Field</th>
+                                        <th className="px-3 py-2 text-left font-medium w-[37.5%]">Old Value</th>
+                                        <th className="px-3 py-2 text-left font-medium w-[37.5%]">New Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {detectedChanges.map((change, index) => (
+                                        <tr key={index} className="border-t">
+                                            <td className="px-3 py-2 font-medium align-top">{change.field}</td>
+                                            <td className="px-3 py-2 text-muted-foreground align-top break-words">
+                                                {change.old}
+                                            </td>
+                                            <td className="px-3 py-2 text-primary align-top break-words">
+                                                {change.new}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="log_remarks" className="text-sm">
+                                Remarks <span className="text-muted-foreground">(Optional)</span>
+                            </Label>
+                            <Textarea
+                                id="log_remarks"
+                                value={logRemarks}
+                                onChange={(e) => setLogRemarks(e.target.value)}
+                                placeholder="Add any additional notes about these changes..."
+                                rows={3}
+                                className="resize-none"
+                            />
+                        </div>
+                    </div>
+
+                    <AlertDialogFooter className="px-6 pb-6 pt-4">
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmUpdate} disabled={processing}>
+                            Confirm Update
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }

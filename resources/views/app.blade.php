@@ -36,7 +36,7 @@
         <title inertia>{{ config('app.name', 'SMMCI RFP Module') }}</title>
 
         {{-- Favicon --}}
-        <link rel="icon" type="image/png" href="{{ asset('storage/images/logos/SMMCI_logo.png') }}">
+        <link rel="icon" type="image/png" href="{{ asset('storage/images/logos/SMMCI_Logo-icon.png') }}">
         <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
         <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
         <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">

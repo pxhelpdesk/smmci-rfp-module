@@ -37,6 +37,7 @@ class UpdateRfpRequest extends FormRequest
             'grand_total_amount' => 'nullable|numeric',
             'remarks' => 'nullable|string',
             'status' => 'nullable|in:cancelled,draft,for_approval,approved,paid',
+            'log_remarks' => 'nullable|string|max:500',
             'details' => 'required|array|min:1',
             'details.*.id' => 'sometimes|exists:mysql_rfp.rfp_details,id',
             'details.*.account_code' => 'nullable|string',
