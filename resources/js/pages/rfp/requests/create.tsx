@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import InputAmount from '@/components/ui/input-amount';
+import DateTimePicker from '@/components/ui/date-time-picker';
 import {
     Card,
     CardContent,
@@ -376,12 +378,12 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="due_date" className="text-sm">Due Date</Label>
-                                <Input
-                                    id="due_date"
-                                    type="date"
+                                <DateTimePicker
                                     value={data.due_date}
-                                    onChange={(e) => setData('due_date', e.target.value)}
-                                    className="h-9"
+                                    onValueChange={(date) => setData('due_date', date)}
+                                    minDate={new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1)}
+                                    placeholder="Select due date"
+                                    showTime={false}
                                 />
                                 {errors.due_date && <p className="text-xs text-destructive">{errors.due_date}</p>}
                             </div>
@@ -471,12 +473,9 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                         )}
                                     </div>
                                     <div className="space-y-1">
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            // placeholder="Total"
-                                            value={detail.total_amount || ''}
-                                            onChange={(e) => updateDetail(index, 'total_amount', parseFloat(e.target.value) || null)}
+                                        <InputAmount
+                                            value={detail.total_amount || undefined}
+                                            onValueChange={(val) => updateDetail(index, 'total_amount', val || null)}
                                             className="h-9"
                                         />
                                         {errors[`details.${index}.total_amount`] && (
@@ -527,12 +526,9 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
 
                             {/* <div className="space-y-1.5">
                                 <Label htmlFor="total_before_vat_amount" className="text-sm">Total Before VAT</Label>
-                                <Input
-                                    id="total_before_vat_amount"
-                                    type="number"
-                                    step="0.01"
-                                    value={data.total_before_vat_amount}
-                                    onChange={(e) => setData('total_before_vat_amount', e.target.value)}
+                                <InputAmount
+                                    value={data.total_before_vat_amount || undefined}
+                                    onValueChange={(val) => setData('total_before_vat_amount', val?.toString() || '')}
                                     className="h-9"
                                 />
                                 {errors.total_before_vat_amount && <p className="text-xs text-destructive">{errors.total_before_vat_amount}</p>}
@@ -540,12 +536,9 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="less_down_payment_amount" className="text-sm">Down Payment</Label>
-                                <Input
-                                    id="less_down_payment_amount"
-                                    type="number"
-                                    step="0.01"
-                                    value={data.less_down_payment_amount}
-                                    onChange={(e) => setData('less_down_payment_amount', e.target.value)}
+                                <InputAmount
+                                    value={data.less_down_payment_amount || undefined}
+                                    onValueChange={(val) => setData('less_down_payment_amount', val?.toString() || '')}
                                     className="h-9"
                                 />
                             </div>
@@ -589,24 +582,18 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="wtax_amount" className="text-sm">Withholding Tax</Label>
-                                <Input
-                                    id="wtax_amount"
-                                    type="number"
-                                    step="0.01"
-                                    value={data.wtax_amount}
-                                    onChange={(e) => setData('wtax_amount', e.target.value)}
+                                <InputAmount
+                                    value={data.wtax_amount || undefined}
+                                    onValueChange={(val) => setData('wtax_amount', val?.toString() || '')}
                                     className="h-9"
                                 />
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="grand_total_amount" className="text-sm">Grand Total</Label>
-                                <Input
-                                    id="grand_total_amount"
-                                    type="number"
-                                    step="0.01"
-                                    value={data.grand_total_amount}
-                                    onChange={(e) => setData('grand_total_amount', e.target.value)}
+                                <InputAmount
+                                    value={data.grand_total_amount || undefined}
+                                    onValueChange={(val) => setData('grand_total_amount', val?.toString() || '')}
                                     className="h-9"
                                 />
                             </div>
