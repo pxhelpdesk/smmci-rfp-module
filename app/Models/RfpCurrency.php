@@ -22,8 +22,8 @@ class RfpCurrency extends Model
         'is_active' => 'boolean',
     ];
 
-    public function rfps()
+    public function rfp_requests()
     {
-        return $this->hasMany(Rfp::class);
+        return $this->hasMany(RfpRequest::class);
     }
 }

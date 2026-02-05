@@ -12,7 +12,7 @@ class RfpDetail extends Model
     protected $connection = 'mysql_rfp';
 
     protected $fillable = [
-        'rfp_id',
+        'rfp_request_id',
         'account_code',
         'account_name',
         'description',
@@ -23,8 +23,8 @@ class RfpDetail extends Model
         'total_amount' => 'decimal:2',
     ];
 
-    public function rfp()
+    public function rfpRequest()
     {
-        return $this->belongsTo(Rfp::class);
+        return $this->belongsTo(RfpRequest::class);
     }
 }

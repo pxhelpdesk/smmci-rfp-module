@@ -1,6 +1,8 @@
 import { Link, router, Head } from '@inertiajs/react';
-import { FileText, MoreVertical, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { FileText, MoreVertical, Pencil, Plus, Search, Trash2, Printer } from 'lucide-react';
 import { useState } from 'react';
+import { pdf } from '@react-pdf/renderer';
+import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +25,12 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -30,11 +38,12 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import type { Rfp } from '@/types';
+import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
+import type { RfpRequest } from '@/types';
 
 type Props = {
-    rfps: {
-        data: Rfp[];
+    rfp_requests: {
+        data: RfpRequest[];
         current_page: number;
         last_page: number;
         per_page: number;
@@ -58,24 +67,65 @@ const statusLabels = {
     paid: 'Paid',
 };
 
-export default function Index({ rfps }: Props) {
+export default function Index({ rfp_requests }: Props) {
     const [search, setSearch] = useState('');
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [previewPdf, setPreviewPdf] = useState<string | null>(null);
+    const [previewRfp, setPreviewRfp] = useState<RfpRequest | null>(null);
 
     const handleDelete = () => {
         if (deleteId) {
             router.delete(`/rfp/requests/${deleteId}`, {
-                onSuccess: () => setDeleteId(null),
+                onSuccess: () => {
+                    setDeleteId(null);
+                },
+                onError: () => {
+                    toast.error('Failed to delete RFP request');
+                },
             });
         }
     };
 
-    const filteredRfps = rfps.data.filter(
-        (rfp) =>
-            rfp.rfp_number.toLowerCase().includes(search.toLowerCase()) ||
-            rfp.usage?.description.toLowerCase().includes(search.toLowerCase()) ||
-            rfp.supplier_name?.toLowerCase().includes(search.toLowerCase()) ||
-            rfp.employee_name?.toLowerCase().includes(search.toLowerCase())
+    const handlePrint = async (rfp_request: RfpRequest) => {
+        toast.loading('Generating PDF...', { id: 'print-toast' });
+
+        try {
+            const blob = await pdf(<RfpPdfDocument rfp_request={rfp_request} />).toBlob();
+            const url = URL.createObjectURL(blob);
+
+            // Track PDF generation
+            await fetch(`/rfp/requests/${rfp_request.id}/track-print`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            setPreviewPdf(url);
+            setPreviewRfp(rfp_request);
+
+            toast.success('PDF ready', { id: 'print-toast' });
+        } catch (error) {
+            console.error('PDF generation failed:', error);
+            toast.error('Failed to generate PDF', { id: 'print-toast' });
+        }
+    };
+
+    const handleClosePdf = () => {
+        if (previewPdf) {
+            URL.revokeObjectURL(previewPdf);
+        }
+        setPreviewPdf(null);
+        setPreviewRfp(null);
+    };
+
+    const filteredRfps = rfp_requests.data.filter(
+        (rfp_request) =>
+            rfp_request.rfp_request_number.toLowerCase().includes(search.toLowerCase()) ||
+            rfp_request.usage?.description.toLowerCase().includes(search.toLowerCase()) ||
+            rfp_request.supplier_name?.toLowerCase().includes(search.toLowerCase()) ||
+            rfp_request.employee_name?.toLowerCase().includes(search.toLowerCase())
     );
 
     const formatDate = (dateString: string) => {
@@ -156,62 +206,62 @@ export default function Index({ rfps }: Props) {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredRfps.map((rfp) => (
-                                    <TableRow key={rfp.id}>
+                                filteredRfps.map((rfp_request) => (
+                                    <TableRow key={rfp_request.id}>
                                         <TableCell className="font-medium">
                                             <Link
-                                                href={`/rfp/requests/${rfp.id}`}
+                                                href={`/rfp/requests/${rfp_request.id}`}
                                                 className="hover:underline text-primary"
                                             >
-                                                {rfp.rfp_number}
+                                                {rfp_request.rfp_request_number}
                                             </Link>
                                         </TableCell>
                                         <TableCell>
                                             <div className="max-w-[200px]">
                                                 <p className="text-xs text-muted-foreground">
-                                                    {rfp.usage?.code}
+                                                    {rfp_request.usage?.code}
                                                 </p>
                                                 <p className="text-sm truncate">
-                                                    {rfp.usage?.description}
+                                                    {rfp_request.usage?.description}
                                                 </p>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div>
-                                                <p className="text-sm">{rfp.payee_type}</p>
+                                                <p className="text-sm">{rfp_request.payee_type}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {rfp.payee_type === 'Supplier'
-                                                        ? rfp.supplier_code
-                                                        : rfp.employee_code}
+                                                    {rfp_request.payee_type === 'Supplier'
+                                                        ? rfp_request.supplier_code
+                                                        : rfp_request.employee_code}
                                                 </p>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <span className="text-sm">{rfp.area}</span>
+                                            <span className="text-sm">{rfp_request.area}</span>
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
-                                                {formatDate(rfp.due_date)}
+                                                {formatDate(rfp_request.due_date)}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right font-medium">
                                             <div className="text-sm">
-                                                {formatCurrency(rfp.grand_total_amount, rfp.currency?.code || 'PHP')}
+                                                {formatCurrency(rfp_request.grand_total_amount, rfp_request.currency?.code || 'PHP')}
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <Badge
                                                 variant="secondary"
-                                                className={statusColors[rfp.status]}
+                                                className={statusColors[rfp_request.status]}
                                             >
-                                                {statusLabels[rfp.status]}
+                                                {statusLabels[rfp_request.status]}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
-                                                <div>{formatDate(rfp.created_at)}</div>
+                                                <div>{formatDate(rfp_request.created_at)}</div>
                                                 <div className="text-xs">
-                                                    {new Date(rfp.created_at).toLocaleTimeString('en-US', {
+                                                    {new Date(rfp_request.created_at).toLocaleTimeString('en-US', {
                                                         hour: '2-digit',
                                                         minute: '2-digit',
                                                     })}
@@ -220,9 +270,9 @@ export default function Index({ rfps }: Props) {
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
-                                                <div>{formatDate(rfp.updated_at)}</div>
+                                                <div>{formatDate(rfp_request.updated_at)}</div>
                                                 <div className="text-xs">
-                                                    {new Date(rfp.updated_at).toLocaleTimeString('en-US', {
+                                                    {new Date(rfp_request.updated_at).toLocaleTimeString('en-US', {
                                                         hour: '2-digit',
                                                         minute: '2-digit',
                                                     })}
@@ -242,20 +292,24 @@ export default function Index({ rfps }: Props) {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem asChild>
-                                                        <Link href={`/rfp/requests/${rfp.id}`}>
+                                                        <Link href={`/rfp/requests/${rfp_request.id}`}>
                                                             <FileText className="h-4 w-4 mr-2" />
                                                             View
                                                         </Link>
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handlePrint(rfp_request)}>
+                                                        <Printer className="h-4 w-4 mr-2" />
+                                                        Print
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem asChild>
-                                                        <Link href={`/rfp/requests/${rfp.id}/edit`}>
+                                                        <Link href={`/rfp/requests/${rfp_request.id}/edit`}>
                                                             <Pencil className="h-4 w-4 mr-2" />
                                                             Edit
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem
-                                                        onClick={() => setDeleteId(rfp.id)}
+                                                        onClick={() => setDeleteId(rfp_request.id)}
                                                         className="text-destructive focus:text-destructive"
                                                     >
                                                         <Trash2 className="h-4 w-4 mr-2" />
@@ -271,18 +325,18 @@ export default function Index({ rfps }: Props) {
                     </Table>
                 </div>
 
-                {rfps.last_page > 1 && (
+                {rfp_requests.last_page > 1 && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground px-2">
                         <p>
-                            Showing {(rfps.current_page - 1) * rfps.per_page + 1} to{' '}
-                            {Math.min(rfps.current_page * rfps.per_page, rfps.total)} of{' '}
-                            {rfps.total} results
+                            Showing {(rfp_requests.current_page - 1) * rfp_requests.per_page + 1} to{' '}
+                            {Math.min(rfp_requests.current_page * rfp_requests.per_page, rfp_requests.total)} of{' '}
+                            {rfp_requests.total} results
                         </p>
                         <div className="flex gap-1">
-                            {Array.from({ length: rfps.last_page }, (_, i) => i + 1).map((page) => (
+                            {Array.from({ length: rfp_requests.last_page }, (_, i) => i + 1).map((page) => (
                                 <Button
                                     key={page}
-                                    variant={page === rfps.current_page ? 'default' : 'ghost'}
+                                    variant={page === rfp_requests.current_page ? 'default' : 'ghost'}
                                     size="sm"
                                     asChild
                                     className="h-8 w-8 p-0"
@@ -295,6 +349,7 @@ export default function Index({ rfps }: Props) {
                 )}
             </div>
 
+            {/* Delete Dialog */}
             <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -312,6 +367,34 @@ export default function Index({ rfps }: Props) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* PDF Preview Dialog */}
+            <Dialog open={!!previewPdf} onOpenChange={handleClosePdf}>
+                <DialogContent
+                    className="flex flex-col p-0 gap-0"
+                    style={{
+                        maxWidth: '90vw',
+                        width: '90vw',
+                        height: '95vh',
+                        margin: 'auto'
+                    }}
+                >
+                    <DialogHeader className="px-6 py-3 border-b shrink-0">
+                        <DialogTitle className="text-lg">
+                            {previewRfp?.rfp_request_number || 'PDF Preview'}
+                        </DialogTitle>
+                    </DialogHeader>
+                    {previewPdf && (
+                        <div className="flex-1 overflow-hidden">
+                            <iframe
+                                src={previewPdf}
+                                className="w-full h-full border-0"
+                                title={previewRfp?.rfp_request_number || 'PDF Preview'}
+                            />
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

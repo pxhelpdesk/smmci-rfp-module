@@ -41,7 +41,7 @@ export type RfpUsage = {
 
 export type RfpDetail = {
     id?: number;
-    rfp_id?: number;
+    rfp_request_id?: number;
     account_code: string | null;
     account_name: string | null;
     description: string | null;
@@ -50,7 +50,7 @@ export type RfpDetail = {
 
 export type RfpSign = {
     id: number;
-    rfp_id: number;
+    rfp_request_id: number;
     code: string | null;
     user_id: number | null;
     user?: RfpUser;
@@ -63,7 +63,7 @@ export type RfpSign = {
 
 export type RfpLog = {
     id: number;
-    rfp_id: number;
+    rfp_request_id: number;
     code: string | null;
     user_id: number | null;
     user?: RfpUser;
@@ -75,13 +75,13 @@ export type RfpLog = {
     updated_at: string;
 };
 
-export type Rfp = {
+export type RfpRequest = {
     id: number;
     ap_no: string | null;
     due_date: string;
     rr_no: string | null;
     po_no: string | null;
-    rfp_number: string;
+    rfp_request_number: string;
     area: 'Head Office' | 'Mine Site';
     payee_type: 'Employee' | 'Supplier';
     employee_code: string | null;
@@ -102,6 +102,10 @@ export type Rfp = {
     grand_total_amount: number | null;
     remarks: string | null;
     status: 'cancelled' | 'draft' | 'for_approval' | 'approved' | 'paid';
+    pdf_generated_at: string | null;
+    pdf_generated_by: number | null;
+    pdf_generation_count: number;
+    generated_by?: RfpUser;
     details: RfpDetail[];
     signs?: RfpSign[];
     logs?: RfpLog[];

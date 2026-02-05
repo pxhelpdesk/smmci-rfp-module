@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::connection('mysql_rfp')->create('rfp_signs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rfp_id')->constrained('rfps')->cascadeOnDelete();
+            $table->foreignId('rfp_request_id')->constrained('rfp_requests')->cascadeOnDelete();
             $table->string('code')->unique()->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->boolean('is_signed')->default(false);

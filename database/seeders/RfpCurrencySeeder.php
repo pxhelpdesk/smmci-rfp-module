@@ -10,9 +10,9 @@ class RfpCurrencySeeder extends Seeder
     public function run(): void
     {
         $currencies = [
+            ['code' => 'PHP', 'name' => 'Philippine Peso', 'description' => null, 'is_active' => true],
             ['code' => 'AUD', 'name' => 'Australian Dollar', 'description' => null, 'is_active' => true],
             ['code' => 'EUR', 'name' => 'Euro', 'description' => null, 'is_active' => true],
-            ['code' => 'PHP', 'name' => 'Philippine Peso', 'description' => null, 'is_active' => true],
             ['code' => 'USD', 'name' => 'US Dollar', 'description' => null, 'is_active' => true],
             ['code' => 'ZAR', 'name' => 'South African Rand', 'description' => null, 'is_active' => true],
         ];

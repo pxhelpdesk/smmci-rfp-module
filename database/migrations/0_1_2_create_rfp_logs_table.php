@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::connection('mysql_rfp')->create('rfp_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rfp_id')->constrained('rfps')->cascadeOnDelete();
-            $table->string('code')->unique()->nullable();
+            $table->foreignId('rfp_request_id')->constrained('rfp_requests')->cascadeOnDelete();
+            $table->string('code', 6)->unique();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->string('from')->nullable();
             $table->string('into')->nullable();

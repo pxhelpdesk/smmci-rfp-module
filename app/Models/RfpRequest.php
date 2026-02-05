@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Rfp extends Model
+class RfpRequest extends Model
 {
     use SoftDeletes;
 
@@ -16,7 +16,7 @@ class Rfp extends Model
         'due_date',
         'rr_no',
         'po_no',
-        'rfp_number',
+        'rfp_request_number',
         'area',
         'payee_type',
         'employee_code',
@@ -35,6 +35,9 @@ class Rfp extends Model
         'grand_total_amount',
         'remarks',
         'status',
+        'pdf_generated_at',
+        'pdf_generated_by',
+        'pdf_generation_count',
     ];
 
     protected $casts = [
@@ -45,6 +48,8 @@ class Rfp extends Model
         'vat_amount' => 'decimal:2',
         'wtax_amount' => 'decimal:2',
         'grand_total_amount' => 'decimal:2',
+        'pdf_generated_at' => 'datetime',
+        'pdf_generation_count' => 'integer',
     ];
 
     // Relationships
@@ -83,5 +88,11 @@ class Rfp extends Model
     public function logs()
     {
         return $this->hasMany(RfpLog::class)->latest();
+    }
+
+    public function generatedBy()
+    {
+        return $this->setConnection('mysql')
+            ->belongsTo(User::class, 'pdf_generated_by');
     }
 }

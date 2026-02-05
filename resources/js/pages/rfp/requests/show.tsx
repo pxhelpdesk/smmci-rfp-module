@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, FileCheck, Trash2, Users, Activity } from 'lucide-react';
+import { ArrowLeft, Edit, FileCheck, Trash2, Users, Activity, Printer } from 'lucide-react';
 import { useState } from 'react';
+import { pdf } from '@react-pdf/renderer';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,11 +25,19 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import type { Rfp } from '@/types';
+import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
+import type { RfpRequest } from '@/types';
+import { toast } from 'sonner';
 
 type Props = {
-    rfp: Rfp;
+    rfp_request: RfpRequest;
 };
 
 const statusColors = {
@@ -47,15 +56,51 @@ const statusLabels = {
     paid: 'Paid',
 };
 
-export default function Show({ rfp }: Props) {
+export default function Show({ rfp_request }: Props) {
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [previewPdf, setPreviewPdf] = useState<string | null>(null);
 
     const handleDelete = () => {
-        router.delete(`/rfp/requests/${rfp.id}`, {
+        router.delete(`/rfp/requests/${rfp_request.id}`, {
             onSuccess: () => {
                 router.visit('/rfp/requests');
             },
         });
+    };
+
+    const handlePrint = async () => {
+        toast.loading('Generating PDF...', { id: 'print-toast' });
+
+        try {
+            const blob = await pdf(<RfpPdfDocument rfp_request={rfp_request} />).toBlob();
+            const url = URL.createObjectURL(blob);
+
+            // Track PDF generation
+            await fetch(`/rfp/requests/${rfp_request.id}/track-print`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            setPreviewPdf(url);
+
+            toast.success('PDF ready', { id: 'print-toast' });
+
+            // Reload to show updated print info
+            setTimeout(() => router.reload({ only: ['rfp_request'] }), 1000);
+        } catch (error) {
+            console.error('PDF generation failed:', error);
+            toast.error('Failed to generate PDF', { id: 'print-toast' });
+        }
+    };
+
+    const handleClosePdf = () => {
+        if (previewPdf) {
+            URL.revokeObjectURL(previewPdf);
+        }
+        setPreviewPdf(null);
     };
 
     const formatDate = (dateString: string) => {
@@ -78,7 +123,7 @@ export default function Show({ rfp }: Props) {
 
     const formatCurrency = (amount: number | null) => {
         if (!amount) return '₱0.00';
-        const currency = rfp.currency?.code || 'PHP';
+        const currency = rfp_request.currency?.code || 'PHP';
         return new Intl.NumberFormat('en-PH', {
             style: 'currency',
             currency: currency === 'PHP' ? 'PHP' : currency === 'USD' ? 'USD' : 'PHP',
@@ -90,17 +135,17 @@ export default function Show({ rfp }: Props) {
             breadcrumbs={[
                 { title: 'Dashboard', href: '/dashboard' },
                 { title: 'Requests', href: '/rfp/requests' },
-                { title: rfp.rfp_number, href: `/rfp/requests/${rfp.id}` },
+                { title: rfp_request.rfp_request_number, href: `/rfp/requests/${rfp_request.id}` },
             ]}
         >
-            <Head title={rfp.rfp_number} />
+            <Head title={rfp_request.rfp_request_number} />
 
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">{rfp.rfp_number}</h1>
+                        <h1 className="text-2xl font-semibold">{rfp_request.rfp_request_number}</h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            {rfp.usage?.description}
+                            {rfp_request.usage?.description}
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -110,8 +155,12 @@ export default function Show({ rfp }: Props) {
                                 Back
                             </Link>
                         </Button>
+                        <Button variant="outline" size="sm" onClick={handlePrint}>
+                            <Printer className="h-4 w-4 mr-1.5" />
+                            Print
+                        </Button>
                         <Button variant="outline" size="sm" asChild>
-                            <Link href={`/rfp/requests/${rfp.id}/edit`}>
+                            <Link href={`/rfp/requests/${rfp_request.id}/edit`}>
                                 <Edit className="h-4 w-4 mr-1.5" />
                                 Edit
                             </Link>
@@ -129,10 +178,10 @@ export default function Show({ rfp }: Props) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className={statusColors[rfp.status]}>
-                        {statusLabels[rfp.status]}
+                    <Badge variant="secondary" className={statusColors[rfp_request.status]}>
+                        {statusLabels[rfp_request.status]}
                     </Badge>
-                    <Badge variant="outline">{rfp.area}</Badge>
+                    <Badge variant="outline">{rfp_request.area}</Badge>
                 </div>
 
                 <Tabs defaultValue="details">
@@ -160,25 +209,25 @@ export default function Show({ rfp }: Props) {
                                 <CardContent className="space-y-2.5">
                                     <div>
                                         <p className="text-xs text-muted-foreground">RFP Number</p>
-                                        <p className="text-sm font-medium">{rfp.rfp_number}</p>
+                                        <p className="text-sm font-medium">{rfp_request.rfp_request_number}</p>
                                     </div>
                                     <Separator />
                                     <div>
                                         <p className="text-xs text-muted-foreground">Area</p>
-                                        <p className="text-sm">{rfp.area}</p>
+                                        <p className="text-sm">{rfp_request.area}</p>
                                     </div>
                                     <Separator />
                                     <div>
                                         <p className="text-xs text-muted-foreground">Category</p>
                                         <p className="text-sm">
-                                            {rfp.usage?.category?.code} - {rfp.usage?.category?.name}
+                                            {rfp_request.usage?.category?.code} - {rfp_request.usage?.category?.name}
                                         </p>
                                     </div>
                                     <Separator />
                                     <div>
                                         <p className="text-xs text-muted-foreground">Usage</p>
                                         <p className="text-sm">
-                                            {rfp.usage?.code} - {rfp.usage?.description}
+                                            {rfp_request.usage?.code} - {rfp_request.usage?.description}
                                         </p>
                                     </div>
                                 </CardContent>
@@ -191,26 +240,26 @@ export default function Show({ rfp }: Props) {
                                 <CardContent className="space-y-2.5">
                                     <div>
                                         <p className="text-xs text-muted-foreground">Type</p>
-                                        <p className="text-sm font-medium">{rfp.payee_type}</p>
+                                        <p className="text-sm font-medium">{rfp_request.payee_type}</p>
                                     </div>
                                     <Separator />
-                                    {rfp.payee_type === 'Supplier' ? (
+                                    {rfp_request.payee_type === 'Supplier' ? (
                                         <>
                                             <div>
                                                 <p className="text-xs text-muted-foreground">Supplier Code</p>
-                                                <p className="text-sm">{rfp.supplier_code || 'N/A'}</p>
+                                                <p className="text-sm">{rfp_request.supplier_code || 'N/A'}</p>
                                             </div>
                                             <Separator />
                                             <div>
                                                 <p className="text-xs text-muted-foreground">Supplier Name</p>
-                                                <p className="text-sm">{rfp.supplier_name || 'N/A'}</p>
+                                                <p className="text-sm">{rfp_request.supplier_name || 'N/A'}</p>
                                             </div>
-                                            {rfp.vendor_ref && (
+                                            {rfp_request.vendor_ref && (
                                                 <>
                                                     <Separator />
                                                     <div>
                                                         <p className="text-xs text-muted-foreground">Vendor Reference</p>
-                                                        <p className="text-sm">{rfp.vendor_ref}</p>
+                                                        <p className="text-sm">{rfp_request.vendor_ref}</p>
                                                     </div>
                                                 </>
                                             )}
@@ -219,12 +268,12 @@ export default function Show({ rfp }: Props) {
                                         <>
                                             <div>
                                                 <p className="text-xs text-muted-foreground">Employee Code</p>
-                                                <p className="text-sm">{rfp.employee_code || 'N/A'}</p>
+                                                <p className="text-sm">{rfp_request.employee_code || 'N/A'}</p>
                                             </div>
                                             <Separator />
                                             <div>
                                                 <p className="text-xs text-muted-foreground">Employee Name</p>
-                                                <p className="text-sm">{rfp.employee_name || 'N/A'}</p>
+                                                <p className="text-sm">{rfp_request.employee_name || 'N/A'}</p>
                                             </div>
                                         </>
                                     )}
@@ -240,19 +289,19 @@ export default function Show({ rfp }: Props) {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div>
                                         <p className="text-xs text-muted-foreground">AP Number</p>
-                                        <p className="text-sm font-medium">{rfp.ap_no || 'N/A'}</p>
+                                        <p className="text-sm font-medium">{rfp_request.ap_no || 'N/A'}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-muted-foreground">Due Date</p>
-                                        <p className="text-sm font-medium">{formatDate(rfp.due_date)}</p>
+                                        <p className="text-sm font-medium">{formatDate(rfp_request.due_date)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-muted-foreground">RR Number</p>
-                                        <p className="text-sm font-medium">{rfp.rr_no || 'N/A'}</p>
+                                        <p className="text-sm font-medium">{rfp_request.rr_no || 'N/A'}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-muted-foreground">PO Number</p>
-                                        <p className="text-sm font-medium">{rfp.po_no || 'N/A'}</p>
+                                        <p className="text-sm font-medium">{rfp_request.po_no || 'N/A'}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -274,14 +323,14 @@ export default function Show({ rfp }: Props) {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {rfp.details.length === 0 ? (
+                                            {rfp_request.details.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                                                         No details found
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                rfp.details.map((detail) => (
+                                                rfp_request.details.map((detail) => (
                                                     <TableRow key={detail.id}>
                                                         {/* <TableCell className="font-medium">
                                                             {detail.account_code || 'N/A'}
@@ -309,56 +358,56 @@ export default function Show({ rfp }: Props) {
                                     <div className="flex justify-between">
                                         <p className="text-sm text-muted-foreground">Currency</p>
                                         <p className="text-sm font-medium">
-                                            {rfp.currency?.code} - {rfp.currency?.name}
+                                            {rfp_request.currency?.code} - {rfp_request.currency?.name}
                                         </p>
                                     </div>
                                     {/* <Separator />
                                     <div className="flex justify-between">
                                         <p className="text-sm text-muted-foreground">Total Before VAT</p>
                                         <p className="text-sm font-medium">
-                                            {formatCurrency(rfp.total_before_vat_amount)}
+                                            {formatCurrency(rfp_request.total_before_vat_amount)}
                                         </p>
                                     </div>
-                                    {rfp.is_vatable && (
+                                    {rfp_request.is_vatable && (
                                         <>
                                             <Separator />
                                             <div className="flex justify-between">
                                                 <p className="text-sm text-muted-foreground">
-                                                    VAT ({rfp.vat_type})
+                                                    VAT ({rfp_request.vat_type})
                                                 </p>
                                                 <p className="text-sm font-medium">
-                                                    {formatCurrency(rfp.vat_amount)}
+                                                    {formatCurrency(rfp_request.vat_amount)}
                                                 </p>
                                             </div>
                                         </>
                                     )} */}
-                                    {rfp.wtax_amount && Number(rfp.wtax_amount) > 0 && (
-                                        <>
-                                            <Separator />
-                                            <div className="flex justify-between">
-                                                <p className="text-sm text-muted-foreground">Withholding Tax</p>
-                                                <p className="text-sm font-medium">
-                                                    {formatCurrency(rfp.wtax_amount)}
-                                                </p>
-                                            </div>
-                                        </>
-                                    )}
-                                    {rfp.less_down_payment_amount && Number(rfp.less_down_payment_amount) > 0 && (
-                                        <>
+                                    {/* {rfp_request.wtax_amount && Number(rfp_request.wtax_amount) > 0 && (
+                                        <> */}
                                             <Separator />
                                             <div className="flex justify-between">
                                                 <p className="text-sm text-muted-foreground">Less: Down Payment</p>
                                                 <p className="text-sm font-medium text-destructive">
-                                                    -{formatCurrency(rfp.less_down_payment_amount)}
+                                                    -{formatCurrency(rfp_request.less_down_payment_amount)}
                                                 </p>
                                             </div>
-                                        </>
-                                    )}
+                                        {/* </>
+                                    )} */}
+                                    {/* {rfp_request.less_down_payment_amount && Number(rfp_request.less_down_payment_amount) > 0 && (
+                                        <> */}
+                                            <Separator />
+                                            <div className="flex justify-between">
+                                                <p className="text-sm text-muted-foreground">Withholding Tax</p>
+                                                <p className="text-sm font-medium">
+                                                    {formatCurrency(rfp_request.wtax_amount)}
+                                                </p>
+                                            </div>
+                                        {/* </>
+                                    )} */}
                                     <Separator />
                                     <div className="flex justify-between">
                                         <p className="text-sm font-semibold">Grand Total</p>
                                         <p className="text-sm font-semibold">
-                                            {formatCurrency(rfp.grand_total_amount)}
+                                            {formatCurrency(rfp_request.grand_total_amount)}
                                         </p>
                                     </div>
                                 </CardContent>
@@ -371,24 +420,35 @@ export default function Show({ rfp }: Props) {
                                 <CardContent className="space-y-2.5">
                                     <div>
                                         <p className="text-xs text-muted-foreground">Created</p>
-                                        <p className="text-sm">{formatDateTime(rfp.created_at)}</p>
+                                        <p className="text-sm">{formatDateTime(rfp_request.created_at)}</p>
                                     </div>
                                     <Separator />
                                     <div>
                                         <p className="text-xs text-muted-foreground">Last Updated</p>
-                                        <p className="text-sm">{formatDateTime(rfp.updated_at)}</p>
+                                        <p className="text-sm">{formatDateTime(rfp_request.updated_at)}</p>
                                     </div>
+                                    {rfp_request.pdf_generated_at && (
+                                        <>
+                                            <Separator />
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">PDF Generated Count</p>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Generated {rfp_request.pdf_generation_count} {rfp_request.pdf_generation_count === 1 ? 'time' : 'times'}
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>
 
-                        {rfp.remarks && (
+                        {rfp_request.remarks && (
                             <Card>
                                 <CardHeader className="pb-3">
                                     <CardTitle className="text-base">Remarks</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-sm whitespace-pre-wrap">{rfp.remarks}</p>
+                                    <p className="text-sm whitespace-pre-wrap">{rfp_request.remarks}</p>
                                 </CardContent>
                             </Card>
                         )}
@@ -412,14 +472,14 @@ export default function Show({ rfp }: Props) {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {!rfp.signs || rfp.signs.length === 0 ? (
+                                            {!rfp_request.signs || rfp_request.signs.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                                                         No signatories found
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                rfp.signs.map((sign) => (
+                                                rfp_request.signs.map((sign) => (
                                                     <TableRow key={sign.id}>
                                                         <TableCell className="font-medium">
                                                             {sign.user?.name || 'N/A'}
@@ -459,27 +519,26 @@ export default function Show({ rfp }: Props) {
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>User</TableHead>
-                                                <TableHead>Action</TableHead>
                                                 <TableHead>From</TableHead>
                                                 <TableHead>To</TableHead>
                                                 <TableHead>Date</TableHead>
+                                                <TableHead>Details</TableHead>
                                                 <TableHead>Remarks</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {!rfp.logs || rfp.logs.length === 0 ? (
+                                            {!rfp_request.logs || rfp_request.logs.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                                                         No activity logs found
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                rfp.logs.map((log) => (
+                                                rfp_request.logs.map((log) => (
                                                     <TableRow key={log.id}>
                                                         <TableCell className="font-medium">
                                                             {log.user?.name || 'System'}
                                                         </TableCell>
-                                                        <TableCell>{log.details || 'N/A'}</TableCell>
                                                         <TableCell>
                                                             {log.from ? (
                                                                 <Badge variant="outline">{log.from}</Badge>
@@ -493,6 +552,7 @@ export default function Show({ rfp }: Props) {
                                                         <TableCell>
                                                             {formatDateTime(log.created_at)}
                                                         </TableCell>
+                                                        <TableCell>{log.details || 'N/A'}</TableCell>
                                                         <TableCell className="text-muted-foreground">
                                                             {log.remarks || 'N/A'}
                                                         </TableCell>
@@ -508,12 +568,13 @@ export default function Show({ rfp }: Props) {
                 </Tabs>
             </div>
 
+            {/* Delete Dialog */}
             <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete RFP Request</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete {rfp.rfp_number}? This action cannot be undone.
+                            Are you sure you want to delete {rfp_request.rfp_request_number}? This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -527,6 +588,34 @@ export default function Show({ rfp }: Props) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* PDF Preview Dialog */}
+            <Dialog open={!!previewPdf} onOpenChange={handleClosePdf}>
+                <DialogContent
+                    className="flex flex-col p-0 gap-0"
+                    style={{
+                        maxWidth: '90vw',
+                        width: '90vw',
+                        height: '95vh',
+                        margin: 'auto'
+                    }}
+                >
+                    <DialogHeader className="px-6 py-3 border-b shrink-0">
+                        <DialogTitle className="text-lg">
+                            {rfp_request.rfp_request_number}
+                        </DialogTitle>
+                    </DialogHeader>
+                    {previewPdf && (
+                        <div className="flex-1 overflow-hidden">
+                            <iframe
+                                src={previewPdf}
+                                className="w-full h-full border-0"
+                                title={rfp_request.rfp_request_number}
+                            />
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

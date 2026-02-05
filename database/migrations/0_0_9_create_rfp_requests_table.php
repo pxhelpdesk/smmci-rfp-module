@@ -8,10 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::connection('mysql_rfp')->create('rfps', function (Blueprint $table) {
+        Schema::connection('mysql_rfp')->create('rfp_requests', function (Blueprint $table) {
             $table->id();
 
-            $table->string('rfp_number')->unique();
+            $table->string('rfp_request_number')->unique();
 
             $table->enum('area', ['Head Office', 'Mine Site'])->default('Mine Site');
             $table->foreignId('rfp_currency_id')->constrained('rfp_currencies');
@@ -40,6 +40,10 @@ return new class extends Migration
             $table->text('remarks')->nullable();
             $table->enum('status', ['cancelled', 'draft', 'for_approval', 'approved', 'paid'])->default('draft');
 
+            $table->timestamp('pdf_generated_at')->nullable();
+            $table->unsignedBigInteger('pdf_generated_by')->nullable();
+            $table->integer('pdf_generation_count')->default(0);
+
             $table->timestamps();
             $table->softDeletes();
         });
@@ -47,6 +51,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::connection('mysql_rfp')->dropIfExists('rfps');
+        Schema::connection('mysql_rfp')->dropIfExists('rfp_requests');
     }
 };

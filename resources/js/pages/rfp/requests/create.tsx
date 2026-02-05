@@ -21,15 +21,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { Rfp, RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
+import type { RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
 
 type Props = {
-    rfp: Rfp;
     categories: RfpCategory[];
     currencies: RfpCurrency[];
+    defaultCurrencyId?: number | null;
 };
 
-export default function Edit({ rfp, categories, currencies }: Props) {
+export default function Create({ categories, currencies, defaultCurrencyId }: Props) {
     const [accounts, setAccounts] = useState<SapAccountOption[]>([]);
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [usages, setUsages] = useState<RfpUsage[]>([]);
@@ -37,14 +37,7 @@ export default function Edit({ rfp, categories, currencies }: Props) {
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
     const [loadingUsages, setLoadingUsages] = useState(false);
 
-    // Load initial usages if category exists
-    useState(() => {
-        if (rfp.usage?.rfp_category_id) {
-            loadUsages(rfp.usage.rfp_category_id);
-        }
-    });
-
-    const { data, setData, put, processing, errors } = useForm<{
+    const { data, setData, post, processing, errors } = useForm<{
         ap_no: string;
         due_date: string;
         rr_no: string;
@@ -69,42 +62,34 @@ export default function Edit({ rfp, categories, currencies }: Props) {
         remarks: string;
         details: Partial<RfpDetail>[];
     }>({
-        ap_no: rfp.ap_no || '',
-        due_date: rfp.due_date || '',
-        rr_no: rfp.rr_no || '',
-        po_no: rfp.po_no || '',
-        area: rfp.area,
-        payee_type: rfp.payee_type,
-        employee_code: rfp.employee_code || '',
-        employee_name: rfp.employee_name || '',
-        supplier_code: rfp.supplier_code,
-        supplier_name: rfp.supplier_name || '',
-        vendor_ref: rfp.vendor_ref || '',
-        rfp_currency_id: rfp.rfp_currency_id,
-        rfp_usage_id: rfp.rfp_usage_id,
-        rfp_category_id: rfp.usage?.rfp_category_id || null,
-        total_before_vat_amount: rfp.total_before_vat_amount?.toString() || '',
-        less_down_payment_amount: rfp.less_down_payment_amount?.toString() || '',
-        is_vatable: rfp.is_vatable,
-        vat_type: rfp.vat_type,
-        vat_amount: rfp.vat_amount?.toString() || '',
-        wtax_amount: rfp.wtax_amount?.toString() || '',
-        grand_total_amount: rfp.grand_total_amount?.toString() || '',
-        remarks: rfp.remarks || '',
-        details: rfp.details && rfp.details.length > 0
-            ? rfp.details.map(item => ({
-                id: item.id,
-                account_code: item.account_code,
-                account_name: item.account_name,
-                description: item.description,
-                total_amount: item.total_amount,
-            })) as Partial<RfpDetail>[]
-            : [{
-                account_code: null,
-                account_name: null,
-                description: null,
-                total_amount: null
-            }],
+        ap_no: '',
+        due_date: '',
+        rr_no: '',
+        po_no: '',
+        area: 'Mine Site',
+        payee_type: 'Supplier',
+        employee_code: '',
+        employee_name: '',
+        supplier_code: null,
+        supplier_name: null,
+        vendor_ref: '',
+        rfp_currency_id: defaultCurrencyId ?? null,
+        rfp_usage_id: null,
+        rfp_category_id: null,
+        total_before_vat_amount: '',
+        less_down_payment_amount: '',
+        is_vatable: true,
+        vat_type: 'inclusive',
+        vat_amount: '',
+        wtax_amount: '',
+        grand_total_amount: '',
+        remarks: '',
+        details: [{
+            account_code: null,
+            account_name: null,
+            description: null,
+            total_amount: null
+        }],
     });
 
     // const loadAccounts = async () => {
@@ -164,7 +149,7 @@ export default function Edit({ rfp, categories, currencies }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/rfp/requests/${rfp.id}`);
+        post('/rfp/requests');
     };
 
     const categoryOptions = categories.map(c => ({
@@ -187,17 +172,17 @@ export default function Edit({ rfp, categories, currencies }: Props) {
             breadcrumbs={[
                 { title: 'Dashboard', href: '/dashboard' },
                 { title: 'Requests', href: '/rfp/requests' },
-                { title: rfp.rfp_number, href: `/rfp/requests/${rfp.id}/edit` },
+                { title: 'Create', href: '/rfp/requests/create' },
             ]}
         >
-            <Head title={`Edit ${rfp.rfp_number}`} />
+            <Head title="Create RFP Request" />
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">Edit RFP Request</h1>
+                        <h1 className="text-2xl font-semibold">Create RFP Request</h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            {rfp.rfp_number}
+                            Fill in the details below
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -209,7 +194,7 @@ export default function Edit({ rfp, categories, currencies }: Props) {
                         </Button>
                         <Button type="submit" size="sm" disabled={processing}>
                             <Save className="h-4 w-4 mr-1.5" />
-                            Update
+                            Save
                         </Button>
                     </div>
                 </div>
@@ -255,6 +240,7 @@ export default function Edit({ rfp, categories, currencies }: Props) {
                                         menu: (base) => ({ ...base, fontSize: '14px' }),
                                     }}
                                 />
+                                {errors.rfp_category_id && <p className="text-xs text-destructive">{errors.rfp_category_id}</p>}
                             </div>
 
                             <div className="space-y-1.5">
@@ -285,7 +271,7 @@ export default function Edit({ rfp, categories, currencies }: Props) {
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
                                 <Label htmlFor="payee_type" className="text-sm">Type</Label>
-                                <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)}>
+                                <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)} disabled>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>

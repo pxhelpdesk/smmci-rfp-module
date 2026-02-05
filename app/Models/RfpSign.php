@@ -13,7 +13,7 @@ class RfpSign extends Model
     protected $connection = 'mysql_rfp';
 
     protected $fillable = [
-        'rfp_id',
+        'rfp_request_id',
         'code',
         'user_id',
         'is_signed',
@@ -25,9 +25,9 @@ class RfpSign extends Model
         'is_signed' => 'boolean',
     ];
 
-    public function rfp()
+    public function rfpRequest()
     {
-        return $this->belongsTo(Rfp::class);
+        return $this->belongsTo(RfpRequest::class);
     }
 
     public function user()
