@@ -106,7 +106,7 @@ export default function Index({ usages, categories }: Props) {
                     </div>
                 </div>
 
-                <div className="border rounded-lg">
+                <div className="border rounded-lg bg-card">
                     <Table>
                         <TableHeader>
                             <TableRow>
