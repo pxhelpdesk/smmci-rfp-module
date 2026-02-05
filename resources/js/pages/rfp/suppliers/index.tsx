@@ -21,6 +21,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
+import { formatDateTime } from '@/lib/formatters';
 import type { SapSupplier } from '@/types';
 
 type Props = {
@@ -47,17 +48,6 @@ export default function Index({ suppliers }: Props) {
             supplier.card_name.toLowerCase().includes(search.toLowerCase()) ||
             supplier.tin?.toLowerCase().includes(search.toLowerCase())
     );
-
-    const formatDate = (dateString: string | null) => {
-        if (!dateString) return 'Never';
-        return new Date(dateString).toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
 
     const renderPaginationItems = () => {
         const items = [];
@@ -180,7 +170,7 @@ export default function Index({ suppliers }: Props) {
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
-                                                {formatDate(supplier.last_synced_at)}
+                                                {supplier.last_synced_at ? formatDateTime(supplier.last_synced_at, { dateFormat: 'short' }) : 'Never'}
                                             </div>
                                         </TableCell>
                                     </TableRow>

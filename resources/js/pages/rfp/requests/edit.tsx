@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import InputAmount from '@/components/ui/input-amount';
 import DateTimePicker from '@/components/ui/date-time-picker';
+import { formatDate } from '@/lib/formatters';
 import {
     Card,
     CardContent,
@@ -370,11 +371,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-base">Document Information</CardTitle>
                             <p className="text-xs text-muted-foreground">
-                                Today: {new Date().toLocaleDateString('en-US', {
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    year: 'numeric',
-                                })}
+                                Date: {formatDate(rfp_request.created_at)}
                             </p>
                         </div>
                     </CardHeader>

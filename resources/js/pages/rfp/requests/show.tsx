@@ -35,6 +35,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest } from '@/types';
 import { toast } from 'sonner';
+import { formatDate, formatDateTime, formatAmount } from '@/lib/formatters';
 
 type Props = {
     rfp_request: RfpRequest;
@@ -101,33 +102,6 @@ export default function Show({ rfp_request }: Props) {
             URL.revokeObjectURL(previewPdf);
         }
         setPreviewPdf(null);
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
-    };
-
-    const formatDateTime = (dateString: string) => {
-        return new Date(dateString).toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
-
-    const formatCurrency = (amount: number | null) => {
-        if (!amount) return '₱0.00';
-        const currency = rfp_request.currency?.code || 'PHP';
-        return new Intl.NumberFormat('en-PH', {
-            style: 'currency',
-            currency: currency === 'PHP' ? 'PHP' : currency === 'USD' ? 'USD' : 'PHP',
-        }).format(amount);
     };
 
     return (
@@ -338,7 +312,7 @@ export default function Show({ rfp_request }: Props) {
                                                         <TableCell>{detail.account_name || 'N/A'}</TableCell> */}
                                                         <TableCell>{detail.description || 'N/A'}</TableCell>
                                                         <TableCell className="text-right font-medium">
-                                                            {formatCurrency(detail.total_amount)}
+                                                            {formatAmount(Number(detail.total_amount))}
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
@@ -387,7 +361,7 @@ export default function Show({ rfp_request }: Props) {
                                             <div className="flex justify-between">
                                                 <p className="text-sm text-muted-foreground">Less: Down Payment</p>
                                                 <p className="text-sm font-medium text-destructive">
-                                                    -{formatCurrency(rfp_request.less_down_payment_amount)}
+                                                    -{formatAmount(Number(rfp_request.less_down_payment_amount))}
                                                 </p>
                                             </div>
                                         {/* </>
@@ -398,7 +372,7 @@ export default function Show({ rfp_request }: Props) {
                                             <div className="flex justify-between">
                                                 <p className="text-sm text-muted-foreground">Withholding Tax</p>
                                                 <p className="text-sm font-medium">
-                                                    {formatCurrency(rfp_request.wtax_amount)}
+                                                    {formatAmount(Number(rfp_request.wtax_amount))}
                                                 </p>
                                             </div>
                                         {/* </>
@@ -407,7 +381,7 @@ export default function Show({ rfp_request }: Props) {
                                     <div className="flex justify-between">
                                         <p className="text-sm font-semibold">Grand Total</p>
                                         <p className="text-sm font-semibold">
-                                            {formatCurrency(rfp_request.grand_total_amount)}
+                                            {formatAmount(Number(rfp_request.grand_total_amount))}
                                         </p>
                                     </div>
                                 </CardContent>

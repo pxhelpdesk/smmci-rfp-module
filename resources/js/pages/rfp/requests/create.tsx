@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import InputAmount from '@/components/ui/input-amount';
 import DateTimePicker from '@/components/ui/date-time-picker';
+import { formatDate } from '@/lib/formatters';
 import {
     Card,
     CardContent,
@@ -356,11 +357,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-base">Document Information</CardTitle>
                             <p className="text-xs text-muted-foreground">
-                                Today: {new Date().toLocaleDateString('en-US', {
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    year: 'numeric',
-                                })}
+                                Date: {formatDate(new Date().toISOString())}
                             </p>
                         </div>
                     </CardHeader>

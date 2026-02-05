@@ -1,3 +1,4 @@
+// pages/rfp/requests/index.tsx
 import { Link, router, Head } from '@inertiajs/react';
 import { FileText, MoreVertical, Pencil, Plus, Search, Trash2, Printer } from 'lucide-react';
 import { useState } from 'react';
@@ -40,6 +41,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest } from '@/types';
+import { formatDate, formatTime, formatAmount } from '@/lib/formatters';
 
 type Props = {
     rfp_requests: {
@@ -128,23 +130,6 @@ export default function Index({ rfp_requests }: Props) {
             rfp_request.employee_name?.toLowerCase().includes(search.toLowerCase())
     );
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
-    };
-
-    const formatCurrency = (amount: number | null, currencyCode: string) => {
-        if (!amount) return '₱0.00';
-        const currency = currencyCode === 'PHP' ? 'PHP' : currencyCode === 'USD' ? 'USD' : 'PHP';
-        return new Intl.NumberFormat('en-PH', {
-            style: 'currency',
-            currency: currency,
-        }).format(amount);
-    };
-
     return (
         <AppLayout
             breadcrumbs={[
@@ -190,7 +175,8 @@ export default function Index({ rfp_requests }: Props) {
                                 <TableHead>Payee</TableHead>
                                 <TableHead>Area</TableHead>
                                 <TableHead>Due Date</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
+                                <TableHead>Currency</TableHead>
+                                <TableHead>Grand Total</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Created</TableHead>
                                 <TableHead>Updated</TableHead>
@@ -200,7 +186,7 @@ export default function Index({ rfp_requests }: Props) {
                         <TableBody>
                             {filteredRfps.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                                         <FileText className="h-12 w-12 mx-auto mb-2 opacity-20" />
                                         <p className="text-sm">No Requests found</p>
                                     </TableCell>
@@ -244,10 +230,15 @@ export default function Index({ rfp_requests }: Props) {
                                                 {formatDate(rfp_request.due_date)}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-right font-medium">
-                                            <div className="text-sm">
-                                                {formatCurrency(rfp_request.grand_total_amount, rfp_request.currency?.code || 'PHP')}
-                                            </div>
+                                        <TableCell>
+                                            <span className="text-sm font-medium">
+                                                {rfp_request.currency?.code || 'PHP'}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm font-medium">
+                                                {formatAmount(Number(rfp_request.grand_total_amount))}
+                                            </span>
                                         </TableCell>
                                         <TableCell>
                                             <Badge
@@ -261,10 +252,7 @@ export default function Index({ rfp_requests }: Props) {
                                             <div className="text-sm text-muted-foreground">
                                                 <div>{formatDate(rfp_request.created_at)}</div>
                                                 <div className="text-xs">
-                                                    {new Date(rfp_request.created_at).toLocaleTimeString('en-US', {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
+                                                    {formatTime(rfp_request.created_at)}
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -272,10 +260,7 @@ export default function Index({ rfp_requests }: Props) {
                                             <div className="text-sm text-muted-foreground">
                                                 <div>{formatDate(rfp_request.updated_at)}</div>
                                                 <div className="text-xs">
-                                                    {new Date(rfp_request.updated_at).toLocaleTimeString('en-US', {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
+                                                    {formatTime(rfp_request.updated_at)}
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -349,7 +334,6 @@ export default function Index({ rfp_requests }: Props) {
                 )}
             </div>
 
-            {/* Delete Dialog */}
             <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -368,7 +352,6 @@ export default function Index({ rfp_requests }: Props) {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* PDF Preview Dialog */}
             <Dialog open={!!previewPdf} onOpenChange={handleClosePdf}>
                 <DialogContent
                     className="flex flex-col p-0 gap-0"
