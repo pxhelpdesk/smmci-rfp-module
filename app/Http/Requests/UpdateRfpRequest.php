@@ -14,36 +14,50 @@ class UpdateRfpRequest extends FormRequest
 
     public function rules(): array
     {
+        // get the bound RfpRequest model from route
+        $rfpRequest = $this->route('request');
+
+        // normalize both dates to Y-m-d for comparison
+        $existingDueDate = $rfpRequest?->due_date?->format('Y-m-d');
+        $incomingDueDate = $this->due_date
+            ? \Carbon\Carbon::parse($this->due_date)->format('Y-m-d')
+            : null;
+
+        // only enforce after:today if due date was changed
+        $dueDateRule = $incomingDueDate && $incomingDueDate !== $existingDueDate
+            ? 'required|date|after:today'
+            : 'required|date';
+
         return [
-            'ap_no' => 'nullable|string',
-            'due_date' => 'required|date|after:today',
-            'rr_no' => 'nullable|string',
-            'po_no' => 'nullable|string',
-            'area' => 'required|in:Head Office,Mine Site',
-            'payee_type' => 'required|in:Employee,Supplier',
-            'employee_code' => 'nullable|string',
-            'employee_name' => 'nullable|string',
-            'supplier_code' => 'nullable|string',
-            'supplier_name' => 'nullable|string',
-            'vendor_ref' => 'nullable|string',
-            'rfp_currency_id' => 'required|exists:mysql_rfp.rfp_currencies,id',
-            'rfp_usage_id' => 'required|exists:mysql_rfp.rfp_usages,id',
-            'total_before_vat_amount' => 'nullable|numeric',
-            'less_down_payment_amount' => 'nullable|numeric',
-            'is_vatable' => 'nullable|boolean',
-            'vat_type' => 'nullable|in:inclusive,exclusive',
-            'vat_amount' => 'nullable|numeric',
-            'wtax_amount' => 'nullable|numeric',
-            'grand_total_amount' => 'nullable|numeric',
-            'remarks' => 'nullable|string',
-            'status' => 'nullable|in:cancelled,draft,for_approval,approved,paid',
-            'log_remarks' => 'nullable|string|max:500',
-            'details' => 'required|array|min:1',
-            'details.*.id' => 'sometimes|exists:mysql_rfp.rfp_details,id',
-            'details.*.account_code' => 'nullable|string',
-            'details.*.account_name' => 'nullable|string',
-            'details.*.description' => 'required|string',
-            'details.*.total_amount' => 'required|numeric|min:0.01',
+            'ap_no'                     => 'nullable|string',
+            'due_date'                  => $dueDateRule,
+            'rr_no'                     => 'nullable|string',
+            'po_no'                     => 'nullable|string',
+            'area'                      => 'required|in:Head Office,Mine Site',
+            'payee_type'                => 'required|in:Employee,Supplier',
+            'employee_code'             => 'nullable|string',
+            'employee_name'             => 'nullable|string',
+            'supplier_code'             => 'nullable|string',
+            'supplier_name'             => 'nullable|string',
+            'vendor_ref'                => 'nullable|string',
+            'rfp_currency_id'           => 'required|exists:mysql_rfp.rfp_currencies,id',
+            'rfp_usage_id'              => 'required|exists:mysql_rfp.rfp_usages,id',
+            'total_before_vat_amount'   => 'nullable|numeric',
+            'less_down_payment_amount'  => 'nullable|numeric',
+            'is_vatable'                => 'nullable|boolean',
+            'vat_type'                  => 'nullable|in:inclusive,exclusive',
+            'vat_amount'                => 'nullable|numeric',
+            'wtax_amount'               => 'nullable|numeric',
+            'grand_total_amount'        => 'nullable|numeric',
+            'remarks'                   => 'nullable|string',
+            'status'                    => 'nullable|in:cancelled,draft,for_approval,approved,paid',
+            'log_remarks'               => 'nullable|string|max:500',
+            'details'                   => 'required|array|min:1',
+            'details.*.id'              => 'sometimes|exists:mysql_rfp.rfp_details,id',
+            'details.*.account_code'    => 'nullable|string',
+            'details.*.account_name'    => 'nullable|string',
+            'details.*.description'     => 'required|string',
+            'details.*.total_amount'    => 'required|numeric|min:0.01',
         ];
     }
 

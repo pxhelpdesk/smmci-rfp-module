@@ -97,4 +97,9 @@ class RfpRequest extends Model
         return $this->setConnection('mysql')
             ->belongsTo(User::class, 'pdf_generated_by');
     }
+
+    public function supplier()
+    {
+        return $this->belongsTo(SapSupplier::class, 'supplier_code', 'card_code');
+    }
 }

@@ -68,7 +68,8 @@ class RfpController extends Controller
             'usage.category',
             'details',
             'signs.user.department',
-            'generatedBy'
+            'generatedBy',
+            'supplier',
         ]);
 
         // Paginate logs separately

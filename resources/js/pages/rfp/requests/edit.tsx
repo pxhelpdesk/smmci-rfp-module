@@ -101,6 +101,12 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         }
     }, []);
 
+    useEffect(() => {
+        if (rfp_request.supplier_code) {
+            loadSuppliers();
+        }
+    }, []);
+
     const { data, setData, put, processing, errors } = useForm<{
         ap_no: string;
         due_date: string;
@@ -255,15 +261,14 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
     const handleConfirmUpdate = () => {
         setShowLogDialog(false);
 
-        // Update form data with log_remarks
+        // set log_remarks directly since it's already in form type
         setData('log_remarks', logRemarks);
 
-        // Submit on next tick to ensure state is updated
         setTimeout(() => {
             put(`/rfp/requests/${rfp_request.id}`, {
                 preserveScroll: true,
             });
-        }, 0);
+        }, 10);
     };
 
     const categoryOptions = categories.map(c => ({
@@ -402,7 +407,11 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                         <Label className="text-sm">Supplier</Label>
                                         <Select
                                             options={suppliers}
-                                            value={suppliers.find(s => s.value === data.supplier_code)}
+                                            value={
+                                                suppliers.find(s => s.value === data.supplier_code)
+                                                // fallback synthetic option while suppliers list is loading
+                                                ?? (data.supplier_code ? { value: data.supplier_code, label: `${data.supplier_code} - ${data.supplier_name}` } : null)
+                                            }
                                             onChange={(opt) => {
                                                 setData({
                                                     ...data,

@@ -110,6 +110,7 @@ export type RfpRequest = {
     details: RfpDetail[];
     signs?: RfpSign[];
     logs?: RfpLog[];
+    supplier?: SapSupplier;
     created_at: string;
     updated_at: string;
 };
