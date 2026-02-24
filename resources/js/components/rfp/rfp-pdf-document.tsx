@@ -16,7 +16,7 @@ Font.register({
 const styles = StyleSheet.create({
     page: {
         paddingTop: 42,
-        paddingBottom: 60, // enough room for footer
+        paddingBottom: 60,
         paddingLeft: 42,
         paddingRight: 42,
         fontSize: 11,
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 14,
         fontWeight: 'bold',
-        marginTop: 16,
+        marginTop: 0,
         marginBottom: 14,
         textAlign: 'center',
         lineHeight: 1.15,
@@ -83,9 +83,6 @@ const styles = StyleSheet.create({
     infoGrid: {
         flexDirection: 'row',
         marginBottom: 10,
-    },
-    infoCol: {
-        flex: 1,
     },
     infoColLeft: {
         width: 325,
@@ -103,7 +100,6 @@ const styles = StyleSheet.create({
         width: 70,
         flexShrink: 0,
     },
-    // right column label — narrower to keep values left-aligned
     infoLabelRight: {
         fontSize: 8.5,
         width: 50,
@@ -131,7 +127,126 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#000000',
         borderBottomStyle: 'dashed',
-        marginBottom: 10,
+        marginBottom: 3,
+    },
+
+    // ── Details Header ───────────────────────────────────────────
+    detailsHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#000000',
+        paddingVertical: 4,
+        paddingHorizontal: 6,
+        marginBottom: 0,
+    },
+    detailsHeaderLabel: {
+        fontSize: 9,
+        fontWeight: 'bold',
+    },
+    detailsHeaderArea: {
+        fontSize: 9,
+        fontWeight: 'bold',
+    },
+
+    // ── Details Table ────────────────────────────────────────────
+    detailsTableHeader: {
+        flexDirection: 'row',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#000000',
+        paddingVertical: 4,
+        paddingHorizontal: 6,
+        backgroundColor: '#f0f0f0',
+    },
+    detailsTableHeaderText: {
+        fontSize: 8.5,
+        fontWeight: 'bold',
+    },
+    detailsTableRow: {
+        flexDirection: 'row',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#cccccc',
+        paddingVertical: 4,
+        paddingHorizontal: 6,
+        minHeight: 20,
+    },
+    detailsColDescription: {
+        flex: 1,
+    },
+    detailsColTotal: {
+        width: 100,
+    },
+    detailsTableText: {
+        fontSize: 8.5,
+    },
+    detailsTableTextRight: {
+        fontSize: 8.5,
+        textAlign: 'right',
+    },
+    detailsTableRowLast: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#000000',
+    },
+
+    // ── Totals ───────────────────────────────────────────────────
+    totalsSection: {
+        marginTop: 4,
+        alignItems: 'flex-end',
+    },
+    totalsRow: {
+        flexDirection: 'row',
+        marginBottom: 2,
+        width: 100,
+    },
+    totalsLabelCol: {
+        width: 90,
+        textAlign: 'right',
+        paddingRight: 8,
+    },
+    totalsLabel: {
+        fontSize: 7.5,
+        fontWeight: 'bold',
+    },
+    totalsValue: {
+        fontSize: 7.5,
+        width: 100,
+        textAlign: 'right',
+    },
+    totalsGrandRow: {
+        flexDirection: 'row',
+        marginTop: 2,
+    },
+    totalsGrandLabel: {
+        fontSize: 8,
+        fontWeight: 'bold',
+        width: 90,
+        textAlign: 'right',
+        paddingRight: 8,
+    },
+    totalsGrandValue: {
+        fontSize: 8,
+        fontWeight: 'bold',
+        width: 100,
+        textAlign: 'right',
+    },
+    // ── Remarks ───────────────────────────────────────────────────
+    remarksSection: {
+        marginTop: 10,
+    },
+    remarksLabel: {
+        fontSize: 8.5,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    remarksBox: {
+        borderWidth: 1,
+        borderColor: '#000000',
+        padding: 8,
+        minHeight: 40,
+    },
+    remarksText: {
+        fontSize: 8.5,
     },
 
     // ── Footer ───────────────────────────────────────────────────
@@ -155,12 +270,18 @@ const styles = StyleSheet.create({
 
 const LOGO_URL = '/storage/images/logos/SMMCI_Logo_icon-text.png';
 
+function formatCurrency(amount: number | null): string {
+    if (amount === null || amount === undefined) return '0.00';
+    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 type Props = {
     rfp_request: RfpRequest;
 };
 
 export function RfpPdfDocument({ rfp_request }: Props) {
     const generatedAt = formatDateTime(new Date().toISOString());
+    const currencyCode = rfp_request.currency?.code ?? '';
 
     return (
         <Document>
@@ -257,6 +378,95 @@ export function RfpPdfDocument({ rfp_request }: Props) {
 
                 {/* Dashed Divider */}
                 <View style={styles.divider} />
+
+                {/* Details Header */}
+                <View style={styles.detailsHeaderRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ width: 3, height: 12, backgroundColor: '#000000', marginRight: 6 }} />
+                        <Text style={styles.detailsHeaderLabel}>Details</Text>
+                    </View>
+                    <Text style={styles.detailsHeaderArea}>{rfp_request.area ?? ''}</Text>
+                </View>
+
+                {/* Table Column Headers */}
+                <View style={styles.detailsTableHeader}>
+                    <Text style={[styles.detailsTableHeaderText, styles.detailsColDescription]}>
+                        Description
+                    </Text>
+                    <Text style={[styles.detailsTableHeaderText, styles.detailsColTotal, { textAlign: 'right' }]}>
+                        Total
+                    </Text>
+                </View>
+
+                {/* Table Rows */}
+                {rfp_request.details && rfp_request.details.length > 0 ? (
+                    rfp_request.details.map((detail, index) => (
+                        <View
+                            key={detail.id ?? index}
+                            style={[
+                                styles.detailsTableRow,
+                                index === rfp_request.details.length - 1 ? styles.detailsTableRowLast : {},
+                            ]}
+                        >
+                            <Text style={[styles.detailsTableText, styles.detailsColDescription]}>
+                                {detail.description ?? '—'}
+                            </Text>
+                            <Text style={[styles.detailsTableTextRight, styles.detailsColTotal]}>
+                                {formatCurrency(detail.total_amount)}
+                            </Text>
+                        </View>
+                    ))
+                ) : (
+                    <View style={[styles.detailsTableRow, styles.detailsTableRowLast]}>
+                        <Text style={[styles.detailsTableText, styles.detailsColDescription]}>—</Text>
+                        <Text style={[styles.detailsTableTextRight, styles.detailsColTotal]}>—</Text>
+                    </View>
+                )}
+
+               {/* Totals */}
+                <View style={{ alignItems: 'flex-end', marginTop: 4 }}>
+                    {/* <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+                        <Text style={[styles.totalsLabel, styles.totalsLabelCol]}>Total Before VAT</Text>
+                        <Text style={styles.totalsValue}>
+                            {formatCurrency(rfp_request.total_before_vat_amount)}
+                        </Text>
+                    </View> */}
+                    <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+                        <Text style={[styles.totalsLabel, styles.totalsLabelCol]}>Less: Downpayment</Text>
+                        <Text style={styles.totalsValue}>
+                            - {formatCurrency(rfp_request.less_down_payment_amount)}
+                        </Text>
+                    </View>
+                    {/* <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+                        <Text style={[styles.totalsLabel, styles.totalsLabelCol]}>VAT Amount</Text>
+                        <Text style={styles.totalsValue}>
+                            {formatCurrency(rfp_request.vat_amount)}
+                        </Text>
+                    </View> */}
+                    <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+                        <Text style={[styles.totalsLabel, styles.totalsLabelCol]}>Wtax</Text>
+                        <Text style={styles.totalsValue}>
+                            {formatCurrency(rfp_request.wtax_amount)}
+                        </Text>
+                    </View>
+                    <View style={styles.totalsGrandRow}>
+                        <Text style={styles.totalsGrandLabel}>Grand Total</Text>
+                        <Text style={styles.totalsGrandValue}>
+                            {currencyCode} {formatCurrency(rfp_request.grand_total_amount)}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Remarks */}
+                <View style={{ flexDirection: 'row'}}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.remarksLabel}>Remarks :</Text>
+                        <View style={styles.remarksBox}>
+                            <Text style={styles.remarksText}>{rfp_request.remarks ?? ''}</Text>
+                        </View>
+                    </View>
+                    <View style={{ flex: 1 }} />
+                </View>
 
                 {/* Footer */}
                 <View style={styles.footer} fixed>
