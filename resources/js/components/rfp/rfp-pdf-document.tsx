@@ -13,7 +13,10 @@ Font.register({
 
 const styles = StyleSheet.create({
     page: {
-        padding: '2.54cm',
+        paddingTop: '2.54cm',
+        paddingBottom: '3cm',
+        paddingLeft: '2.54cm',
+        paddingRight: '2.54cm',
         fontSize: 11,
         fontFamily: 'Arial',
         lineHeight: 1.15,
@@ -49,9 +52,10 @@ const styles = StyleSheet.create({
     },
     footer: {
         position: 'absolute',
-        bottom: 30,
-        left: '2.54cm',
-        right: '2.54cm',
+        bottom: 20,
+        left: 0,
+        right: 0,
+        paddingHorizontal: '2.54cm',
         paddingTop: 10,
         borderTop: 1,
         borderTopColor: '#000',

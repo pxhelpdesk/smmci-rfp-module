@@ -43,7 +43,14 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     <SidebarMenuButton tooltip={{ children: item.title }}>
                                         {item.icon && <item.icon />}
                                         <span>{item.title}</span>
-                                        <ChevronRight className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                                        <div className="ml-auto flex items-center gap-1">
+                                            {item.badge ? (
+                                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground">
+                                                    {item.badge}
+                                                </span>
+                                            ) : null}
+                                            <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                        </div>
                                     </SidebarMenuButton>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
@@ -62,7 +69,13 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                                         isActive={!!(subItem.href && isCurrentUrl(subItem.href))}
                                                     >
                                                         <Link href={subItem.href!} prefetch>
+                                                            {subItem.icon && <subItem.icon />}
                                                             <span>{subItem.title}</span>
+                                                            {subItem.badge ? (
+                                                                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground">
+                                                                    {subItem.badge}
+                                                                </span>
+                                                            ) : null}
                                                         </Link>
                                                     </SidebarMenuSubButton>
                                                 )}
@@ -76,14 +89,24 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                         // Regular item without sub-items
                         <SidebarMenuItem key={item.title}>
                             {item.isExternal ? (
-                                <SidebarMenuButton
-                                    asChild
-                                    tooltip={{ children: item.title }}
-                                >
+                                <SidebarMenuButton asChild tooltip={{ children: item.title }}>
                                     <a href={item.href as string}>
                                         {item.icon && <item.icon />}
                                         <span>{item.title}</span>
                                     </a>
+                                </SidebarMenuButton>
+                            ) : item.onClick ? (
+                                <SidebarMenuButton
+                                    onClick={item.onClick}
+                                    tooltip={{ children: item.title }}
+                                >
+                                    {item.icon && <item.icon />}
+                                    <span>{item.title}</span>
+                                    {item.badge ? (
+                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground">
+                                            {item.badge}
+                                        </span>
+                                    ) : null}
                                 </SidebarMenuButton>
                             ) : (
                                 <SidebarMenuButton
@@ -94,6 +117,11 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     <Link href={item.href!} prefetch>
                                         {item.icon && <item.icon />}
                                         <span>{item.title}</span>
+                                        {item.badge ? (
+                                            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground">
+                                                {item.badge}
+                                            </span>
+                                        ) : null}
                                     </Link>
                                 </SidebarMenuButton>
                             )}

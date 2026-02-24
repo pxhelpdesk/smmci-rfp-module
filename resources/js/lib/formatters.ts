@@ -1,4 +1,4 @@
-// lib/formatters.ts
+// js/lib/formatters.ts
 
 // Format number to currency with commas and 2 decimals
 export function formatAmount(

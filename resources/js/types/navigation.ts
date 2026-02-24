@@ -14,5 +14,6 @@ export type NavItem = {
     isActive?: boolean;
     items?: NavItem[];
     onClick?: () => void;
-    isExternal?: boolean
+    isExternal?: boolean;
+    badge?: number;
 };
