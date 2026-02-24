@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#000000',
         borderBottomStyle: 'dashed',
-        marginBottom: 3,
+        marginBottom: 5,
     },
 
     // ── Details Header ───────────────────────────────────────────
@@ -190,15 +190,6 @@ const styles = StyleSheet.create({
     },
 
     // ── Totals ───────────────────────────────────────────────────
-    totalsSection: {
-        marginTop: 4,
-        alignItems: 'flex-end',
-    },
-    totalsRow: {
-        flexDirection: 'row',
-        marginBottom: 2,
-        width: 100,
-    },
     totalsLabelCol: {
         width: 90,
         textAlign: 'right',
@@ -231,9 +222,6 @@ const styles = StyleSheet.create({
         textAlign: 'right',
     },
     // ── Remarks ───────────────────────────────────────────────────
-    remarksSection: {
-        marginTop: 10,
-    },
     remarksLabel: {
         fontSize: 8.5,
         fontWeight: 'bold',
@@ -247,24 +235,6 @@ const styles = StyleSheet.create({
     },
     remarksText: {
         fontSize: 8.5,
-    },
-
-    // ── Footer ───────────────────────────────────────────────────
-    footer: {
-        position: 'absolute',
-        bottom: 20,
-        left: 42,
-        right: 42,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderTopWidth: 0.5,
-        borderTopColor: '#cccccc',
-        paddingTop: 6,
-    },
-    footerText: {
-        fontSize: 8,
-        color: '#555555',
     },
 });
 
@@ -466,18 +436,6 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                         </View>
                     </View>
                     <View style={{ flex: 1 }} />
-                </View>
-
-                {/* Footer */}
-                <View style={styles.footer} fixed>
-                    <Text style={styles.footerText}>Generated: {generatedAt}</Text>
-                    <Text
-                        style={styles.footerText}
-                        render={({ pageNumber, totalPages }) =>
-                            `Page ${pageNumber} of ${totalPages}`
-                        }
-                        fixed
-                    />
                 </View>
 
             </Page>

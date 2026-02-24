@@ -16,9 +16,12 @@ class RfpController extends Controller
     public function index()
     {
         $rfp_requests = RfpRequest::with([
-            'currency:id,code,name',
-            'usage:id,code,description',
-            'details'
+            'currency',
+            'usage.category',
+            'details',
+            'signs.user.department',
+            'generatedBy',
+            'supplier',
         ])->latest()->paginate(15);
 
         return Inertia::render('rfp/requests/index', [
