@@ -170,6 +170,9 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
         label: `${c.code} - ${c.name}`,
     }));
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return (
         <AppLayout
             breadcrumbs={[
@@ -202,12 +205,13 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                     </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Basic Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
+                {/* Row 1: Basic Information (3 cols) */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Basic Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid md:grid-cols-3 gap-3">
                             <div className="space-y-1.5">
                                 <Label htmlFor="area" className="text-sm">Area</Label>
                                 <SelectUI value={data.area} onValueChange={(v) => setData('area', v as any)}>
@@ -264,9 +268,13 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                 />
                                 {errors.rfp_usage_id && <p className="text-xs text-destructive">{errors.rfp_usage_id}</p>}
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </CardContent>
+                </Card>
 
+                {/* Row 2: Payee Information (col 1) + Document Information (col 2) */}
+                <div className="grid gap-4 md:grid-cols-2">
+                    {/* Payee Information */}
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">Payee Information</CardTitle>
@@ -322,6 +330,22 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                             className="h-9"
                                         />
                                     </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label className="text-sm">Currency</Label>
+                                        <Select
+                                            options={currencyOptions}
+                                            value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
+                                            onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
+                                            placeholder="Select currency..."
+                                            className="text-sm"
+                                            styles={{
+                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                                menu: (base) => ({ ...base, fontSize: '14px' }),
+                                            }}
+                                        />
+                                        {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
+                                    </div>
                                 </>
                             ) : (
                                 <>
@@ -346,23 +370,35 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                         />
                                         {errors.employee_name && <p className="text-xs text-destructive">{errors.employee_name}</p>}
                                     </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label className="text-sm">Currency</Label>
+                                        <Select
+                                            options={currencyOptions}
+                                            value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
+                                            onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
+                                            placeholder="Select currency..."
+                                            className="text-sm"
+                                            styles={{
+                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                                menu: (base) => ({ ...base, fontSize: '14px' }),
+                                            }}
+                                        />
+                                        {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
+                                    </div>
                                 </>
                             )}
                         </CardContent>
                     </Card>
-                </div>
 
-                <Card>
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">Document Information</CardTitle>
-                            <p className="text-xs text-muted-foreground">
-                                Date: {formatDate(new Date().toISOString())}
-                            </p>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-4 gap-3">
+                    {/* Document Information */}
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-base">Document Information</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
                             <div className="space-y-1.5">
                                 <Label htmlFor="ap_no" className="text-sm">AP Number</Label>
                                 <Input
@@ -373,16 +409,27 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                 />
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label htmlFor="due_date" className="text-sm">Due Date</Label>
-                                <DateTimePicker
-                                    value={data.due_date}
-                                    onValueChange={(date) => setData('due_date', date)}
-                                    minDate={new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1)}
-                                    placeholder="Select due date"
-                                    showTime={false}
-                                />
-                                {errors.due_date && <p className="text-xs text-destructive">{errors.due_date}</p>}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label className="text-sm">Prepared Date</Label>
+                                    <Input
+                                        value={formatDate(new Date().toISOString())}
+                                        className="h-9"
+                                        readOnly
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="due_date" className="text-sm">Due Date</Label>
+                                    <DateTimePicker
+                                        value={data.due_date}
+                                        onValueChange={(date) => setData('due_date', date)}
+                                        minDate={today}
+                                        placeholder="Select due date"
+                                        showTime={false}
+                                    />
+                                    {errors.due_date && <p className="text-xs text-destructive">{errors.due_date}</p>}
+                                </div>
                             </div>
 
                             <div className="space-y-1.5">
@@ -404,10 +451,11 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     className="h-9"
                                 />
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
+                {/* Details */}
                 <Card>
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
@@ -498,28 +546,13 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                     </CardContent>
                 </Card>
 
-                <Card>
+                {/* Financial Details */}
+                {/* <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Financial Details</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <div className="grid md:grid-cols-3 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Currency</Label>
-                                <Select
-                                    options={currencyOptions}
-                                    value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
-                                    onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
-                                    placeholder="Select currency..."
-                                    className="text-sm"
-                                    styles={{
-                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                        menu: (base) => ({ ...base, fontSize: '14px' }),
-                                    }}
-                                />
-                                {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
-                            </div>
-
                             <div className="space-y-1.5">
                                 <Label htmlFor="total_before_vat_amount" className="text-sm">Total Before VAT</Label>
                                 <InputAmount
@@ -538,9 +571,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     className="h-9"
                                 />
                             </div>
-                        </div>
 
-                        <div className="grid md:grid-cols-4 gap-3">
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Vatable</Label>
                                 <div className="flex items-center gap-3 h-9">
@@ -562,7 +593,9 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     )}
                                 </div>
                             </div>
+                        </div>
 
+                        <div className="grid md:grid-cols-3 gap-3">
                             <div className="space-y-1.5">
                                 <Label htmlFor="vat_amount" className="text-sm">VAT Amount</Label>
                                 <Input
@@ -594,7 +627,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                             </div>
                         </div>
                     </CardContent>
-                </Card>
+                </Card> */}
 
                 <Card>
                     <CardHeader className="pb-3">
