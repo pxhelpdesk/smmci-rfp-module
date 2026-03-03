@@ -48,6 +48,8 @@ type Props = {
     currencies: RfpCurrency[];
 };
 
+const Req = () => <span className="text-destructive ml-0.5">*</span>;
+
 export default function Edit({ rfp_request, categories, currencies }: Props) {
     const [accounts, setAccounts] = useState<SapAccountOption[]>([]);
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
@@ -112,8 +114,10 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         due_date: string;
         rr_no: string;
         po_no: string;
-        area: 'Head Office' | 'Mine Site';
-        payee_type: 'Employee' | 'Supplier';
+        swp_pr_no: string;
+        contract_no: string;
+        area: 'head_office' | 'mine_site';
+        payee_type: 'employee' | 'supplier';
         employee_code: string;
         employee_name: string;
         supplier_code: string | null;
@@ -137,6 +141,8 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         due_date: rfp_request.due_date || '',
         rr_no: rfp_request.rr_no || '',
         po_no: rfp_request.po_no || '',
+        swp_pr_no: rfp_request.swp_pr_no || '',
+        contract_no: rfp_request.contract_no || '',
         area: rfp_request.area,
         payee_type: rfp_request.payee_type,
         employee_code: rfp_request.employee_code || '',
@@ -171,18 +177,12 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
             }],
     });
 
-    // Detect changes when form data changes
     useEffect(() => {
         const changes: ChangeLog[] = [];
 
         const formatDisplayValue = (field: string, value: any) => {
             if (!value) return 'N/A';
-
-            // Format dates to YYYY-MM-DD only
-            if (field === 'due_date') {
-                return value.split('T')[0];
-            }
-
+            if (field === 'due_date') return value.split('T')[0];
             return value;
         };
 
@@ -192,12 +192,8 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
 
             // Special handling for dates - normalize to YYYY-MM-DD format
             if (field === 'due_date') {
-                if (oldVal) {
-                    oldStr = oldVal.split('T')[0];
-                }
-                if (newVal) {
-                    newStr = newVal.split('T')[0];
-                }
+                if (oldVal) oldStr = oldVal.split('T')[0];
+                if (newVal) newStr = newVal.split('T')[0];
             }
 
             if (oldStr !== newStr) {
@@ -213,6 +209,8 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         checkField('due_date', 'Due Date', rfp_request.due_date, data.due_date);
         checkField('rr_no', 'RR Number', rfp_request.rr_no, data.rr_no);
         checkField('po_no', 'PO Number', rfp_request.po_no, data.po_no);
+        checkField('swp_pr_no', 'SWP PR Number', rfp_request.swp_pr_no, data.swp_pr_no);
+        checkField('contract_no', 'Contract Number', rfp_request.contract_no, data.contract_no);
         checkField('area', 'Area', rfp_request.area, data.area);
         checkField('employee_code', 'Employee Code', rfp_request.employee_code, data.employee_code);
         checkField('employee_name', 'Employee Name', rfp_request.employee_name, data.employee_name);
@@ -249,7 +247,6 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
         if (detectedChanges.length > 0) {
             setShowLogDialog(true);
         } else {
@@ -329,21 +326,21 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                     <CardContent>
                         <div className="grid md:grid-cols-3 gap-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="area" className="text-sm">Area</Label>
+                                <Label htmlFor="area" className="text-sm">Area <Req /></Label>
                                 <SelectUI value={data.area} onValueChange={(v) => setData('area', v as any)}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Head Office">Head Office</SelectItem>
-                                        <SelectItem value="Mine Site">Mine Site</SelectItem>
+                                        <SelectItem value="head_office">Head Office</SelectItem>
+                                        <SelectItem value="mine_site">Mine Site</SelectItem>
                                     </SelectContent>
                                 </SelectUI>
                                 {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-sm">Category</Label>
+                                <Label className="text-sm">Category <Req /></Label>
                                 <Select
                                     options={categoryOptions}
                                     value={categoryOptions.find(o => o.value === data.rfp_category_id)}
@@ -366,7 +363,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-sm">Usage</Label>
+                                <Label className="text-sm">Usage <Req /></Label>
                                 <Select
                                     options={usageOptions}
                                     value={usageOptions.find(o => o.value === data.rfp_usage_id)}
@@ -396,23 +393,23 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="payee_type" className="text-sm">Type</Label>
+                                <Label htmlFor="payee_type" className="text-sm">Type <Req /></Label>
                                 <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)} disabled>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Employee">Employee</SelectItem>
-                                        <SelectItem value="Supplier">Supplier</SelectItem>
+                                        <SelectItem value="employee">Employee</SelectItem>
+                                        <SelectItem value="supplier">Supplier</SelectItem>
                                     </SelectContent>
                                 </SelectUI>
                                 {errors.payee_type && <p className="text-xs text-destructive">{errors.payee_type}</p>}
                             </div>
 
-                            {data.payee_type === 'Supplier' ? (
+                            {data.payee_type === 'supplier' ? (
                                 <>
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm">Supplier</Label>
+                                        <Label className="text-sm">Supplier <Req /></Label>
                                         <Select
                                             options={suppliers}
                                             value={
@@ -451,7 +448,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm">Currency</Label>
+                                        <Label className="text-sm">Currency <Req /></Label>
                                         <Select
                                             options={currencyOptions}
                                             value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
@@ -469,7 +466,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                             ) : (
                                 <>
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="employee_code" className="text-sm">Employee Code</Label>
+                                        <Label htmlFor="employee_code" className="text-sm">Employee Code <Req /></Label>
                                         <Input
                                             id="employee_code"
                                             value={data.employee_code}
@@ -480,7 +477,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="employee_name" className="text-sm">Employee Name</Label>
+                                        <Label htmlFor="employee_name" className="text-sm">Employee Name <Req /></Label>
                                         <Input
                                             id="employee_name"
                                             value={data.employee_name}
@@ -491,7 +488,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm">Currency</Label>
+                                        <Label className="text-sm">Currency <Req /></Label>
                                         <Select
                                             options={currencyOptions}
                                             value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
@@ -513,9 +510,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                     {/* Document Information */}
                     <Card>
                         <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-base">Document Information</CardTitle>
-                            </div>
+                            <CardTitle className="text-base">Document Information</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
@@ -532,14 +527,14 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm">Prepared Date</Label>
                                     <Input
-                                        value={formatDate(new Date().toISOString())}
+                                        value={formatDate(rfp_request.created_at)}
                                         className="h-9"
                                         readOnly
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="due_date" className="text-sm">Due Date</Label>
+                                    <Label htmlFor="due_date" className="text-sm">Due Date <Req /></Label>
                                     <DateTimePicker
                                         value={data.due_date}
                                         onValueChange={(date) => setData('due_date', date)}
@@ -551,24 +546,48 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label htmlFor="rr_no" className="text-sm">RR Number</Label>
-                                <Input
-                                    id="rr_no"
-                                    value={data.rr_no}
-                                    onChange={(e) => setData('rr_no', e.target.value)}
-                                    className="h-9"
-                                />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="rr_no" className="text-sm">RR Number</Label>
+                                    <Input
+                                        id="rr_no"
+                                        value={data.rr_no}
+                                        onChange={(e) => setData('rr_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="po_no" className="text-sm">PO Number</Label>
+                                    <Input
+                                        id="po_no"
+                                        value={data.po_no}
+                                        onChange={(e) => setData('po_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label htmlFor="po_no" className="text-sm">PO Number</Label>
-                                <Input
-                                    id="po_no"
-                                    value={data.po_no}
-                                    onChange={(e) => setData('po_no', e.target.value)}
-                                    className="h-9"
-                                />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR Number</Label>
+                                    <Input
+                                        id="swp_pr_no"
+                                        value={data.swp_pr_no}
+                                        onChange={(e) => setData('swp_pr_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="contract_no" className="text-sm">Contract Number</Label>
+                                    <Input
+                                        id="contract_no"
+                                        value={data.contract_no}
+                                        onChange={(e) => setData('contract_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -578,7 +597,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                 <Card>
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">Details</CardTitle>
+                            <CardTitle className="text-base">Details <Req /></CardTitle>
                             <Button type="button" size="sm" variant="outline" onClick={addDetail}>
                                 Add Detail
                             </Button>
@@ -662,6 +681,9 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                 )}
                             </div>
                         ))}
+                        {errors['details'] && (
+                            <p className="text-xs text-destructive px-3">{errors['details']}</p>
+                        )}
                     </CardContent>
                 </Card>
 

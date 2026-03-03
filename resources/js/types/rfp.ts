@@ -81,9 +81,11 @@ export type RfpRequest = {
     due_date: string;
     rr_no: string | null;
     po_no: string | null;
+    swp_pr_no: string | null;
+    contract_no: string | null;
     rfp_request_number: string;
-    area: 'Head Office' | 'Mine Site';
-    payee_type: 'Employee' | 'Supplier';
+    area: 'head_office' | 'mine_site';
+    payee_type: 'employee' | 'supplier';
     employee_code: string | null;
     employee_name: string | null;
     supplier_code: string | null;
@@ -93,7 +95,7 @@ export type RfpRequest = {
     currency?: RfpCurrency;
     rfp_usage_id: number;
     usage?: RfpUsage;
-    details_subtotal_amount: number | null;
+    subtotal_details_amount: number | null;
     total_before_vat_amount: number | null;
     less_down_payment_amount: number | null;
     is_vatable: boolean;

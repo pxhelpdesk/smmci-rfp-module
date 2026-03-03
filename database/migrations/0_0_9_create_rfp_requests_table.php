@@ -13,11 +13,11 @@ return new class extends Migration
 
             $table->string('rfp_request_number')->unique();
 
-            $table->enum('area', ['Head Office', 'Mine Site'])->default('Mine Site');
+            $table->enum('area', ['head_office', 'mine_site'])->default('mine_site');
             $table->foreignId('rfp_currency_id')->constrained('rfp_currencies');
             $table->foreignId('rfp_usage_id')->constrained('rfp_usages');
 
-            $table->enum('payee_type', ['Employee', 'Supplier'])->default('Supplier');
+            $table->enum('payee_type', ['employee', 'supplier'])->default('supplier');
             $table->string('employee_code')->nullable();
             $table->string('employee_name')->nullable();
             $table->string('supplier_code')->nullable();
@@ -28,12 +28,14 @@ return new class extends Migration
             $table->date('due_date');
             $table->string('rr_no')->nullable();
             $table->string('po_no')->nullable();
+            $table->string('swp_pr_no')->nullable();
+            $table->string('contract_no')->nullable();
 
-            $table->decimal('details_subtotal_amount', 15, 2)->nullable();
+            $table->decimal('subtotal_details_amount', 15, 2)->nullable();
             $table->decimal('total_before_vat_amount', 15, 2)->nullable();
             $table->decimal('less_down_payment_amount', 15, 2)->nullable();
-            $table->boolean('is_vatable')->default(true);
-            $table->enum('vat_type', ['inclusive', 'exclusive'])->default('inclusive');
+            $table->boolean('is_vatable')->nullable();
+            $table->enum('vat_type', ['inclusive', 'exclusive'])->nullable();
             $table->decimal('vat_amount', 15, 2)->nullable();
             $table->decimal('wtax_amount', 15, 2)->nullable();
             $table->decimal('grand_total_amount', 15, 2)->nullable();

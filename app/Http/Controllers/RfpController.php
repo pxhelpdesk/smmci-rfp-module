@@ -52,7 +52,7 @@ class RfpController extends Controller
 
         // Calculate details subtotal
         $detailsSubtotal = collect($request->details)->sum('total_amount');
-        $validated['details_subtotal_amount'] = $detailsSubtotal;
+        $validated['subtotal_details_amount'] = $detailsSubtotal;
 
         $rfpRequest = RfpRequest::create($validated);
 
@@ -108,7 +108,7 @@ class RfpController extends Controller
 
         // Calculate details subtotal
         $detailsSubtotal = collect($updateRequest->details)->sum('total_amount');
-        $validated['details_subtotal_amount'] = $detailsSubtotal;
+        $validated['subtotal_details_amount'] = $detailsSubtotal;
 
         // Track changes for logging
         $changes = $this->detectChanges($request, $validated);
@@ -165,7 +165,7 @@ class RfpController extends Controller
             'vendor_ref' => 'Vendor Reference',
             'rfp_currency_id' => 'Currency',
             'rfp_usage_id' => 'Usage',
-            'details_subtotal_amount' => 'Details Subtotal',
+            'subtotal_details_amount' => 'Details Subtotal',
             'less_down_payment_amount' => 'Down Payment',
             'wtax_amount' => 'Withholding Tax',
             'grand_total_amount' => 'Grand Total',
@@ -203,7 +203,7 @@ class RfpController extends Controller
         }
 
         // Normalize numeric fields
-        if (in_array($field, ['details_subtotal_amount', 'less_down_payment_amount', 'wtax_amount', 'grand_total_amount'])) {
+        if (in_array($field, ['subtotal_details_amount', 'less_down_payment_amount', 'wtax_amount', 'grand_total_amount'])) {
             return number_format((float) $value, 2, '.', '');
         }
 
@@ -225,7 +225,7 @@ class RfpController extends Controller
         }
 
         // Format currency fields
-        if (in_array($field, ['details_subtotal_amount', 'less_down_payment_amount', 'wtax_amount', 'grand_total_amount'])) {
+        if (in_array($field, ['subtotal_details_amount', 'less_down_payment_amount', 'wtax_amount', 'grand_total_amount'])) {
             return number_format((float) $value, 2);
         }
 

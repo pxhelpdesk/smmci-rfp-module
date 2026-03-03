@@ -34,7 +34,7 @@ const mainNavItems: NavItem[] = [
         title: 'Requests',
         href: '/rfp/requests',
         icon: FileText,
-        badge: 1
+        // badge: 1
     },
     {
         title: 'Setup',

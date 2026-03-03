@@ -32,6 +32,8 @@ type Props = {
     defaultCurrencyId?: number | null;
 };
 
+const Req = () => <span className="text-destructive ml-0.5">*</span>;
+
 export default function Create({ categories, currencies, defaultCurrencyId }: Props) {
     const [accounts, setAccounts] = useState<SapAccountOption[]>([]);
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
@@ -45,8 +47,10 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
         due_date: string;
         rr_no: string;
         po_no: string;
-        area: 'Head Office' | 'Mine Site';
-        payee_type: 'Employee' | 'Supplier';
+        swp_pr_no: string;
+        contract_no: string;
+        area: 'head_office' | 'mine_site';
+        payee_type: 'employee' | 'supplier';
         employee_code: string;
         employee_name: string;
         supplier_code: string | null;
@@ -69,8 +73,10 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
         due_date: '',
         rr_no: '',
         po_no: '',
-        area: 'Mine Site',
-        payee_type: 'Supplier',
+        swp_pr_no: '',
+        contract_no: '',
+        area: 'mine_site',
+        payee_type: 'supplier',
         employee_code: '',
         employee_name: '',
         supplier_code: null,
@@ -213,21 +219,21 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                     <CardContent>
                         <div className="grid md:grid-cols-3 gap-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="area" className="text-sm">Area</Label>
+                                <Label htmlFor="area" className="text-sm">Area <Req /></Label>
                                 <SelectUI value={data.area} onValueChange={(v) => setData('area', v as any)}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Head Office">Head Office</SelectItem>
-                                        <SelectItem value="Mine Site">Mine Site</SelectItem>
+                                        <SelectItem value="head_office">Head Office</SelectItem>
+                                        <SelectItem value="mine_site">Mine Site</SelectItem>
                                     </SelectContent>
                                 </SelectUI>
                                 {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-sm">Category</Label>
+                                <Label className="text-sm">Category <Req /></Label>
                                 <Select
                                     options={categoryOptions}
                                     value={categoryOptions.find(o => o.value === data.rfp_category_id)}
@@ -251,7 +257,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-sm">Usage</Label>
+                                <Label className="text-sm">Usage <Req /></Label>
                                 <Select
                                     options={usageOptions}
                                     value={usageOptions.find(o => o.value === data.rfp_usage_id)}
@@ -281,23 +287,23 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="payee_type" className="text-sm">Type</Label>
+                                <Label htmlFor="payee_type" className="text-sm">Type <Req /></Label>
                                 <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)} disabled>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Employee">Employee</SelectItem>
-                                        <SelectItem value="Supplier">Supplier</SelectItem>
+                                        <SelectItem value="employee">Employee</SelectItem>
+                                        <SelectItem value="supplier">Supplier</SelectItem>
                                     </SelectContent>
                                 </SelectUI>
                                 {errors.payee_type && <p className="text-xs text-destructive">{errors.payee_type}</p>}
                             </div>
 
-                            {data.payee_type === 'Supplier' ? (
+                            {data.payee_type === 'supplier' ? (
                                 <>
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm">Supplier</Label>
+                                        <Label className="text-sm">Supplier <Req /></Label>
                                         <Select
                                             options={suppliers}
                                             value={suppliers.find(s => s.value === data.supplier_code)}
@@ -332,7 +338,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm">Currency</Label>
+                                        <Label className="text-sm">Currency <Req /></Label>
                                         <Select
                                             options={currencyOptions}
                                             value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
@@ -350,7 +356,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                             ) : (
                                 <>
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="employee_code" className="text-sm">Employee Code</Label>
+                                        <Label htmlFor="employee_code" className="text-sm">Employee Code <Req /></Label>
                                         <Input
                                             id="employee_code"
                                             value={data.employee_code}
@@ -361,7 +367,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="employee_name" className="text-sm">Employee Name</Label>
+                                        <Label htmlFor="employee_name" className="text-sm">Employee Name <Req /></Label>
                                         <Input
                                             id="employee_name"
                                             value={data.employee_name}
@@ -372,7 +378,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm">Currency</Label>
+                                        <Label className="text-sm">Currency <Req /></Label>
                                         <Select
                                             options={currencyOptions}
                                             value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
@@ -394,9 +400,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                     {/* Document Information */}
                     <Card>
                         <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-base">Document Information</CardTitle>
-                            </div>
+                            <CardTitle className="text-base">Document Information</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
@@ -420,7 +424,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="due_date" className="text-sm">Due Date</Label>
+                                    <Label htmlFor="due_date" className="text-sm">Due Date <Req /></Label>
                                     <DateTimePicker
                                         value={data.due_date}
                                         onValueChange={(date) => setData('due_date', date)}
@@ -432,24 +436,48 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label htmlFor="rr_no" className="text-sm">RR Number</Label>
-                                <Input
-                                    id="rr_no"
-                                    value={data.rr_no}
-                                    onChange={(e) => setData('rr_no', e.target.value)}
-                                    className="h-9"
-                                />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="rr_no" className="text-sm">RR Number</Label>
+                                    <Input
+                                        id="rr_no"
+                                        value={data.rr_no}
+                                        onChange={(e) => setData('rr_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="po_no" className="text-sm">PO Number</Label>
+                                    <Input
+                                        id="po_no"
+                                        value={data.po_no}
+                                        onChange={(e) => setData('po_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label htmlFor="po_no" className="text-sm">PO Number</Label>
-                                <Input
-                                    id="po_no"
-                                    value={data.po_no}
-                                    onChange={(e) => setData('po_no', e.target.value)}
-                                    className="h-9"
-                                />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR Number</Label>
+                                    <Input
+                                        id="swp_pr_no"
+                                        value={data.swp_pr_no}
+                                        onChange={(e) => setData('swp_pr_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="contract_no" className="text-sm">Contract Number</Label>
+                                    <Input
+                                        id="contract_no"
+                                        value={data.contract_no}
+                                        onChange={(e) => setData('contract_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -459,7 +487,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                 <Card>
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">Details</CardTitle>
+                            <CardTitle className="text-base">Details <Req /></CardTitle>
                             <Button type="button" size="sm" variant="outline" onClick={addDetail}>
                                 Add Detail
                             </Button>
@@ -543,6 +571,9 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                 )}
                             </div>
                         ))}
+                        {errors['details'] && (
+                            <p className="text-xs text-destructive px-3">{errors['details']}</p>
+                        )}
                     </CardContent>
                 </Card>
 

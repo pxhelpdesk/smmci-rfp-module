@@ -16,15 +16,15 @@ class StoreRfpRequest extends FormRequest
     {
         return [
             'ap_no' => 'nullable|string',
-            'due_date' => 'required|date|after:today',
+            'due_date' => 'required|date|after_or_equal:today',
             'rr_no' => 'nullable|string',
             'po_no' => 'nullable|string',
-            'area' => 'required|in:Head Office,Mine Site',
-            'payee_type' => 'required|in:Employee,Supplier',
-            'employee_code' => 'nullable|string',
-            'employee_name' => 'nullable|string',
-            'supplier_code' => 'nullable|string',
-            'supplier_name' => 'nullable|string',
+            'area' => 'required|in:head_office,mine_site',
+            'payee_type' => 'required|in:employee,supplier',
+            'employee_code' => 'required_if:payee_type,employee|nullable|string',
+            'employee_name' => 'required_if:payee_type,employee|nullable|string',
+            'supplier_code' => 'required_if:payee_type,supplier|nullable|string',
+            'supplier_name' => 'required_if:payee_type,supplier|nullable|string',
             'vendor_ref' => 'nullable|string',
             'rfp_currency_id' => 'required|exists:mysql_rfp.rfp_currencies,id',
             'rfp_usage_id' => 'required|exists:mysql_rfp.rfp_usages,id',
@@ -48,10 +48,14 @@ class StoreRfpRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'due_date.after' => 'The due date must be a future date.',
+            'due_date.after_or_equal' => 'The due date must be today or a future date.',
             'due_date.required' => 'The due date is required.',
             'area.required' => 'The area is required.',
             'payee_type.required' => 'The payee type is required.',
+            'employee_code.required_if' => 'Employee code is required.',
+            'employee_name.required_if' => 'Employee name is required.',
+            'supplier_code.required_if' => 'Supplier is required.',
+            'supplier_name.required_if' => 'Supplier name is required.',
             'rfp_currency_id.required' => 'The currency is required.',
             'rfp_usage_id.required' => 'The usage is required.',
             'details.required' => 'At least one detail item is required.',

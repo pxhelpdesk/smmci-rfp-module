@@ -73,6 +73,16 @@ const statusLabels = {
     paid: 'Paid',
 };
 
+const areaLabels = {
+    head_office: 'Head Office',
+    mine_site: 'Mine Site',
+};
+
+const payeeLabels = {
+    employee: 'Employee',
+    supplier: 'Supplier',
+};
+
 export default function Show({ rfp_request, logs }: Props) {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [previewPdf, setPreviewPdf] = useState<string | null>(null);
@@ -251,7 +261,7 @@ export default function Show({ rfp_request, logs }: Props) {
                     <Badge variant="secondary" className={statusColors[rfp_request.status]}>
                         {statusLabels[rfp_request.status]}
                     </Badge>
-                    <Badge variant="outline">{rfp_request.area}</Badge>
+                    <Badge variant="outline">{areaLabels[rfp_request.area]}</Badge>
                 </div>
 
                 <Tabs defaultValue="request">
@@ -284,7 +294,7 @@ export default function Show({ rfp_request, logs }: Props) {
                                     <Separator />
                                     <div>
                                         <p className="text-xs text-muted-foreground">Area</p>
-                                        <p className="text-sm">{rfp_request.area}</p>
+                                        <p className="text-sm">{areaLabels[rfp_request.area]}</p>
                                     </div>
                                     <Separator />
                                     <div>
@@ -310,19 +320,20 @@ export default function Show({ rfp_request, logs }: Props) {
                                 <CardContent className="space-y-2.5">
                                     <div>
                                         <p className="text-xs text-muted-foreground">Type</p>
-                                        <p className="text-sm font-medium">{rfp_request.payee_type}</p>
+                                        <p className="text-sm font-medium">{payeeLabels[rfp_request.payee_type]}</p>
                                     </div>
                                     <Separator />
-                                    {rfp_request.payee_type === 'Supplier' ? (
+                                    {rfp_request.payee_type === 'supplier' ? (
                                         <>
-                                            <div>
-                                                <p className="text-xs text-muted-foreground">Supplier Code</p>
-                                                <p className="text-sm">{rfp_request.supplier_code || 'N/A'}</p>
-                                            </div>
-                                            <Separator />
-                                            <div>
-                                                <p className="text-xs text-muted-foreground">Supplier Name</p>
-                                                <p className="text-sm">{rfp_request.supplier_name || 'N/A'}</p>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">Supplier Code</p>
+                                                    <p className="text-sm">{rfp_request.supplier_code || 'N/A'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">Supplier Name</p>
+                                                    <p className="text-sm">{rfp_request.supplier_name || 'N/A'}</p>
+                                                </div>
                                             </div>
                                             {rfp_request.vendor_ref && (
                                                 <>
@@ -333,6 +344,13 @@ export default function Show({ rfp_request, logs }: Props) {
                                                     </div>
                                                 </>
                                             )}
+                                            <Separator />
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">Currency</p>
+                                                <p className="text-sm">
+                                                    {rfp_request.currency?.code} - {rfp_request.currency?.name}
+                                                </p>
+                                            </div>
                                         </>
                                     ) : (
                                         <>
@@ -345,6 +363,13 @@ export default function Show({ rfp_request, logs }: Props) {
                                                 <p className="text-xs text-muted-foreground">Employee Name</p>
                                                 <p className="text-sm">{rfp_request.employee_name || 'N/A'}</p>
                                             </div>
+                                            <Separator />
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">Currency</p>
+                                                <p className="text-sm">
+                                                    {rfp_request.currency?.code} - {rfp_request.currency?.name}
+                                                </p>
+                                            </div>
                                         </>
                                     )}
                                 </CardContent>
@@ -355,23 +380,35 @@ export default function Show({ rfp_request, logs }: Props) {
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-base">Document Information</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <CardContent className="space-y-3">
+                                <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <p className="text-xs text-muted-foreground">AP Number</p>
                                         <p className="text-sm font-medium">{rfp_request.ap_no || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground">Due Date</p>
-                                        <p className="text-sm font-medium">{formatDate(rfp_request.due_date)}</p>
+                                        <p className="text-xs text-muted-foreground">Prepared Date - Due Date</p>
+                                        <p className="text-sm font-medium">
+                                            {formatDate(rfp_request.created_at)} – {formatDate(rfp_request.due_date)}
+                                        </p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-muted-foreground">RR Number</p>
                                         <p className="text-sm font-medium">{rfp_request.rr_no || 'N/A'}</p>
                                     </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <p className="text-xs text-muted-foreground">PO Number</p>
                                         <p className="text-sm font-medium">{rfp_request.po_no || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">SWP PR Number</p>
+                                        <p className="text-sm font-medium">{rfp_request.swp_pr_no || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Contract Number</p>
+                                        <p className="text-sm font-medium">{rfp_request.contract_no || 'N/A'}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -422,64 +459,10 @@ export default function Show({ rfp_request, logs }: Props) {
                         <div className="grid gap-4 md:grid-cols-2">
                             <Card>
                                 <CardHeader className="pb-3">
-                                    <CardTitle className="text-base">Financial Summary</CardTitle>
+                                    <CardTitle className="text-base">Remarks</CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-2.5">
-                                    <div className="flex justify-between">
-                                        <p className="text-sm text-muted-foreground">Currency</p>
-                                        <p className="text-sm font-medium">
-                                            {rfp_request.currency?.code} - {rfp_request.currency?.name}
-                                        </p>
-                                    </div>
-                                    {/* <Separator />
-                                    <div className="flex justify-between">
-                                        <p className="text-sm text-muted-foreground">Total Before VAT</p>
-                                        <p className="text-sm font-medium">
-                                            {formatCurrency(rfp_request.total_before_vat_amount)}
-                                        </p>
-                                    </div>
-                                    {rfp_request.is_vatable && (
-                                        <>
-                                            <Separator />
-                                            <div className="flex justify-between">
-                                                <p className="text-sm text-muted-foreground">
-                                                    VAT ({rfp_request.vat_type})
-                                                </p>
-                                                <p className="text-sm font-medium">
-                                                    {formatCurrency(rfp_request.vat_amount)}
-                                                </p>
-                                            </div>
-                                        </>
-                                    )} */}
-                                    {/* {rfp_request.wtax_amount && Number(rfp_request.wtax_amount) > 0 && (
-                                        <> */}
-                                            <Separator />
-                                            <div className="flex justify-between">
-                                                <p className="text-sm text-muted-foreground">Less: Down Payment</p>
-                                                <p className="text-sm font-medium text-destructive">
-                                                    -{formatAmount(Number(rfp_request.less_down_payment_amount))}
-                                                </p>
-                                            </div>
-                                        {/* </>
-                                    )} */}
-                                    {/* {rfp_request.less_down_payment_amount && Number(rfp_request.less_down_payment_amount) > 0 && (
-                                        <> */}
-                                            <Separator />
-                                            <div className="flex justify-between">
-                                                <p className="text-sm text-muted-foreground">Withholding Tax</p>
-                                                <p className="text-sm font-medium">
-                                                    {formatAmount(Number(rfp_request.wtax_amount))}
-                                                </p>
-                                            </div>
-                                        {/* </>
-                                    )} */}
-                                    <Separator />
-                                    <div className="flex justify-between">
-                                        <p className="text-sm font-semibold">Grand Total</p>
-                                        <p className="text-sm font-semibold">
-                                            {formatAmount(Number(rfp_request.grand_total_amount))}
-                                        </p>
-                                    </div>
+                                <CardContent>
+                                    <p className="text-sm whitespace-pre-wrap">{rfp_request.remarks || 'N/A'}</p>
                                 </CardContent>
                             </Card>
 
@@ -511,17 +494,6 @@ export default function Show({ rfp_request, logs }: Props) {
                                 </CardContent>
                             </Card>
                         </div>
-
-                        {rfp_request.remarks && (
-                            <Card>
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-base">Remarks</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm whitespace-pre-wrap">{rfp_request.remarks}</p>
-                                </CardContent>
-                            </Card>
-                        )}
                     </TabsContent>
 
                     <TabsContent value="signatories" className="mt-4">
@@ -588,7 +560,7 @@ export default function Show({ rfp_request, logs }: Props) {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead className="w-[50px]"></TableHead>
+                                                <TableHead className="w-12.5"></TableHead>
                                                 <TableHead>User</TableHead>
                                                 <TableHead>From</TableHead>
                                                 <TableHead>To</TableHead>
@@ -670,10 +642,10 @@ export default function Show({ rfp_request, logs }: Props) {
                                                                                                 <td className="px-3 py-2 font-medium">
                                                                                                     {change.field}
                                                                                                 </td>
-                                                                                                <td className="px-3 py-2 text-muted-foreground break-words">
+                                                                                                <td className="px-3 py-2 text-muted-foreground wrap-break-word">
                                                                                                     {change.old}
                                                                                                 </td>
-                                                                                                <td className="px-3 py-2 text-primary break-words">
+                                                                                                <td className="px-3 py-2 text-primary wrap-break-word">
                                                                                                     {change.new}
                                                                                                 </td>
                                                                                             </tr>
