@@ -46,7 +46,6 @@ class RfpController extends Controller implements HasMiddleware
             'usage.category',
             'details',
             'signs.user.department',
-            'generatedBy.department',
             'preparedBy.department',
             'supplier',
         ])
@@ -95,8 +94,7 @@ class RfpController extends Controller implements HasMiddleware
             $rfpRequest->details()->createMany($request->details);
         }
 
-        return redirect()->route('rfp.requests.index')
-            ->with('success', "RFP {$rfpRequest->rfp_request_number} created successfully.");
+        return redirect()->route('rfp.requests.index')->with('success', "RFP {$rfpRequest->rfp_request_number} created successfully.");
     }
 
     public function show(RfpRequest $request)
@@ -124,7 +122,6 @@ class RfpController extends Controller implements HasMiddleware
             'usage.category',
             'details',
             'signs.user.department',
-            'generatedBy.department',
             'preparedBy.department',
             'supplier',
         ]);
@@ -193,8 +190,7 @@ class RfpController extends Controller implements HasMiddleware
             ]);
         }
 
-        return redirect()->route('rfp.requests.show', $request->id)
-            ->with('success', "RFP {$request->rfp_request_number} updated successfully.");
+        return redirect()->route('rfp.requests.show', $request->id)->with('success', "RFP {$request->rfp_request_number} updated successfully.");
     }
 
     /**
@@ -319,26 +315,5 @@ class RfpController extends Controller implements HasMiddleware
             ->get();
 
         return response()->json($usages);
-    }
-
-    public function trackPrint(RfpRequest $request)
-    {
-        $request->update([
-            'pdf_generated_at' => now(),
-            'pdf_generated_by' => auth()->id(),
-            'pdf_generation_count' => $request->pdf_generation_count + 1,
-        ]);
-
-        // Log the PDF generation action with current status
-        RfpLog::create([
-            'rfp_request_id' => $request->id,
-            'user_id' => auth()->id(),
-            'from' => $request->status,
-            'into' => $request->status,
-            'details' => 'PDF document generated',
-            'remarks' => 'PDF preview generated for printing/download',
-        ]);
-
-        return response()->json(['success' => true]);
     }
 }

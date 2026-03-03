@@ -39,9 +39,6 @@ class RfpRequest extends Model
         'grand_total_amount',
         'remarks',
         'status',
-        'pdf_generated_at',
-        'pdf_generated_by',
-        'pdf_generation_count',
     ];
 
     protected $casts = [
@@ -53,8 +50,6 @@ class RfpRequest extends Model
         'vat_amount' => 'decimal:2',
         'wtax_amount' => 'decimal:2',
         'grand_total_amount' => 'decimal:2',
-        'pdf_generated_at' => 'datetime',
-        'pdf_generation_count' => 'integer',
     ];
 
     // Relationships
@@ -95,16 +90,9 @@ class RfpRequest extends Model
         return $this->hasMany(RfpLog::class)->latest();
     }
 
-    public function generatedBy()
-    {
-        return $this->setConnection('mysql')
-            ->belongsTo(User::class, 'pdf_generated_by');
-    }
-
     public function preparedBy()
     {
-        return $this->setConnection('mysql')
-            ->belongsTo(User::class, 'prepared_by');
+        return $this->setConnection('mysql')->belongsTo(User::class, 'prepared_by');
     }
 
     public function supplier()

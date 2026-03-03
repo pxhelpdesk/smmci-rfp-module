@@ -45,10 +45,6 @@ return new class extends Migration
             $table->text('remarks')->nullable();
             $table->enum('status', ['cancelled', 'draft', 'for_approval', 'approved', 'paid'])->default('draft');
 
-            $table->timestamp('pdf_generated_at')->nullable();
-            $table->unsignedBigInteger('pdf_generated_by')->nullable();
-            $table->integer('pdf_generation_count')->default(0);
-
             $table->timestamps();
             $table->softDeletes();
         });

@@ -103,9 +103,6 @@ export type RfpRequest = {
     grand_total_amount: number | null;
     remarks: string | null;
     status: 'cancelled' | 'draft' | 'for_approval' | 'approved' | 'paid';
-    pdf_generated_at: string | null;
-    pdf_generation_count: number;
-    pdf_generated_by?: RfpUser;
     details: RfpDetail[];
     signs?: RfpSign[];
     logs?: RfpLog[];

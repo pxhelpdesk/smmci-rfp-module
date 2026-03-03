@@ -1,7 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Edit, FileCheck, Trash2, Users, Activity, Printer, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import { pdf } from '@react-pdf/renderer';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,12 +25,6 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
     Pagination,
     PaginationContent,
     PaginationEllipsis,
@@ -41,12 +34,11 @@ import {
     PaginationPrevious,
 } from '@/components/ui/pagination';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs-custom';
-import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest, RfpLog } from '@/types';
-import { toast } from 'sonner';
 import { formatDate, formatDateTime, formatAmount } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
 import { RfpBadge } from '@/components/rfp/rfp-badge';
+import { RfpPdfPreviewDialog } from '@/components/rfp/rfp-pdf-preview-dialog';
 
 type Props = {
     rfp_request: RfpRequest;
@@ -61,8 +53,8 @@ type Props = {
 
 export default function Show({ rfp_request, logs }: Props) {
     const [deleteOpen, setDeleteOpen] = useState(false);
-    const [previewPdf, setPreviewPdf] = useState<string | null>(null);
     const [expandedLogIds, setExpandedLogIds] = useState<Set<number>>(new Set());
+    const [previewPdf, setPreviewPdf] = useState(false);
 
     const handleDelete = () => {
         router.delete(`/rfp/requests/${rfp_request.id}`, {
@@ -72,39 +64,12 @@ export default function Show({ rfp_request, logs }: Props) {
         });
     };
 
-    const handlePrint = async () => {
-        toast.loading('Generating PDF...', { id: 'print-toast' });
-
-        try {
-            const blob = await pdf(<RfpPdfDocument rfp_request={rfp_request} />).toBlob();
-            const url = URL.createObjectURL(blob);
-
-            // Track PDF generation
-            await fetch(`/rfp/requests/${rfp_request.id}/track-print`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-            });
-
-            setPreviewPdf(url);
-
-            toast.success('PDF ready', { id: 'print-toast' });
-
-            // Reload to show updated print info
-            setTimeout(() => router.reload({ only: ['rfp_request'] }), 1000);
-        } catch (error) {
-            console.error('PDF generation failed:', error);
-            toast.error('Failed to generate PDF', { id: 'print-toast' });
-        }
+    const handlePrint = () => {
+        setPreviewPdf(true);
     };
 
     const handleClosePdf = () => {
-        if (previewPdf) {
-            URL.revokeObjectURL(previewPdf);
-        }
-        setPreviewPdf(null);
+        setPreviewPdf(false);
     };
 
     const toggleLogExpand = (logId: number) => {
@@ -484,17 +449,6 @@ export default function Show({ rfp_request, logs }: Props) {
                                         <p className="text-xs text-muted-foreground">Last Updated</p>
                                         <p className="text-sm">{formatDateTime(rfp_request.updated_at)}</p>
                                     </div>
-                                    {rfp_request.pdf_generated_at && (
-                                        <>
-                                            <Separator />
-                                            <div>
-                                                <p className="text-xs text-muted-foreground">PDF Generated Count</p>
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    Generated {rfp_request.pdf_generation_count} {rfp_request.pdf_generation_count === 1 ? 'time' : 'times'}
-                                                </p>
-                                            </div>
-                                        </>
-                                    )}
                                 </CardContent>
                             </Card>
                         </div>
@@ -717,33 +671,11 @@ export default function Show({ rfp_request, logs }: Props) {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* PDF Preview Dialog */}
-            <Dialog open={!!previewPdf} onOpenChange={handleClosePdf}>
-                <DialogContent
-                    className="flex flex-col p-0 gap-0"
-                    style={{
-                        maxWidth: '90vw',
-                        width: '90vw',
-                        height: '95vh',
-                        margin: 'auto'
-                    }}
-                >
-                    <DialogHeader className="px-6 py-3 border-b shrink-0">
-                        <DialogTitle className="text-lg">
-                            {rfp_request.rfp_request_number}
-                        </DialogTitle>
-                    </DialogHeader>
-                    {previewPdf && (
-                        <div className="flex-1 overflow-hidden">
-                            <iframe
-                                src={previewPdf}
-                                className="w-full h-full border-0"
-                                title={rfp_request.rfp_request_number}
-                            />
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+            <RfpPdfPreviewDialog
+                rfp_request={rfp_request}
+                open={previewPdf}
+                onClose={handleClosePdf}
+            />
         </AppLayout>
     );
 }

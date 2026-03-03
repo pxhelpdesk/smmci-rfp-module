@@ -47,10 +47,6 @@ Route::prefix('rfp')->group(function () {
         Route::get('usages/category/{categoryId}', [RfpController::class, 'getUsagesByCategory'])
             ->name('rfp.usages.by-category');
 
-        // Track print action
-        Route::post('requests/{request}/track-print', [RfpController::class, 'trackPrint'])
-            ->name('rfp.requests.track-print');
-
         // Categories
         Route::resource('categories', RfpCategoryController::class)->names([
             'index' => 'rfp.categories.index',

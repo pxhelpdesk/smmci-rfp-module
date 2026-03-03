@@ -26,7 +26,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Dashboard',
-        href: '/dashboard',
+        href: '/rfp/dashboard',
         icon: LayoutGrid,
     },
     {
@@ -87,7 +87,7 @@ export function AppSidebar() {
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton size="lg" asChild>
-                                <Link href="/dashboard" prefetch>
+                                <Link href="/rfp/dashboard" prefetch>
                                     <AppLogo />
                                 </Link>
                             </SidebarMenuButton>

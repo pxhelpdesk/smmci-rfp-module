@@ -2,7 +2,6 @@
 import { Link, router, Head } from '@inertiajs/react';
 import { FileText, MoreVertical, Pencil, Plus, Search, Trash2, Printer } from 'lucide-react';
 import { useState } from 'react';
-import { pdf } from '@react-pdf/renderer';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -26,12 +25,6 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -47,11 +40,11 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
-import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest } from '@/types';
 import { formatDate, formatTime } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
 import { RfpBadge } from '@/components/rfp/rfp-badge';
+import { RfpPdfPreviewDialog } from '@/components/rfp/rfp-pdf-preview-dialog';
 
 type Props = {
     rfp_requests: {
@@ -67,7 +60,6 @@ export default function Index({ rfp_requests }: Props) {
     const [search, setSearch] = useState('');
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [previewPdf, setPreviewPdf] = useState<string | null>(null);
-    const [previewRfp, setPreviewRfp] = useState<RfpRequest | null>(null);
 
     const handleDelete = () => {
         if (deleteId) {
@@ -82,37 +74,13 @@ export default function Index({ rfp_requests }: Props) {
         }
     };
 
-    const handlePrint = async (rfp_request: RfpRequest) => {
-        toast.loading('Generating PDF...', { id: 'print-toast' });
+    const [previewRfp, setPreviewRfp] = useState<RfpRequest | null>(null);
 
-        try {
-            const blob = await pdf(<RfpPdfDocument rfp_request={rfp_request} />).toBlob();
-            const url = URL.createObjectURL(blob);
-
-            // Track PDF generation
-            await fetch(`/rfp/requests/${rfp_request.id}/track-print`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-            });
-
-            setPreviewPdf(url);
-            setPreviewRfp(rfp_request);
-
-            toast.success('PDF ready', { id: 'print-toast' });
-        } catch (error) {
-            console.error('PDF generation failed:', error);
-            toast.error('Failed to generate PDF', { id: 'print-toast' });
-        }
+    const handlePrint = (rfp_request: RfpRequest) => {
+        setPreviewRfp(rfp_request);
     };
 
     const handleClosePdf = () => {
-        if (previewPdf) {
-            URL.revokeObjectURL(previewPdf);
-        }
-        setPreviewPdf(null);
         setPreviewRfp(null);
     };
 
@@ -393,32 +361,11 @@ export default function Index({ rfp_requests }: Props) {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <Dialog open={!!previewPdf} onOpenChange={handleClosePdf}>
-                <DialogContent
-                    className="flex flex-col p-0 gap-0"
-                    style={{
-                        maxWidth: '90vw',
-                        width: '90vw',
-                        height: '95vh',
-                        margin: 'auto'
-                    }}
-                >
-                    <DialogHeader className="px-6 py-3 border-b shrink-0">
-                        <DialogTitle className="text-lg">
-                            {previewRfp?.rfp_request_number || 'PDF Preview'}
-                        </DialogTitle>
-                    </DialogHeader>
-                    {previewPdf && (
-                        <div className="flex-1 overflow-hidden">
-                            <iframe
-                                src={previewPdf}
-                                className="w-full h-full border-0"
-                                title={previewRfp?.rfp_request_number || 'PDF Preview'}
-                            />
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+            <RfpPdfPreviewDialog
+                rfp_request={previewRfp}
+                open={!!previewRfp}
+                onClose={handleClosePdf}
+            />
         </AppLayout>
     );
 }

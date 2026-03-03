@@ -1,7 +1,4 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import { pdf } from '@react-pdf/renderer';
-import { Download } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import type { RfpRequest } from '@/types';
 
 // ── Local PDF-safe formatters ─────────────────────────────────────────────────
@@ -495,28 +492,5 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                 </Text>
             </Page>
         </Document>
-    );
-}
-
-type DownloadButtonProps = {
-    rfp_request: RfpRequest;
-};
-
-export function RfpPdfDownloadButton({ rfp_request }: DownloadButtonProps) {
-    const handleDownload = async () => {
-        const blob = await pdf(<RfpPdfDocument rfp_request={rfp_request} />).toBlob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${rfp_request.rfp_request_number}.pdf`;
-        link.click();
-        URL.revokeObjectURL(url);
-    };
-
-    return (
-        <Button onClick={handleDownload} variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Download PDF
-        </Button>
     );
 }
