@@ -412,9 +412,9 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <CardTitle className="text-base">Details</CardTitle>
-                            {/* <Button type="button" size="sm" variant="outline" onClick={addDetail}>
+                            <Button type="button" size="sm" variant="outline" onClick={addDetail}>
                                 Add Detail
-                            </Button> */}
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
@@ -458,7 +458,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     /> */}
                                     <div className="space-y-1">
                                         <Input
-                                            // placeholder="Description"
+                                            placeholder="Input here"
                                             value={detail.description || ''}
                                             onChange={(e) => updateDetail(index, 'description', e.target.value)}
                                             className="h-9"
@@ -503,8 +503,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                         <CardTitle className="text-base">Financial Details</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        {/* <div className="grid md:grid-cols-3 gap-3"> */}
-                        <div className="grid md:grid-cols-2 gap-3">
+                        <div className="grid md:grid-cols-3 gap-3">
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Currency</Label>
                                 <Select
@@ -521,7 +520,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                 {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
                             </div>
 
-                            {/* <div className="space-y-1.5">
+                            <div className="space-y-1.5">
                                 <Label htmlFor="total_before_vat_amount" className="text-sm">Total Before VAT</Label>
                                 <InputAmount
                                     value={data.total_before_vat_amount || undefined}
@@ -529,7 +528,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     className="h-9"
                                 />
                                 {errors.total_before_vat_amount && <p className="text-xs text-destructive">{errors.total_before_vat_amount}</p>}
-                            </div> */}
+                            </div>
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="less_down_payment_amount" className="text-sm">Down Payment</Label>
@@ -541,9 +540,8 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                             </div>
                         </div>
 
-                        {/* <div className="grid md:grid-cols-4 gap-3"> */}
-                        <div className="grid md:grid-cols-2 gap-3">
-                            {/* <div className="space-y-1.5">
+                        <div className="grid md:grid-cols-4 gap-3">
+                            <div className="space-y-1.5">
                                 <Label className="text-sm">Vatable</Label>
                                 <div className="flex items-center gap-3 h-9">
                                     <Checkbox
@@ -575,7 +573,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     onChange={(e) => setData('vat_amount', e.target.value)}
                                     className="h-9"
                                 />
-                            </div> */}
+                            </div>
 
                             <div className="space-y-1.5">
                                 <Label htmlFor="wtax_amount" className="text-sm">Withholding Tax</Label>

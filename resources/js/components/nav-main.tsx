@@ -45,7 +45,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                         <span>{item.title}</span>
                                         <div className="ml-auto flex items-center gap-1">
                                             {item.badge ? (
-                                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground">
+                                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-800 px-1 text-[11px] font-medium text-white">
                                                     {item.badge}
                                                 </span>
                                             ) : null}
@@ -72,7 +72,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                                             {subItem.icon && <subItem.icon />}
                                                             <span>{subItem.title}</span>
                                                             {subItem.badge ? (
-                                                                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground">
+                                                                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-800 px-1 text-[11px] font-medium text-white">
                                                                     {subItem.badge}
                                                                 </span>
                                                             ) : null}
@@ -103,7 +103,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     {item.icon && <item.icon />}
                                     <span>{item.title}</span>
                                     {item.badge ? (
-                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground">
+                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-800 px-1 text-[11px] font-medium text-white">
                                             {item.badge}
                                         </span>
                                     ) : null}
@@ -118,7 +118,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                         {item.icon && <item.icon />}
                                         <span>{item.title}</span>
                                         {item.badge ? (
-                                            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground">
+                                            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-800 px-1 text-[11px] font-medium text-white">
                                                 {item.badge}
                                             </span>
                                         ) : null}

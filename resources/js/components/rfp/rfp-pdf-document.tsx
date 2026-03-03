@@ -3,7 +3,6 @@ import { pdf } from '@react-pdf/renderer';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { RfpRequest } from '@/types';
-import { formatDate, formatDateTime } from '@/lib/formatters';
 
 Font.register({
     family: 'Arial',
@@ -13,10 +12,50 @@ Font.register({
     ]
 });
 
+// ── Local PDF-safe formatters ─────────────────────────────────────────────────
+
+function pdfFormatDate(dateString: string | null | undefined): string {
+    if (!dateString) return 'N/A';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return 'N/A';
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+}
+
+function pdfFormatDateTime(dateString: string | null | undefined): string {
+    if (!dateString) return 'N/A';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return 'N/A';
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const hh = String(hours).padStart(2, '0');
+    return `${mm}/${dd}/${yyyy} ${hh}:${minutes}:${seconds} ${ampm}`;
+}
+
+function pdfFormatAmount(amount: number | null | undefined, prefix?: string): string {
+    if (amount === null || amount === undefined) return '0.00';
+    const fixed = Math.abs(amount).toFixed(2);
+    const [intPart, decPart] = fixed.split('.');
+    const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const formatted = `${withCommas}.${decPart}`;
+    const sign = amount < 0 ? '-' : '';
+    return `${sign}${prefix ?? ''}${formatted}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
     page: {
         paddingTop: 42,
-        paddingBottom: 60,
+        paddingBottom: 80,
         paddingLeft: 42,
         paddingRight: 42,
         fontSize: 11,
@@ -167,7 +206,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         borderBottomWidth: 0.5,
         borderBottomColor: '#cccccc',
-        paddingVertical: 4,
+        paddingVertical: 8,
         paddingHorizontal: 6,
         minHeight: 20,
     },
@@ -189,38 +228,6 @@ const styles = StyleSheet.create({
         borderBottomColor: '#000000',
     },
 
-    // ── Totals ───────────────────────────────────────────────────
-    totalsLabelCol: {
-        width: 90,
-        textAlign: 'right',
-        paddingRight: 8,
-    },
-    totalsLabel: {
-        fontSize: 7.5,
-        fontWeight: 'bold',
-    },
-    totalsValue: {
-        fontSize: 7.5,
-        width: 100,
-        textAlign: 'right',
-    },
-    totalsGrandRow: {
-        flexDirection: 'row',
-        marginTop: 2,
-    },
-    totalsGrandLabel: {
-        fontSize: 8,
-        fontWeight: 'bold',
-        width: 90,
-        textAlign: 'right',
-        paddingRight: 8,
-    },
-    totalsGrandValue: {
-        fontSize: 8,
-        fontWeight: 'bold',
-        width: 100,
-        textAlign: 'right',
-    },
     // ── Remarks ───────────────────────────────────────────────────
     remarksLabel: {
         fontSize: 8.5,
@@ -236,22 +243,28 @@ const styles = StyleSheet.create({
     remarksText: {
         fontSize: 8.5,
     },
+
+    // ── Footer ────────────────────────────────────────────────
+    footerDivider: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#000000',
+        borderBottomStyle: 'dashed',
+        position: 'absolute',
+        bottom: 40,
+        left: 42,
+        right: 42,
+    },
 });
 
 const LOGO_URL = '/storage/images/logos/SMMCI_Logo_icon-text.png';
-
-function formatCurrency(amount: number | null): string {
-    if (amount === null || amount === undefined) return '0.00';
-    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 type Props = {
     rfp_request: RfpRequest;
 };
 
 export function RfpPdfDocument({ rfp_request }: Props) {
-    const generatedAt = formatDateTime(new Date().toISOString());
     const currencyCode = rfp_request.currency?.code ?? '';
+    const generatedAt = pdfFormatDateTime(new Date().toISOString());
 
     return (
         <Document>
@@ -322,14 +335,14 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                             <Text style={styles.infoLabelRight}>Date</Text>
                             <Text style={styles.infoColon}>:</Text>
                             <Text style={styles.infoValueRight}>
-                                {rfp_request.created_at ? formatDate(rfp_request.created_at) : '—'}
+                                {pdfFormatDate(rfp_request.created_at)}
                             </Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabelRight}>Due Date</Text>
                             <Text style={styles.infoColon}>:</Text>
                             <Text style={styles.infoValueRight}>
-                                {rfp_request.due_date ? formatDate(rfp_request.due_date) : '—'}
+                                {pdfFormatDate(rfp_request.due_date)}
                             </Text>
                         </View>
                         <View style={styles.infoRow}>
@@ -382,7 +395,7 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                                 {detail.description ?? '—'}
                             </Text>
                             <Text style={[styles.detailsTableTextRight, styles.detailsColTotal]}>
-                                {formatCurrency(detail.total_amount)}
+                                {pdfFormatAmount(detail.total_amount)}
                             </Text>
                         </View>
                     ))
@@ -393,42 +406,8 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                     </View>
                 )}
 
-               {/* Totals */}
-                <View style={{ alignItems: 'flex-end', marginTop: 4 }}>
-                    {/* <View style={{ flexDirection: 'row', marginBottom: 2 }}>
-                        <Text style={[styles.totalsLabel, styles.totalsLabelCol]}>Total Before VAT</Text>
-                        <Text style={styles.totalsValue}>
-                            {formatCurrency(rfp_request.total_before_vat_amount)}
-                        </Text>
-                    </View> */}
-                    <View style={{ flexDirection: 'row', marginBottom: 2 }}>
-                        <Text style={[styles.totalsLabel, styles.totalsLabelCol]}>Less: Downpayment</Text>
-                        <Text style={styles.totalsValue}>
-                            - {formatCurrency(rfp_request.less_down_payment_amount)}
-                        </Text>
-                    </View>
-                    {/* <View style={{ flexDirection: 'row', marginBottom: 2 }}>
-                        <Text style={[styles.totalsLabel, styles.totalsLabelCol]}>VAT Amount</Text>
-                        <Text style={styles.totalsValue}>
-                            {formatCurrency(rfp_request.vat_amount)}
-                        </Text>
-                    </View> */}
-                    <View style={{ flexDirection: 'row', marginBottom: 2 }}>
-                        <Text style={[styles.totalsLabel, styles.totalsLabelCol]}>Wtax</Text>
-                        <Text style={styles.totalsValue}>
-                            {formatCurrency(rfp_request.wtax_amount)}
-                        </Text>
-                    </View>
-                    <View style={styles.totalsGrandRow}>
-                        <Text style={styles.totalsGrandLabel}>Grand Total</Text>
-                        <Text style={styles.totalsGrandValue}>
-                            {currencyCode} {formatCurrency(rfp_request.grand_total_amount)}
-                        </Text>
-                    </View>
-                </View>
-
                 {/* Remarks */}
-                <View style={{ flexDirection: 'row'}}>
+                <View style={{ flexDirection: 'row', marginTop: 12 }}>
                     <View style={{ flex: 1 }}>
                         <Text style={styles.remarksLabel}>Remarks :</Text>
                         <View style={styles.remarksBox}>
@@ -438,6 +417,8 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                     <View style={{ flex: 1 }} />
                 </View>
 
+                {/* Footer */}
+                <View style={styles.footerDivider} fixed />
             </Page>
         </Document>
     );
