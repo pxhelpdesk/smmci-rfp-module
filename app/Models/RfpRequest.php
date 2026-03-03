@@ -12,6 +12,7 @@ class RfpRequest extends Model
     protected $connection = 'mysql_rfp';
 
     protected $fillable = [
+        'prepared_by',
         'ap_no',
         'due_date',
         'rr_no',
@@ -98,6 +99,12 @@ class RfpRequest extends Model
     {
         return $this->setConnection('mysql')
             ->belongsTo(User::class, 'pdf_generated_by');
+    }
+
+    public function preparedBy()
+    {
+        return $this->setConnection('mysql')
+            ->belongsTo(User::class, 'prepared_by');
     }
 
     public function supplier()

@@ -38,11 +38,20 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
 import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest } from '@/types';
 import { formatDate, formatTime } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
+import { RfpBadge } from '@/components/rfp/rfp-badge';
 
 type Props = {
     rfp_requests: {
@@ -52,32 +61,6 @@ type Props = {
         per_page: number;
         total: number;
     };
-};
-
-const statusColors = {
-    cancelled: 'bg-red-100 text-red-800',
-    draft: 'bg-gray-100 text-gray-800',
-    for_approval: 'bg-yellow-100 text-yellow-800',
-    approved: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-};
-
-const statusLabels = {
-    cancelled: 'Cancelled',
-    draft: 'Draft',
-    for_approval: 'For Approval',
-    approved: 'Approved',
-    paid: 'Paid',
-};
-
-const areaLabels: Record<RfpRequest['area'], string> = {
-    head_office: 'Head Office',
-    mine_site: 'Mine Site',
-};
-
-const payeeLabels: Record<RfpRequest['payee_type'], string> = {
-    employee: 'Employee',
-    supplier: 'Supplier',
 };
 
 export default function Index({ rfp_requests }: Props) {
@@ -187,8 +170,9 @@ export default function Index({ rfp_requests }: Props) {
                             <TableRow>
                                 <TableHead className="w-32.5">RFP No.</TableHead>
                                 <TableHead>Area</TableHead>
+                                <TableHead>Requestor</TableHead>
                                 <TableHead>Payee</TableHead>
-                                <TableHead>Prepared Date</TableHead>
+                                <TableHead>Prepared</TableHead>
                                 <TableHead>Due Date</TableHead>
                                 <TableHead>Currency</TableHead>
                                 <TableHead>Status</TableHead>
@@ -216,13 +200,19 @@ export default function Index({ rfp_requests }: Props) {
                                             </Link>
                                         </TableCell>
                                         <TableCell>
-                                            <span className="text-sm">{areaLabels[rfp_request.area]}</span>
+                                            <RfpBadge type="area" value={rfp_request.area} />
                                         </TableCell>
                                         <TableCell>
                                             <div>
-                                                <p className="text-sm">
-                                                    {payeeLabels[rfp_request.payee_type]}
+                                                <p className="text-sm">{rfp_request.prepared_by?.name ?? 'N/A'}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {rfp_request.prepared_by?.department?.department ?? ''}
                                                 </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div>
+                                                <RfpBadge type="payee" value={rfp_request.payee_type} />
 
                                                 <p className="text-xs text-muted-foreground">
                                                     {rfp_request.payee_type === 'supplier'
@@ -234,6 +224,9 @@ export default function Index({ rfp_requests }: Props) {
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
                                                 <div>{formatDate(rfp_request.created_at)}</div>
+                                                <div className="text-xs">
+                                                    {formatTime(rfp_request.created_at)}
+                                                </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -247,12 +240,7 @@ export default function Index({ rfp_requests }: Props) {
                                             </span>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge
-                                                variant="secondary"
-                                                className={statusColors[rfp_request.status]}
-                                            >
-                                                {statusLabels[rfp_request.status]}
-                                            </Badge>
+                                            <RfpBadge type="status" value={rfp_request.status} />
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
@@ -321,19 +309,68 @@ export default function Index({ rfp_requests }: Props) {
                             {Math.min(rfp_requests.current_page * rfp_requests.per_page, rfp_requests.total)} of{' '}
                             {rfp_requests.total} results
                         </p>
-                        <div className="flex gap-1">
-                            {Array.from({ length: rfp_requests.last_page }, (_, i) => i + 1).map((page) => (
-                                <Button
-                                    key={page}
-                                    variant={page === rfp_requests.current_page ? 'default' : 'ghost'}
-                                    size="sm"
-                                    asChild
-                                    className="h-8 w-8 p-0"
-                                >
-                                    <Link href={`/rfp/requests?page=${page}`}>{page}</Link>
-                                </Button>
-                            ))}
-                        </div>
+                        <Pagination className="w-auto mx-0">
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        href={rfp_requests.current_page > 1 ? `/rfp/requests?page=${rfp_requests.current_page - 1}` : '#'}
+                                        className={rfp_requests.current_page === 1 ? 'pointer-events-none opacity-50' : ''}
+                                    />
+                                </PaginationItem>
+
+                                {/* First page */}
+                                <PaginationItem>
+                                    <PaginationLink
+                                        href="/rfp/requests?page=1"
+                                        isActive={rfp_requests.current_page === 1}
+                                    >
+                                        1
+                                    </PaginationLink>
+                                </PaginationItem>
+
+                                {rfp_requests.current_page > 3 && <PaginationEllipsis />}
+
+                                {Array.from({ length: rfp_requests.last_page }, (_, i) => i + 1)
+                                    .filter(page =>
+                                        page !== 1 &&
+                                        page !== rfp_requests.last_page &&
+                                        page >= rfp_requests.current_page - 1 &&
+                                        page <= rfp_requests.current_page + 1
+                                    )
+                                    .map(page => (
+                                        <PaginationItem key={page}>
+                                            <PaginationLink
+                                                href={`/rfp/requests?page=${page}`}
+                                                isActive={rfp_requests.current_page === page}
+                                            >
+                                                {page}
+                                            </PaginationLink>
+                                        </PaginationItem>
+                                    ))
+                                }
+
+                                {rfp_requests.current_page < rfp_requests.last_page - 2 && <PaginationEllipsis />}
+
+                                {/* Last page */}
+                                {rfp_requests.last_page > 1 && (
+                                    <PaginationItem>
+                                        <PaginationLink
+                                            href={`/rfp/requests?page=${rfp_requests.last_page}`}
+                                            isActive={rfp_requests.current_page === rfp_requests.last_page}
+                                        >
+                                            {rfp_requests.last_page}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                )}
+
+                                <PaginationItem>
+                                    <PaginationNext
+                                        href={rfp_requests.current_page < rfp_requests.last_page ? `/rfp/requests?page=${rfp_requests.current_page + 1}` : '#'}
+                                        className={rfp_requests.current_page === rfp_requests.last_page ? 'pointer-events-none opacity-50' : ''}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
                     </div>
                 )}
             </div>

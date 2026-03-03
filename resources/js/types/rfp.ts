@@ -1,9 +1,6 @@
 // types/rfp.ts
 
-export type Department = {
-    id: number;
-    department: string;
-};
+import type { Department } from './auth';
 
 export type RfpUser = {
     id: number;
@@ -77,6 +74,7 @@ export type RfpLog = {
 
 export type RfpRequest = {
     id: number;
+    prepared_by?: RfpUser;
     ap_no: string | null;
     due_date: string;
     rr_no: string | null;
@@ -106,9 +104,8 @@ export type RfpRequest = {
     remarks: string | null;
     status: 'cancelled' | 'draft' | 'for_approval' | 'approved' | 'paid';
     pdf_generated_at: string | null;
-    pdf_generated_by: number | null;
     pdf_generation_count: number;
-    generated_by?: RfpUser;
+    pdf_generated_by?: RfpUser;
     details: RfpDetail[];
     signs?: RfpSign[];
     logs?: RfpLog[];

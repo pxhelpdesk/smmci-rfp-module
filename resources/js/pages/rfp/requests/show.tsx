@@ -44,8 +44,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs-c
 import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest, RfpLog } from '@/types';
 import { toast } from 'sonner';
-import { formatDate, formatTime, formatDateTime, formatAmount } from '@/lib/formatters';
+import { formatDate, formatDateTime, formatAmount } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
+import { RfpBadge } from '@/components/rfp/rfp-badge';
 
 type Props = {
     rfp_request: RfpRequest;
@@ -56,32 +57,6 @@ type Props = {
         per_page: number;
         total: number;
     };
-};
-
-const statusColors = {
-    cancelled: 'bg-red-100 text-red-800',
-    draft: 'bg-gray-100 text-gray-800',
-    for_approval: 'bg-yellow-100 text-yellow-800',
-    approved: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-};
-
-const statusLabels = {
-    cancelled: 'Cancelled',
-    draft: 'Draft',
-    for_approval: 'For Approval',
-    approved: 'Approved',
-    paid: 'Paid',
-};
-
-const areaLabels = {
-    head_office: 'Head Office',
-    mine_site: 'Mine Site',
-};
-
-const payeeLabels = {
-    employee: 'Employee',
-    supplier: 'Supplier',
 };
 
 export default function Show({ rfp_request, logs }: Props) {
@@ -226,9 +201,9 @@ export default function Show({ rfp_request, logs }: Props) {
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">{rfp_request.rfp_request_number}</h1>
+                        <h1 className="text-2xl font-semibold">View RFP Request</h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            {rfp_request.usage?.description}
+                            {rfp_request.rfp_request_number}
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -264,13 +239,6 @@ export default function Show({ rfp_request, logs }: Props) {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className={statusColors[rfp_request.status]}>
-                        {statusLabels[rfp_request.status]}
-                    </Badge>
-                    <Badge variant="outline">{areaLabels[rfp_request.area]}</Badge>
-                </div>
-
                 <Tabs defaultValue="request">
                     <TabsList variant="line">
                         <TabsTrigger value="request">
@@ -287,6 +255,31 @@ export default function Show({ rfp_request, logs }: Props) {
                         </TabsTrigger>
                     </TabsList>
 
+                    {/* Requestor Information */}
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base">Requestor Information</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Prepared By</p>
+                                    <p className="text-sm font-medium">{rfp_request.prepared_by?.name ?? 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Department</p>
+                                    <p className="text-sm">{rfp_request.prepared_by?.department?.department ?? 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Status</p>
+                                    <p className="text-sm">
+                                        <RfpBadge type="status" value={rfp_request.status} />
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <TabsContent value="request" className="space-y-4 mt-4">
                         <div className="grid gap-4 md:grid-cols-2">
                             <Card>
@@ -301,7 +294,9 @@ export default function Show({ rfp_request, logs }: Props) {
                                     <Separator />
                                     <div>
                                         <p className="text-xs text-muted-foreground">Area</p>
-                                        <p className="text-sm">{areaLabels[rfp_request.area]}</p>
+                                        <p className="text-sm">
+                                            <RfpBadge type="area" value={rfp_request.area} />
+                                        </p>
                                     </div>
                                     <Separator />
                                     <div>
@@ -327,7 +322,9 @@ export default function Show({ rfp_request, logs }: Props) {
                                 <CardContent className="space-y-2.5">
                                     <div>
                                         <p className="text-xs text-muted-foreground">Type</p>
-                                        <p className="text-sm font-medium">{payeeLabels[rfp_request.payee_type]}</p>
+                                        <p className="text-sm font-medium">
+                                            <RfpBadge type="payee" value={rfp_request.payee_type} />
+                                        </p>
                                     </div>
                                     <Separator />
                                     {rfp_request.payee_type === 'supplier' ? (
@@ -480,7 +477,7 @@ export default function Show({ rfp_request, logs }: Props) {
                                 <CardContent className="space-y-2.5">
                                     <div>
                                         <p className="text-xs text-muted-foreground">Created</p>
-                                        <p className="text-sm">{formatTime(rfp_request.created_at)}</p>
+                                        <p className="text-sm">{formatDateTime(rfp_request.created_at)}</p>
                                     </div>
                                     <Separator />
                                     <div>

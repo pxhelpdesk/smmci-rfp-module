@@ -1,4 +1,4 @@
-import { useForm, Head } from '@inertiajs/react';
+import { useForm, Head, usePage } from '@inertiajs/react';
 import { Save, X } from 'lucide-react';
 import { useState } from 'react';
 import Select from 'react-select';
@@ -25,6 +25,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import type { RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
+import type { SharedData } from '@/types';
 
 type Props = {
     categories: RfpCategory[];
@@ -35,6 +36,7 @@ type Props = {
 const Req = () => <span className="text-destructive ml-0.5">*</span>;
 
 export default function Create({ categories, currencies, defaultCurrencyId }: Props) {
+    const { auth } = usePage<SharedData>().props;
     const [accounts, setAccounts] = useState<SapAccountOption[]>([]);
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [usages, setUsages] = useState<RfpUsage[]>([]);
@@ -212,7 +214,42 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                     </div>
                 </div>
 
-                {/* Row 1: Basic Information (3 cols) */}
+                {/* Requestor Information */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Requestor Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid md:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-sm">Prepared By</Label>
+                                <Input
+                                    value={auth.user.name as string}
+                                    className="h-9"
+                                    readOnly
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-sm">Department</Label>
+                                <Input
+                                    value={auth.user.department?.department ?? 'N/A'}
+                                    className="h-9"
+                                    readOnly
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-sm">Status</Label>
+                                <Input
+                                    value="Draft"
+                                    className="h-9"
+                                    readOnly
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Basic Information */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Basic Information</CardTitle>
@@ -288,7 +325,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                     </CardContent>
                 </Card>
 
-                {/* Row 2: Payee Information (col 1) + Document Information (col 2) */}
+                {/* Payee Information */}
                 <div className="grid gap-4 md:grid-cols-2">
                     {/* Payee Information */}
                     <Card>

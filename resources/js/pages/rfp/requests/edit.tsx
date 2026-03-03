@@ -1,4 +1,4 @@
-import { useForm, Head } from '@inertiajs/react';
+import { useForm, Head, usePage } from '@inertiajs/react';
 import { Save, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
@@ -35,6 +35,8 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { RfpRequest, RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
+import type { SharedData } from '@/types';
+import { RfpBadge } from '@/components/rfp/rfp-badge';
 
 type ChangeLog = {
     field: string;
@@ -51,6 +53,7 @@ type Props = {
 const Req = () => <span className="text-destructive ml-0.5">*</span>;
 
 export default function Edit({ rfp_request, categories, currencies }: Props) {
+    const { auth } = usePage<SharedData>().props;
     const [accounts, setAccounts] = useState<SapAccountOption[]>([]);
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [usages, setUsages] = useState<RfpUsage[]>([]);
@@ -318,7 +321,40 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                     </div>
                 </div>
 
-                {/* Row 1: Basic Information (3 cols) */}
+                {/* Requestor Information */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Requestor Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid md:grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-sm">Prepared By</Label>
+                                <Input
+                                    value={rfp_request.prepared_by?.name ?? auth.user.name as string}
+                                    className="h-9"
+                                    readOnly
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-sm">Department</Label>
+                                <Input
+                                    value={rfp_request.prepared_by?.department?.department ?? auth.user.department?.department ?? 'N/A'}
+                                    className="h-9"
+                                    readOnly
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-sm">Status</Label>
+                                <div className="h-9 flex items-center">
+                                    <RfpBadge type="status" value={rfp_request.status} />
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Basic Information) */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Basic Information</CardTitle>
@@ -384,7 +420,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                     </CardContent>
                 </Card>
 
-                {/* Row 2: Payee Information (col 1) + Document Information (col 2) */}
+                {/* Payee Information */}
                 <div className="grid gap-4 md:grid-cols-2">
                     {/* Payee Information */}
                     <Card>

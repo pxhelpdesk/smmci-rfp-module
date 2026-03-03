@@ -27,14 +27,36 @@ class RfpController extends Controller implements HasMiddleware
 
     public function index()
     {
+        $user = auth()->user();
+        $userId = $user->id;
+        $departmentId = $user->department_id;
+
+        // Get all user IDs in the same department (cross-db safe)
+        $sameDeptUserIds = \App\Models\User::where('department_id', $departmentId)
+            ->pluck('id')
+            ->toArray();
+
+        // Get RFP IDs where user is a signatory
+        $signedRfpIds = \App\Models\RfpSign::where('user_id', $userId)
+            ->pluck('rfp_request_id')
+            ->toArray();
+
         $rfp_requests = RfpRequest::with([
             'currency',
             'usage.category',
             'details',
             'signs.user.department',
-            'generatedBy',
+            'generatedBy.department',
+            'preparedBy.department',
             'supplier',
-        ])->latest()->paginate(15);
+        ])
+        ->where(function ($query) use ($userId, $sameDeptUserIds, $signedRfpIds) {
+            $query->where('prepared_by', $userId)
+                ->orWhereIn('prepared_by', $sameDeptUserIds)
+                ->orWhereIn('id', $signedRfpIds);
+        })
+        ->latest()
+        ->paginate(15);
 
         return Inertia::render('rfp/requests/index', [
             'rfp_requests' => $rfp_requests
@@ -66,6 +88,7 @@ class RfpController extends Controller implements HasMiddleware
         $detailsSubtotal = collect($request->details)->sum('total_amount');
         $validated['subtotal_details_amount'] = $detailsSubtotal;
 
+        $validated['prepared_by'] = auth()->id();
         $rfpRequest = RfpRequest::create($validated);
 
         if ($request->has('details')) {
@@ -78,16 +101,34 @@ class RfpController extends Controller implements HasMiddleware
 
     public function show(RfpRequest $request)
     {
+        $user = auth()->user();
+        $userId = $user->id;
+        $departmentId = $user->department_id;
+
+        // Authorization check — same logic as index
+        $sameDeptUserIds = \App\Models\User::where('department_id', $departmentId)
+            ->pluck('id')
+            ->toArray();
+
+        $isSignatory = \App\Models\RfpSign::where('rfp_request_id', $request->id)
+            ->where('user_id', $userId)
+            ->exists();
+
+        $isPreparedByDept = in_array($request->prepared_by, $sameDeptUserIds);
+        $isOwner = $request->prepared_by === $userId;
+
+        abort_unless($isOwner || $isPreparedByDept || $isSignatory, 403);
+
         $request->load([
             'currency',
             'usage.category',
             'details',
             'signs.user.department',
-            'generatedBy',
+            'generatedBy.department',
+            'preparedBy.department',
             'supplier',
         ]);
 
-        // Paginate logs separately
         $logs = RfpLog::where('rfp_request_id', $request->id)
             ->with('user.department')
             ->latest()
