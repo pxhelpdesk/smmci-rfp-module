@@ -295,7 +295,7 @@ export default function Show({ rfp_request, logs }: Props) {
                                 </CardHeader>
                                 <CardContent className="space-y-2.5">
                                     <div>
-                                        <p className="text-xs text-muted-foreground">RFP Number</p>
+                                        <p className="text-xs text-muted-foreground">RFP No.</p>
                                         <p className="text-sm font-medium">{rfp_request.rfp_request_number}</p>
                                     </div>
                                     <Separator />
@@ -390,7 +390,7 @@ export default function Show({ rfp_request, logs }: Props) {
                             <CardContent className="space-y-3">
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
-                                        <p className="text-xs text-muted-foreground">AP Number</p>
+                                        <p className="text-xs text-muted-foreground">AP No.</p>
                                         <p className="text-sm font-medium">{rfp_request.ap_no || 'N/A'}</p>
                                     </div>
                                     <div>
@@ -400,21 +400,21 @@ export default function Show({ rfp_request, logs }: Props) {
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground">RR Number</p>
+                                        <p className="text-xs text-muted-foreground">RR No.</p>
                                         <p className="text-sm font-medium">{rfp_request.rr_no || 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
-                                        <p className="text-xs text-muted-foreground">PO Number</p>
+                                        <p className="text-xs text-muted-foreground">PO No.</p>
                                         <p className="text-sm font-medium">{rfp_request.po_no || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground">SWP PR Number</p>
+                                        <p className="text-xs text-muted-foreground">SWP PR No.</p>
                                         <p className="text-sm font-medium">{rfp_request.swp_pr_no || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground">Contract Number</p>
+                                        <p className="text-xs text-muted-foreground">Contract No.</p>
                                         <p className="text-sm font-medium">{rfp_request.contract_no || 'N/A'}</p>
                                     </div>
                                 </div>

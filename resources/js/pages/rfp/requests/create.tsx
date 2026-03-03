@@ -414,7 +414,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="ap_no" className="text-sm">AP Number</Label>
+                                <Label htmlFor="ap_no" className="text-sm">AP No.</Label>
                                 <Input
                                     id="ap_no"
                                     value={data.ap_no}
@@ -448,7 +448,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="rr_no" className="text-sm">RR Number</Label>
+                                    <Label htmlFor="rr_no" className="text-sm">RR No.</Label>
                                     <Input
                                         id="rr_no"
                                         value={data.rr_no}
@@ -458,7 +458,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="po_no" className="text-sm">PO Number</Label>
+                                    <Label htmlFor="po_no" className="text-sm">PO No.</Label>
                                     <Input
                                         id="po_no"
                                         value={data.po_no}
@@ -470,7 +470,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR Number</Label>
+                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR No.</Label>
                                     <Input
                                         id="swp_pr_no"
                                         value={data.swp_pr_no}
@@ -480,7 +480,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="contract_no" className="text-sm">Contract Number</Label>
+                                    <Label htmlFor="contract_no" className="text-sm">Contract No.</Label>
                                     <Input
                                         id="contract_no"
                                         value={data.contract_no}

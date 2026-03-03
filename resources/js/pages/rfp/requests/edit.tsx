@@ -205,12 +205,12 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
             }
         };
 
-        checkField('ap_no', 'AP Number', rfp_request.ap_no, data.ap_no);
+        checkField('ap_no', 'AP No.', rfp_request.ap_no, data.ap_no);
         checkField('due_date', 'Due Date', rfp_request.due_date, data.due_date);
-        checkField('rr_no', 'RR Number', rfp_request.rr_no, data.rr_no);
-        checkField('po_no', 'PO Number', rfp_request.po_no, data.po_no);
-        checkField('swp_pr_no', 'SWP PR Number', rfp_request.swp_pr_no, data.swp_pr_no);
-        checkField('contract_no', 'Contract Number', rfp_request.contract_no, data.contract_no);
+        checkField('rr_no', 'RR No.', rfp_request.rr_no, data.rr_no);
+        checkField('po_no', 'PO No.', rfp_request.po_no, data.po_no);
+        checkField('swp_pr_no', 'SWP PR No.', rfp_request.swp_pr_no, data.swp_pr_no);
+        checkField('contract_no', 'Contract No.', rfp_request.contract_no, data.contract_no);
         checkField('area', 'Area', rfp_request.area, data.area);
         checkField('employee_code', 'Employee Code', rfp_request.employee_code, data.employee_code);
         checkField('employee_name', 'Employee Name', rfp_request.employee_name, data.employee_name);
@@ -514,7 +514,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="ap_no" className="text-sm">AP Number</Label>
+                                <Label htmlFor="ap_no" className="text-sm">AP No.</Label>
                                 <Input
                                     id="ap_no"
                                     value={data.ap_no}
@@ -548,7 +548,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="rr_no" className="text-sm">RR Number</Label>
+                                    <Label htmlFor="rr_no" className="text-sm">RR No.</Label>
                                     <Input
                                         id="rr_no"
                                         value={data.rr_no}
@@ -558,7 +558,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="po_no" className="text-sm">PO Number</Label>
+                                    <Label htmlFor="po_no" className="text-sm">PO No.</Label>
                                     <Input
                                         id="po_no"
                                         value={data.po_no}
@@ -570,7 +570,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR Number</Label>
+                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR No.</Label>
                                     <Input
                                         id="swp_pr_no"
                                         value={data.swp_pr_no}
@@ -580,7 +580,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="contract_no" className="text-sm">Contract Number</Label>
+                                    <Label htmlFor="contract_no" className="text-sm">Contract No.</Label>
                                     <Input
                                         id="contract_no"
                                         value={data.contract_no}

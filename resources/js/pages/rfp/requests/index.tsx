@@ -175,7 +175,7 @@ export default function Index({ rfp_requests }: Props) {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-32.5">RFP Number</TableHead>
+                                <TableHead className="w-32.5">RFP No.</TableHead>
                                 <TableHead>Usage</TableHead>
                                 <TableHead>Payee</TableHead>
                                 <TableHead>Area</TableHead>

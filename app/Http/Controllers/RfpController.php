@@ -164,10 +164,10 @@ class RfpController extends Controller implements HasMiddleware
         $changes = [];
 
         $fieldsToTrack = [
-            'ap_no' => 'AP Number',
+            'ap_no' => 'AP No.',
             'due_date' => 'Due Date',
-            'rr_no' => 'RR Number',
-            'po_no' => 'PO Number',
+            'rr_no' => 'RR No.',
+            'po_no' => 'PO No.',
             'area' => 'Area',
             'payee_type' => 'Payee Type',
             'employee_code' => 'Employee Code',
