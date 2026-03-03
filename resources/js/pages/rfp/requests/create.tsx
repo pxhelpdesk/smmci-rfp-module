@@ -48,7 +48,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
         due_date: string;
         rr_no: string;
         po_no: string;
-        swp_pr_no: string;
+        requisition_no: string;
         contract_no: string;
         area: 'head_office' | 'mine_site';
         payee_type: 'employee' | 'supplier';
@@ -74,7 +74,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
         due_date: '',
         rr_no: '',
         po_no: '',
-        swp_pr_no: '',
+        requisition_no: '',
         contract_no: '',
         area: 'mine_site',
         payee_type: 'supplier',
@@ -470,11 +470,11 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR No.</Label>
+                                    <Label htmlFor="requisition_no" className="text-sm">Requisition No.</Label>
                                     <Input
-                                        id="swp_pr_no"
-                                        value={data.swp_pr_no}
-                                        onChange={(e) => setData('swp_pr_no', e.target.value)}
+                                        id="requisition_no"
+                                        value={data.requisition_no}
+                                        onChange={(e) => setData('requisition_no', e.target.value)}
                                         className="h-9"
                                     />
                                 </div>

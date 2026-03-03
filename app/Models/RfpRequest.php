@@ -16,7 +16,7 @@ class RfpRequest extends Model
         'due_date',
         'rr_no',
         'po_no',
-        'swp_pr_no',
+        'requisition_no',
         'contract_no',
         'rfp_request_number',
         'area',

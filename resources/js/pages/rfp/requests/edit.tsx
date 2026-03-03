@@ -114,7 +114,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         due_date: string;
         rr_no: string;
         po_no: string;
-        swp_pr_no: string;
+        requisition_no: string;
         contract_no: string;
         area: 'head_office' | 'mine_site';
         payee_type: 'employee' | 'supplier';
@@ -141,7 +141,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         due_date: rfp_request.due_date || '',
         rr_no: rfp_request.rr_no || '',
         po_no: rfp_request.po_no || '',
-        swp_pr_no: rfp_request.swp_pr_no || '',
+        requisition_no: rfp_request.requisition_no || '',
         contract_no: rfp_request.contract_no || '',
         area: rfp_request.area,
         payee_type: rfp_request.payee_type,
@@ -209,7 +209,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         checkField('due_date', 'Due Date', rfp_request.due_date, data.due_date);
         checkField('rr_no', 'RR No.', rfp_request.rr_no, data.rr_no);
         checkField('po_no', 'PO No.', rfp_request.po_no, data.po_no);
-        checkField('swp_pr_no', 'SWP PR No.', rfp_request.swp_pr_no, data.swp_pr_no);
+        checkField('requisition_no', 'Requisition No.', rfp_request.requisition_no, data.requisition_no);
         checkField('contract_no', 'Contract No.', rfp_request.contract_no, data.contract_no);
         checkField('area', 'Area', rfp_request.area, data.area);
         checkField('employee_code', 'Employee Code', rfp_request.employee_code, data.employee_code);
@@ -570,11 +570,11 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR No.</Label>
+                                    <Label htmlFor="requisition_no" className="text-sm">Requisition No.</Label>
                                     <Input
-                                        id="swp_pr_no"
-                                        value={data.swp_pr_no}
-                                        onChange={(e) => setData('swp_pr_no', e.target.value)}
+                                        id="requisition_no"
+                                        value={data.requisition_no}
+                                        onChange={(e) => setData('requisition_no', e.target.value)}
                                         className="h-9"
                                     />
                                 </div>

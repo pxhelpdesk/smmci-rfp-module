@@ -81,7 +81,7 @@ export type RfpRequest = {
     due_date: string;
     rr_no: string | null;
     po_no: string | null;
-    swp_pr_no: string | null;
+    requisition_no: string | null;
     contract_no: string | null;
     rfp_request_number: string;
     area: 'head_office' | 'mine_site';

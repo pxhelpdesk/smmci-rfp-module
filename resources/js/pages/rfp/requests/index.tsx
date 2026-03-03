@@ -41,7 +41,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest } from '@/types';
-import { formatDate, formatTime, formatAmount } from '@/lib/formatters';
+import { formatDate, formatTime } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
@@ -68,6 +68,16 @@ const statusLabels = {
     for_approval: 'For Approval',
     approved: 'Approved',
     paid: 'Paid',
+};
+
+const areaLabels: Record<RfpRequest['area'], string> = {
+    head_office: 'Head Office',
+    mine_site: 'Mine Site',
+};
+
+const payeeLabels: Record<RfpRequest['payee_type'], string> = {
+    employee: 'Employee',
+    supplier: 'Supplier',
 };
 
 export default function Index({ rfp_requests }: Props) {
@@ -176,13 +186,12 @@ export default function Index({ rfp_requests }: Props) {
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-32.5">RFP No.</TableHead>
-                                <TableHead>Usage</TableHead>
-                                <TableHead>Payee</TableHead>
                                 <TableHead>Area</TableHead>
+                                <TableHead>Payee</TableHead>
+                                <TableHead>Prepared Date</TableHead>
                                 <TableHead>Due Date</TableHead>
                                 <TableHead>Currency</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Created</TableHead>
                                 <TableHead>Updated</TableHead>
                                 <TableHead className="w-15"></TableHead>
                             </TableRow>
@@ -207,27 +216,25 @@ export default function Index({ rfp_requests }: Props) {
                                             </Link>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="max-w-50">
-                                                <p className="text-xs text-muted-foreground">
-                                                    {rfp_request.usage?.code}
-                                                </p>
-                                                <p className="text-sm truncate">
-                                                    {rfp_request.usage?.description}
-                                                </p>
-                                            </div>
+                                            <span className="text-sm">{areaLabels[rfp_request.area]}</span>
                                         </TableCell>
                                         <TableCell>
                                             <div>
-                                                <p className="text-sm">{rfp_request.payee_type}</p>
+                                                <p className="text-sm">
+                                                    {payeeLabels[rfp_request.payee_type]}
+                                                </p>
+
                                                 <p className="text-xs text-muted-foreground">
                                                     {rfp_request.payee_type === 'supplier'
-                                                        ? rfp_request.supplier_code
-                                                        : rfp_request.employee_code}
+                                                    ? rfp_request.supplier_code
+                                                    : rfp_request.employee_code}
                                                 </p>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <span className="text-sm">{rfp_request.area}</span>
+                                            <div className="text-sm text-muted-foreground">
+                                                <div>{formatDate(rfp_request.created_at)}</div>
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
@@ -246,14 +253,6 @@ export default function Index({ rfp_requests }: Props) {
                                             >
                                                 {statusLabels[rfp_request.status]}
                                             </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm text-muted-foreground">
-                                                <div>{formatDate(rfp_request.created_at)}</div>
-                                                <div className="text-xs">
-                                                    {formatTime(rfp_request.created_at)}
-                                                </div>
-                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">

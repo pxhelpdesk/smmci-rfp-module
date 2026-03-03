@@ -44,7 +44,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs-c
 import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest, RfpLog } from '@/types';
 import { toast } from 'sonner';
-import { formatDate, formatDateTime, formatAmount } from '@/lib/formatters';
+import { formatDate, formatTime, formatDateTime, formatAmount } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
@@ -410,8 +410,8 @@ export default function Show({ rfp_request, logs }: Props) {
                                         <p className="text-sm font-medium">{rfp_request.po_no || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground">SWP PR No.</p>
-                                        <p className="text-sm font-medium">{rfp_request.swp_pr_no || 'N/A'}</p>
+                                        <p className="text-xs text-muted-foreground">Requisition No.</p>
+                                        <p className="text-sm font-medium">{rfp_request.requisition_no || 'N/A'}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-muted-foreground">Contract No.</p>
@@ -480,7 +480,7 @@ export default function Show({ rfp_request, logs }: Props) {
                                 <CardContent className="space-y-2.5">
                                     <div>
                                         <p className="text-xs text-muted-foreground">Created</p>
-                                        <p className="text-sm">{formatDateTime(rfp_request.created_at)}</p>
+                                        <p className="text-sm">{formatTime(rfp_request.created_at)}</p>
                                     </div>
                                     <Separator />
                                     <div>
