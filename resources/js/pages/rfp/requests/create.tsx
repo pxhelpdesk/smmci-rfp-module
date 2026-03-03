@@ -41,6 +41,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
     const [loadingAccounts, setLoadingAccounts] = useState(false);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
     const [loadingUsages, setLoadingUsages] = useState(false);
+    const [usageSelectKey, setUsageSelectKey] = useState(0);
 
     const { data, setData, post, processing, errors } = useForm<{
         ap_no: string;
@@ -238,11 +239,19 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                                     options={categoryOptions}
                                     value={categoryOptions.find(o => o.value === data.rfp_category_id)}
                                     onChange={(opt) => {
-                                        setData('rfp_category_id', opt?.value || null);
-                                        setData('rfp_usage_id', null);
-                                        setUsages([]);
-                                        if (opt?.value) {
-                                            loadUsages(opt.value);
+                                        const categoryId = opt?.value ?? null;
+
+                                        // Only reset if category actually changed
+                                        if (categoryId !== data.rfp_category_id) {
+                                            setData('rfp_usage_id', null);
+                                            setUsages([]);
+                                            setUsageSelectKey((k) => k + 1);
+                                        }
+
+                                        setData('rfp_category_id', categoryId);
+
+                                        if (categoryId) {
+                                            loadUsages(categoryId);
                                         }
                                     }}
                                     isClearable
@@ -259,6 +268,7 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Usage <Req /></Label>
                                 <Select
+                                    key={usageSelectKey}
                                     options={usageOptions}
                                     value={usageOptions.find(o => o.value === data.rfp_usage_id)}
                                     onChange={(opt) => setData('rfp_usage_id', opt?.value || null)}
