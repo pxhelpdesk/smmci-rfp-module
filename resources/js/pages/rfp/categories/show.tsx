@@ -7,12 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { RfpCategory, RfpUsage } from '@/types';
+import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
     category: RfpCategory & { usages: RfpUsage[] };
 };
 
 export default function Show({ category }: Props) {
+    const { can } = usePermission();
+
     return (
         <AppLayout
             breadcrumbs={[
@@ -38,12 +41,14 @@ export default function Show({ category }: Props) {
                                 Back
                             </Link>
                         </Button>
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={`/rfp/categories/${category.id}/edit`}>
-                                <Edit className="h-4 w-4 mr-1.5" />
-                                Edit
-                            </Link>
-                        </Button>
+                        {can('rfp-category-edit') && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={`/rfp/categories/${category.id}/edit`}>
+                                    <Edit className="h-4 w-4 mr-1.5" />
+                                    Edit
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 </div>
 

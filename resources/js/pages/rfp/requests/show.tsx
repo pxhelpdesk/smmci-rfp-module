@@ -242,7 +242,7 @@ export default function Show({ rfp_request, logs }: Props) {
                             <Printer className="h-4 w-4 mr-1.5" />
                             Print
                         </Button>
-                        {can('rfp-edit') && (
+                        {can('rfp-request-edit') && (
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={`/rfp/requests/${rfp_request.id}/edit`}>
                                     <Edit className="h-4 w-4 mr-1.5" />
@@ -250,7 +250,7 @@ export default function Show({ rfp_request, logs }: Props) {
                                 </Link>
                             </Button>
                         )}
-                        {can('rfp-delete') && (
+                        {can('rfp-request-delete') && (
                             <Button
                                 variant="outline"
                                 size="sm"

@@ -23,6 +23,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { RfpCategory } from '@/types';
+import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
     categories: {
@@ -45,6 +46,8 @@ export default function Index({ categories }: Props) {
         }
     };
 
+    const { can } = usePermission();
+
     return (
         <AppLayout
             breadcrumbs={[
@@ -62,12 +65,14 @@ export default function Index({ categories }: Props) {
                             Manage expense categories
                         </p>
                     </div>
-                    <Button size="sm" asChild>
-                        <Link href="/rfp/categories/create">
-                            <Plus className="h-4 w-4 mr-1.5" />
-                            Add Category
-                        </Link>
-                    </Button>
+                    {can('rfp-category-create') && (
+                        <Button size="sm" asChild>
+                            <Link href="/rfp/categories/create">
+                                <Plus className="h-4 w-4 mr-1.5" />
+                                Add Category
+                            </Link>
+                        </Button>
+                    )}
                 </div>
 
                 <div className="border rounded-lg bg-card">
@@ -112,18 +117,18 @@ export default function Index({ categories }: Props) {
                                                         <Eye className="h-4 w-4" />
                                                     </Link>
                                                 </Button>
-                                                <Button variant="ghost" size="sm" asChild>
-                                                    <Link href={`/rfp/categories/${category.id}/edit`}>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setDeleteId(category.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
+                                                {can('rfp-category-edit') && (
+                                                    <Button variant="ghost" size="sm" asChild>
+                                                        <Link href={`/rfp/categories/${category.id}/edit`}>
+                                                            <Edit className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                )}
+                                                {can('rfp-category-delete') && (
+                                                    <Button variant="ghost" size="sm" onClick={() => setDeleteId(category.id)}>
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                )}
                                             </div>
                                         </TableCell>
                                     </TableRow>

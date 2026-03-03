@@ -23,6 +23,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { RfpCurrency } from '@/types';
+import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
     currencies: {
@@ -45,6 +46,8 @@ export default function Index({ currencies }: Props) {
         }
     };
 
+    const { can } = usePermission();
+
     return (
         <AppLayout
             breadcrumbs={[
@@ -62,12 +65,14 @@ export default function Index({ currencies }: Props) {
                             Manage available currencies
                         </p>
                     </div>
-                    <Button size="sm" asChild>
-                        <Link href="/rfp/currencies/create">
-                            <Plus className="h-4 w-4 mr-1.5" />
-                            Add Currency
-                        </Link>
-                    </Button>
+                    {can('rfp-currency-create') && (
+                        <Button size="sm" asChild>
+                            <Link href="/rfp/currencies/create">
+                                <Plus className="h-4 w-4 mr-1.5" />
+                                Add Currency
+                            </Link>
+                        </Button>
+                    )}
                 </div>
 
                 <div className="border rounded-lg bg-card">
@@ -108,18 +113,18 @@ export default function Index({ currencies }: Props) {
                                                         <Eye className="h-4 w-4" />
                                                     </Link>
                                                 </Button>
-                                                <Button variant="ghost" size="sm" asChild>
-                                                    <Link href={`/rfp/currencies/${currency.id}/edit`}>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setDeleteId(currency.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
+                                                {can('rfp-currency-edit') && (
+                                                    <Button variant="ghost" size="sm" asChild>
+                                                        <Link href={`/rfp/currencies/${currency.id}/edit`}>
+                                                            <Edit className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                )}
+                                                {can('rfp-currency-delete') && (
+                                                    <Button variant="ghost" size="sm" onClick={() => setDeleteId(currency.id)}>
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                )}
                                             </div>
                                         </TableCell>
                                     </TableRow>

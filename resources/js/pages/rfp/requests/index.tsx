@@ -149,7 +149,7 @@ export default function Index({ rfp_requests }: Props) {
                             Manage request for payment documents
                         </p>
                     </div>
-                    {can('rfp-create') && (
+                    {can('rfp-request-create') && (
                         <Button asChild size="sm">
                             <Link href="/rfp/requests/create">
                                 <Plus className="h-4 w-4 mr-1.5" />
@@ -285,7 +285,7 @@ export default function Index({ rfp_requests }: Props) {
                                                         <Printer className="h-4 w-4 mr-2" />
                                                         Print
                                                     </DropdownMenuItem>
-                                                    {can('rfp-edit') && (
+                                                    {can('rfp-request-edit') && (
                                                         <DropdownMenuItem asChild>
                                                             <Link href={`/rfp/requests/${rfp_request.id}/edit`}>
                                                                 <Pencil className="h-4 w-4 mr-2" />
@@ -293,7 +293,7 @@ export default function Index({ rfp_requests }: Props) {
                                                             </Link>
                                                         </DropdownMenuItem>
                                                     )}
-                                                    {can('rfp-delete') && (
+                                                    {can('rfp-request-delete') && (
                                                         <>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem

@@ -6,12 +6,15 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { RfpCurrency } from '@/types';
+import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
     currency: RfpCurrency;
 };
 
 export default function Show({ currency }: Props) {
+    const { can } = usePermission();
+
     return (
         <AppLayout
             breadcrumbs={[
@@ -37,12 +40,14 @@ export default function Show({ currency }: Props) {
                                 Back
                             </Link>
                         </Button>
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={`/rfp/currencies/${currency.id}/edit`}>
-                                <Edit className="h-4 w-4 mr-1.5" />
-                                Edit
-                            </Link>
-                        </Button>
+                        {can('rfp-currency-edit') && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={`/rfp/currencies/${currency.id}/edit`}>
+                                    <Edit className="h-4 w-4 mr-1.5" />
+                                    Edit
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 </div>
 

@@ -1,8 +1,8 @@
 export type Permission =
-    | 'rfp-list'
-    | 'rfp-create'
-    | 'rfp-edit'
-    | 'rfp-delete'
+    | 'rfp-request-list'
+    | 'rfp-request-create'
+    | 'rfp-request-edit'
+    | 'rfp-request-delete'
     | 'rfp-category-list'
     | 'rfp-category-create'
     | 'rfp-category-edit'

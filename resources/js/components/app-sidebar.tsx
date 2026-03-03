@@ -33,7 +33,7 @@ const mainNavItems: NavItem[] = [
         title: 'Requests',
         href: '/rfp/requests',
         icon: FileText,
-        permission: 'rfp-list',
+        permission: 'rfp-request-list',
     },
     {
         title: 'Setup',
