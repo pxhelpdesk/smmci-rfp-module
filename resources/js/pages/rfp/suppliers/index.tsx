@@ -138,11 +138,11 @@ export default function Index({ suppliers }: Props) {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[130px]">Supplier Code</TableHead>
+                                <TableHead className="w-32.5">Supplier Code</TableHead>
                                 <TableHead>Supplier Name</TableHead>
                                 <TableHead>Address</TableHead>
-                                <TableHead className="w-[150px]">TIN</TableHead>
-                                <TableHead className="w-[180px]">Last Synced</TableHead>
+                                <TableHead className="w-37.5">TIN</TableHead>
+                                <TableHead className="w-45">Last Synced</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -161,7 +161,7 @@ export default function Index({ suppliers }: Props) {
                                         </TableCell>
                                         <TableCell>{supplier.card_name}</TableCell>
                                         <TableCell>
-                                            <div className="max-w-[300px] truncate text-sm text-muted-foreground">
+                                            <div className="max-w-75 truncate text-sm text-muted-foreground">
                                                 {supplier.address || 'N/A'}
                                             </div>
                                         </TableCell>

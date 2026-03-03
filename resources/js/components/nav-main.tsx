@@ -1,4 +1,3 @@
-// components/nav-main.tsx
 import { Link } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -17,18 +16,44 @@ import {
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { usePermission } from '@/hooks/use-permission';
 import type { NavItem } from '@/types';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const { isCurrentUrl } = useCurrentUrl();
+    const { can } = usePermission();
+
+    const filterItems = (navItems: NavItem[]): NavItem[] => {
+        return navItems.reduce<NavItem[]>((acc, item) => {
+            // Filter sub-items first
+            if (item.items) {
+                const visibleSubs = item.items.filter(
+                    sub => !sub.permission || can(sub.permission)
+                );
+                // Only show parent if at least one sub-item is visible
+                if (visibleSubs.length > 0) {
+                    acc.push({ ...item, items: visibleSubs });
+                }
+                return acc;
+            }
+
+            // Regular item — show if no permission required or user has it
+            if (!item.permission || can(item.permission)) {
+                acc.push(item);
+            }
+
+            return acc;
+        }, []);
+    };
+
+    const visibleItems = filterItems(items);
 
     return (
         <SidebarGroup className="px-2 py-0">
             <SidebarGroupLabel>Platform</SidebarGroupLabel>
             <SidebarMenu>
-                {items.map((item) =>
+                {visibleItems.map((item) =>
                     item.items ? (
-                        // Parent with sub-items
                         <Collapsible
                             key={item.title}
                             asChild
@@ -86,7 +111,6 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                             </SidebarMenuItem>
                         </Collapsible>
                     ) : (
-                        // Regular item without sub-items
                         <SidebarMenuItem key={item.title}>
                             {item.isExternal ? (
                                 <SidebarMenuButton asChild tooltip={{ children: item.title }}>

@@ -9,6 +9,14 @@ use Inertia\Inertia;
 
 class RfpUsageController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:rfp-usage-list')->only(['index', 'show']);
+        $this->middleware('can:rfp-usage-create')->only(['create', 'store']);
+        $this->middleware('can:rfp-usage-edit')->only(['edit', 'update']);
+        $this->middleware('can:rfp-usage-delete')->only(['destroy']);
+    }
+
     public function index(Request $request)
     {
         $query = RfpUsage::with('category:id,code,name');

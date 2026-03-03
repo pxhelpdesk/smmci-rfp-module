@@ -13,6 +13,14 @@ use Inertia\Inertia;
 
 class RfpController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:rfp-list')->only(['index', 'show']);
+        $this->middleware('can:rfp-create')->only(['create', 'store']);
+        $this->middleware('can:rfp-edit')->only(['edit', 'update']);
+        $this->middleware('can:rfp-delete')->only(['destroy']);
+    }
+
     public function index()
     {
         $rfp_requests = RfpRequest::with([

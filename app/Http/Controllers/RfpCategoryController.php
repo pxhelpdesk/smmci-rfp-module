@@ -8,6 +8,14 @@ use Inertia\Inertia;
 
 class RfpCategoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:rfp-category-list')->only(['index', 'show']);
+        $this->middleware('can:rfp-category-create')->only(['create', 'store']);
+        $this->middleware('can:rfp-category-edit')->only(['edit', 'update']);
+        $this->middleware('can:rfp-category-delete')->only(['destroy']);
+    }
+
     public function index()
     {
         $categories = RfpCategory::withCount('usages')

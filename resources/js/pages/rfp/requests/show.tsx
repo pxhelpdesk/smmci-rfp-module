@@ -45,6 +45,7 @@ import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest, RfpLog } from '@/types';
 import { toast } from 'sonner';
 import { formatDate, formatDateTime, formatAmount } from '@/lib/formatters';
+import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
     rfp_request: RfpRequest;
@@ -210,6 +211,8 @@ export default function Show({ rfp_request, logs }: Props) {
         return items;
     };
 
+    const { can } = usePermission();
+
     return (
         <AppLayout
             breadcrumbs={[
@@ -239,21 +242,25 @@ export default function Show({ rfp_request, logs }: Props) {
                             <Printer className="h-4 w-4 mr-1.5" />
                             Print
                         </Button>
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={`/rfp/requests/${rfp_request.id}/edit`}>
-                                <Edit className="h-4 w-4 mr-1.5" />
-                                Edit
-                            </Link>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeleteOpen(true)}
-                            className="text-destructive hover:text-destructive"
-                        >
-                            <Trash2 className="h-4 w-4 mr-1.5" />
-                            Delete
-                        </Button>
+                        {can('rfp-edit') && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={`/rfp/requests/${rfp_request.id}/edit`}>
+                                    <Edit className="h-4 w-4 mr-1.5" />
+                                    Edit
+                                </Link>
+                            </Button>
+                        )}
+                        {can('rfp-delete') && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDeleteOpen(true)}
+                                className="text-destructive hover:text-destructive"
+                            >
+                                <Trash2 className="h-4 w-4 mr-1.5" />
+                                Delete
+                            </Button>
+                        )}
                     </div>
                 </div>
 

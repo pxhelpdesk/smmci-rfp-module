@@ -8,6 +8,11 @@ use Inertia\Response;
 
 class SapSupplierController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:sap-supplier-list')->only(['index']);
+    }
+
     public function index(): Response
     {
         $suppliers = SapSupplier::orderBy('card_name')

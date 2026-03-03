@@ -8,6 +8,14 @@ use Inertia\Inertia;
 
 class RfpCurrencyController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:rfp-currency-list')->only(['index', 'show']);
+        $this->middleware('can:rfp-currency-create')->only(['create', 'store']);
+        $this->middleware('can:rfp-currency-edit')->only(['edit', 'update']);
+        $this->middleware('can:rfp-currency-delete')->only(['destroy']);
+    }
+
     public function index()
     {
         $currencies = RfpCurrency::latest()->paginate(15);

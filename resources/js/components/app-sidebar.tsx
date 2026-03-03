@@ -14,27 +14,26 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Home',
-        href: 'http://172.17.2.25:8001',
+        href: '/',
         icon: Home,
         isExternal: true,
     },
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: '/dashboard',
         icon: LayoutGrid,
     },
     {
         title: 'Requests',
         href: '/rfp/requests',
         icon: FileText,
-        // badge: 1
+        permission: 'rfp-list',
     },
     {
         title: 'Setup',
@@ -45,21 +44,25 @@ const mainNavItems: NavItem[] = [
                 title: 'Categories',
                 href: '/rfp/categories',
                 icon: FolderTree,
+                permission: 'rfp-category-list',
             },
             {
                 title: 'Usages',
                 href: '/rfp/usages',
                 icon: Layers,
+                permission: 'rfp-usage-list',
             },
             {
                 title: 'Currencies',
                 href: '/rfp/currencies',
                 icon: DollarSign,
+                permission: 'rfp-currency-list',
             },
             {
                 title: 'Suppliers',
                 href: '/rfp/suppliers',
                 icon: Users,
+                permission: 'sap-supplier-list',
             },
         ],
     },
@@ -84,7 +87,7 @@ export function AppSidebar() {
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton size="lg" asChild>
-                                <Link href={dashboard()} prefetch>
+                                <Link href="/dashboard" prefetch>
                                     <AppLogo />
                                 </Link>
                             </SidebarMenuButton>

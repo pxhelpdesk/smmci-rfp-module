@@ -1,0 +1,18 @@
+export type Permission =
+    | 'rfp-list'
+    | 'rfp-create'
+    | 'rfp-edit'
+    | 'rfp-delete'
+    | 'rfp-category-list'
+    | 'rfp-category-create'
+    | 'rfp-category-edit'
+    | 'rfp-category-delete'
+    | 'rfp-usage-list'
+    | 'rfp-usage-create'
+    | 'rfp-usage-edit'
+    | 'rfp-usage-delete'
+    | 'rfp-currency-list'
+    | 'rfp-currency-create'
+    | 'rfp-currency-edit'
+    | 'rfp-currency-delete'
+    | 'sap-supplier-list';

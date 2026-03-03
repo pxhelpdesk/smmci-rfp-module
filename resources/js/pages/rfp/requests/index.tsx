@@ -42,6 +42,7 @@ import { Badge } from '@/components/ui/badge';
 import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
 import type { RfpRequest } from '@/types';
 import { formatDate, formatTime, formatAmount } from '@/lib/formatters';
+import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
     rfp_requests: {
@@ -130,6 +131,8 @@ export default function Index({ rfp_requests }: Props) {
             rfp_request.employee_name?.toLowerCase().includes(search.toLowerCase())
     );
 
+    const { can } = usePermission();
+
     return (
         <AppLayout
             breadcrumbs={[
@@ -146,12 +149,14 @@ export default function Index({ rfp_requests }: Props) {
                             Manage request for payment documents
                         </p>
                     </div>
-                    <Button asChild size="sm">
-                        <Link href="/rfp/requests/create">
-                            <Plus className="h-4 w-4 mr-1.5" />
-                            New Request
-                        </Link>
-                    </Button>
+                    {can('rfp-create') && (
+                        <Button asChild size="sm">
+                            <Link href="/rfp/requests/create">
+                                <Plus className="h-4 w-4 mr-1.5" />
+                                New Request
+                            </Link>
+                        </Button>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3 bg-card p-3 rounded-lg border">
@@ -170,17 +175,16 @@ export default function Index({ rfp_requests }: Props) {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[130px]">RFP Number</TableHead>
+                                <TableHead className="w-32.5">RFP Number</TableHead>
                                 <TableHead>Usage</TableHead>
                                 <TableHead>Payee</TableHead>
                                 <TableHead>Area</TableHead>
                                 <TableHead>Due Date</TableHead>
                                 <TableHead>Currency</TableHead>
-                                <TableHead>Grand Total</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Created</TableHead>
                                 <TableHead>Updated</TableHead>
-                                <TableHead className="w-[60px]"></TableHead>
+                                <TableHead className="w-15"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -203,7 +207,7 @@ export default function Index({ rfp_requests }: Props) {
                                             </Link>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="max-w-[200px]">
+                                            <div className="max-w-50">
                                                 <p className="text-xs text-muted-foreground">
                                                     {rfp_request.usage?.code}
                                                 </p>
@@ -216,7 +220,7 @@ export default function Index({ rfp_requests }: Props) {
                                             <div>
                                                 <p className="text-sm">{rfp_request.payee_type}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {rfp_request.payee_type === 'Supplier'
+                                                    {rfp_request.payee_type === 'supplier'
                                                         ? rfp_request.supplier_code
                                                         : rfp_request.employee_code}
                                                 </p>
@@ -233,11 +237,6 @@ export default function Index({ rfp_requests }: Props) {
                                         <TableCell>
                                             <span className="text-sm font-medium">
                                                 {rfp_request.currency?.code || 'PHP'}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="text-sm font-medium">
-                                                {formatAmount(Number(rfp_request.grand_total_amount))}
                                             </span>
                                         </TableCell>
                                         <TableCell>
@@ -286,20 +285,26 @@ export default function Index({ rfp_requests }: Props) {
                                                         <Printer className="h-4 w-4 mr-2" />
                                                         Print
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem asChild>
-                                                        <Link href={`/rfp/requests/${rfp_request.id}/edit`}>
-                                                            <Pencil className="h-4 w-4 mr-2" />
-                                                            Edit
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onClick={() => setDeleteId(rfp_request.id)}
-                                                        className="text-destructive focus:text-destructive"
-                                                    >
-                                                        <Trash2 className="h-4 w-4 mr-2" />
-                                                        Delete
-                                                    </DropdownMenuItem>
+                                                    {can('rfp-edit') && (
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/rfp/requests/${rfp_request.id}/edit`}>
+                                                                <Pencil className="h-4 w-4 mr-2" />
+                                                                Edit
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {can('rfp-delete') && (
+                                                        <>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                onClick={() => setDeleteId(rfp_request.id)}
+                                                                className="text-destructive focus:text-destructive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
