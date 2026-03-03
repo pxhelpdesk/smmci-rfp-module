@@ -6,15 +6,19 @@ use App\Models\RfpUsage;
 use App\Models\RfpCategory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class RfpUsageController extends Controller
+class RfpUsageController extends Controller implements HasMiddleware
 {
-    public function __construct()
+    public static function middleware(): array
     {
-        $this->middleware('can:rfp-usage-list')->only(['index', 'show']);
-        $this->middleware('can:rfp-usage-create')->only(['create', 'store']);
-        $this->middleware('can:rfp-usage-edit')->only(['edit', 'update']);
-        $this->middleware('can:rfp-usage-delete')->only(['destroy']);
+        return [
+            new Middleware('permission:rfp-usage-list', only: ['index', 'show']),
+            new Middleware('permission:rfp-usage-create', only: ['create', 'store']),
+            new Middleware('permission:rfp-usage-edit', only: ['edit', 'update']),
+            new Middleware('permission:rfp-usage-delete', only: ['destroy']),
+        ];
     }
 
     public function index(Request $request)

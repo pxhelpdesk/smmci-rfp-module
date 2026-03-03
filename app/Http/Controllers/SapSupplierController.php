@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\SapSupplier;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class SapSupplierController extends Controller
+class SapSupplierController extends Controller implements HasMiddleware
 {
-    public function __construct()
+    public static function middleware(): array
     {
-        $this->middleware('can:sap-supplier-list')->only(['index']);
+        return [
+            new Middleware('permission:sap-supplier-list', only: ['index', 'show']),
+        ];
     }
 
     public function index(): Response

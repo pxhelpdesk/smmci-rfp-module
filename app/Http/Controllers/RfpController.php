@@ -10,15 +10,19 @@ use App\Models\RfpLog;
 use App\Http\Requests\StoreRfpRequest;
 use App\Http\Requests\UpdateRfpRequest;
 use Inertia\Inertia;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class RfpController extends Controller
+class RfpController extends Controller implements HasMiddleware
 {
-    public function __construct()
+    public static function middleware(): array
     {
-        $this->middleware('can:rfp-request-list')->only(['index', 'show']);
-        $this->middleware('can:rfp-request-create')->only(['create', 'store']);
-        $this->middleware('can:rfp-request-edit')->only(['edit', 'update']);
-        $this->middleware('can:rfp-request-delete')->only(['destroy']);
+        return [
+            new Middleware('permission:rfp-request-list', only: ['index', 'show']),
+            new Middleware('permission:rfp-request-create', only: ['create', 'store']),
+            new Middleware('permission:rfp-request-edit', only: ['edit', 'update']),
+            new Middleware('permission:rfp-request-delete', only: ['destroy']),
+        ];
     }
 
     public function index()
