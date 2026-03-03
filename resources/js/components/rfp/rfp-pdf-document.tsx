@@ -42,6 +42,15 @@ function pdfFormatAmount(amount: number | null | undefined, prefix?: string): st
     return `${sign}${prefix ?? ''}${formatted}`;
 }
 
+function pdfFormatArea(area: string | null | undefined): string {
+    if (!area) return '';
+    const mapping: Record<string, string> = {
+        'head_office': 'Head Office',
+        'mine_site': 'Mine Site'
+    };
+    return mapping[area] || area; // Returns formatted string or the original if no match
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
@@ -409,7 +418,9 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                         <View style={{ width: 3, height: 12, backgroundColor: '#000000', marginRight: 6 }} />
                         <Text style={styles.detailsHeaderLabel}>Details</Text>
                     </View>
-                    <Text style={styles.detailsHeaderArea}>{rfp_request.area ?? ''}</Text>
+                    <Text style={styles.detailsHeaderArea}>
+                        {pdfFormatArea(rfp_request.area)}
+                    </Text>
                 </View>
 
                 {/* Table Column Headers */}
