@@ -11,6 +11,7 @@ use App\Http\Controllers\RfpRecordController;
 use App\Http\Controllers\SapController;
 use App\Http\Controllers\SapSupplierController;
 use App\Http\Controllers\RfpApprovalMatrixController;
+use App\Http\Controllers\RfpDashboardController;
 
 // Route::get('/', function () {
 //     return Inertia::render('welcome', [
@@ -29,9 +30,7 @@ Route::post('/logout', function () {
 
 Route::prefix('rfp')->group(function () {
     Route::middleware(['auth'])->group(function () {
-        Route::get('dashboard', function () {
-            return Inertia::render('dashboard');
-        })->name('dashboard');
+        Route::get('dashboard', [RfpDashboardController::class, 'index'])->name('dashboard');
 
         // Records
         Route::resource('records', RfpRecordController::class)->names([
@@ -45,6 +44,8 @@ Route::prefix('rfp')->group(function () {
         ]);
 
         Route::patch('records/{record}/cancel', [RfpRecordController::class, 'cancel'])->name('rfp.records.cancel');
+        Route::patch('records/{record}/paid', [RfpRecordController::class, 'markAsPaid'])->name('rfp.records.paid');
+        Route::patch('records/{record}/revert', [RfpRecordController::class, 'revert'])->name('rfp.records.revert');
 
         Route::get('approval-matrix', [RfpApprovalMatrixController::class, 'index'])->name('rfp.approval-matrix.index');
 

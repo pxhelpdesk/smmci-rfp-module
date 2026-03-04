@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { FileText, GitBranch, Home, LayoutGrid, Layers, FolderTree, DollarSign, Users, TableProperties } from 'lucide-react';
+import { FileText, GitBranch, Home, LayoutGrid, Layers, FolderTree, Banknote, Users, TableProperties } from 'lucide-react';
 import { useState } from 'react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -61,7 +61,7 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Currencies',
                 href: '/rfp/currencies',
-                icon: DollarSign,
+                icon: Banknote,
                 permission: 'rfp-currency-view',
             },
             {

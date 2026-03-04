@@ -12,6 +12,7 @@ use App\Http\Requests\UpdateRfpRecordRequest;
 use Inertia\Inertia;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Http\Request;
 
 class RfpRecordController extends Controller implements HasMiddleware
 {
@@ -23,26 +24,26 @@ class RfpRecordController extends Controller implements HasMiddleware
             new Middleware('permission:rfp-record-edit', only: ['edit', 'update']),
             new Middleware('permission:rfp-record-delete', only: ['destroy']),
             new Middleware('permission:rfp-record-cancel', only: ['cancel']),
+            new Middleware('permission:rfp-record-paid', only: ['markAsPaid']),
+            new Middleware('permission:rfp-record-revert', only: ['revert']),
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         $userId = $user->id;
         $departmentId = $user->department_id;
 
-        // Get all user IDs in the same department (cross-db safe)
         $sameDeptUserIds = \App\Models\User::where('department_id', $departmentId)
             ->pluck('id')
             ->toArray();
 
-        // Get RFP IDs where user is a signatory
         $signedRfpIds = \App\Models\RfpSign::where('user_id', $userId)
             ->pluck('rfp_record_id')
             ->toArray();
 
-        $rfp_records = RfpRecord::with([
+        $query = RfpRecord::with([
             'currency',
             'usage.category',
             'details',
@@ -50,16 +51,25 @@ class RfpRecordController extends Controller implements HasMiddleware
             'preparedBy.department',
             'supplier',
         ])
-        ->where(function ($query) use ($userId, $sameDeptUserIds, $signedRfpIds) {
-            $query->where('prepared_by', $userId)
+        ->where(function ($q) use ($userId, $sameDeptUserIds, $signedRfpIds) {
+            $q->where('prepared_by', $userId)
                 ->orWhereIn('prepared_by', $sameDeptUserIds)
                 ->orWhereIn('id', $signedRfpIds);
-        })
-        ->latest()
-        ->paginate(15);
+        });
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->boolean('overdue')) {
+            $query->whereDate('due_date', '<', now());
+        }
+
+        $rfp_records = $query->latest()->paginate(15)->withQueryString();
 
         return Inertia::render('rfp/records/index', [
-            'rfp_records' => $rfp_records
+            'rfp_records' => $rfp_records,
+            'filters' => $request->only(['status', 'overdue']),
         ]);
     }
 
@@ -444,6 +454,45 @@ class RfpRecordController extends Controller implements HasMiddleware
         ]);
 
         return redirect()->back()->with('success', "RFP {$record->rfp_number} has been cancelled.");
+    }
+
+    public function markAsPaid(RfpRecord $record)
+    {
+        abort_if($record->status === 'paid', 422, 'RFP is already marked as paid.');
+        abort_if($record->status === 'cancelled', 422, 'Cancelled RFP cannot be marked as paid.');
+
+        $previousStatus = $record->status;
+        $record->update(['status' => 'paid']);
+
+        RfpLog::create([
+            'rfp_record_id' => $record->id,
+            'user_id' => auth()->id(),
+            'from' => $previousStatus,
+            'into' => 'paid',
+            'details' => null,
+            'remarks' => 'Record marked as paid.',
+        ]);
+
+        return redirect()->back()->with('success', "RFP {$record->rfp_number} marked as paid.");
+    }
+
+    public function revert(RfpRecord $record)
+    {
+        abort_unless(in_array($record->status, ['paid', 'cancelled']), 422, 'Only paid or cancelled RFPs can be reverted to draft.');
+
+        $previousStatus = $record->status;
+        $record->update(['status' => 'draft']);
+
+        RfpLog::create([
+            'rfp_record_id' => $record->id,
+            'user_id' => auth()->id(),
+            'from' => $previousStatus,
+            'into' => 'draft',
+            'details' => null,
+            'remarks' => 'Record reverted to draft.',
+        ]);
+
+        return redirect()->back()->with('success', "RFP {$record->rfp_number} reverted to draft.");
     }
 
     public function getUsagesByCategory($categoryId)

@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight, Ban } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight, Ban, AlertTriangle, HandCoins, RotateCcw } from 'lucide-react';
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,8 @@ type Props = {
 export default function Show({ rfp_record, logs }: Props) {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [cancelOpen, setCancelOpen] = useState(false);
+    const [paidOpen, setPaidOpen] = useState(false);
+    const [revertOpen, setRevertOpen] = useState(false);
     const [expandedLogIds, setExpandedLogIds] = useState<Set<number>>(new Set());
     const [previewPdf, setPreviewPdf] = useState(false);
 
@@ -67,6 +69,18 @@ export default function Show({ rfp_record, logs }: Props) {
     const handleCancel = () => {
         router.patch(`/rfp/records/${rfp_record.id}/cancel`, {}, {
             onSuccess: () => setCancelOpen(false),
+        });
+    };
+
+    const handleMarkAsPaid = () => {
+        router.patch(`/rfp/records/${rfp_record.id}/paid`, {}, {
+            onSuccess: () => setPaidOpen(false),
+        });
+    };
+
+    const handleRevert = () => {
+        router.patch(`/rfp/records/${rfp_record.id}/revert`, {}, {
+            onSuccess: () => setRevertOpen(false),
         });
     };
 
@@ -173,9 +187,16 @@ export default function Show({ rfp_record, logs }: Props) {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-semibold">View RFP</h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            {rfp_record.rfp_number}
-                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-sm text-muted-foreground">{rfp_record.rfp_number}</p>
+                            {rfp_record.status === 'draft' &&
+                                new Date(rfp_record.due_date) < new Date(new Date().toDateString()) && (
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    Overdue
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" asChild>
@@ -205,6 +226,29 @@ export default function Show({ rfp_record, logs }: Props) {
                             >
                                 <Ban className="h-4 w-4 mr-1.5" />
                                 Cancel
+                            </Button>
+                        )}
+                        {can('rfp-record-paid') && rfp_record.status === 'draft' && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPaidOpen(true)}
+                                className="text-green-600 hover:text-green-600"
+                            >
+                                <HandCoins className="h-4 w-4 mr-1.5" />
+                                Mark as Paid
+                            </Button>
+                        )}
+
+                        {can('rfp-record-revert') && (rfp_record.status === 'paid' || rfp_record.status === 'cancelled') && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setRevertOpen(true)}
+                                className="text-yellow-600 hover:text-yellow-600"
+                            >
+                                <RotateCcw className="h-4 w-4 mr-1.5" />
+                                Revert to Draft
                             </Button>
                         )}
                         {can('rfp-record-delete') && (
@@ -677,6 +721,46 @@ export default function Show({ rfp_record, logs }: Props) {
                             className="bg-orange-600 text-white hover:bg-orange-700"
                         >
                             Cancel RFP
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={paidOpen} onOpenChange={setPaidOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Mark as Paid</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Mark {rfp_record.rfp_number} as paid? This can be reverted later.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Back</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleMarkAsPaid}
+                            className="bg-green-600 text-white hover:bg-green-700"
+                        >
+                            Mark as Paid
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={revertOpen} onOpenChange={setRevertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Revert to Draft</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Revert {rfp_record.rfp_number} back to draft status?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Back</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleRevert}
+                            className="bg-yellow-600 text-white hover:bg-yellow-700"
+                        >
+                            Revert to Draft
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

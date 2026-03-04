@@ -29,7 +29,6 @@ class RfpLog extends Model
 
     public function user()
     {
-        return $this->setConnection('mysql')
-            ->belongsTo(User::class, 'user_id');
+        return $this->setConnection('mysql')->belongsTo(User::class, 'user_id');
     }
 }

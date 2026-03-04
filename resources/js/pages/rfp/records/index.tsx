@@ -1,6 +1,6 @@
 // pages/rfp/records/index.tsx
 import { Link, router, Head } from '@inertiajs/react';
-import { FileText, MoreVertical, Pencil, Plus, Search, Trash2, Printer, Ban } from 'lucide-react';
+import { FileText, MoreVertical, Pencil, Plus, Search, Trash2, Printer, Ban, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
@@ -54,9 +54,13 @@ type Props = {
         per_page: number;
         total: number;
     };
+    filters: {
+        status?: string;
+        overdue?: string;
+    };
 };
 
-export default function Index({ rfp_records }: Props) {
+export default function Index({ rfp_records, filters }: Props) {
     const [search, setSearch] = useState('');
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [cancelId, setCancelId] = useState<number | null>(null);
@@ -141,6 +145,45 @@ export default function Index({ rfp_records }: Props) {
                     </div>
                 </div>
 
+                {/* Status filter tabs */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {[
+                        { label: 'All', value: null },
+                        { label: 'Draft', value: 'draft' },
+                        { label: 'Paid', value: 'paid' },
+                        { label: 'Cancelled', value: 'cancelled' },
+                    ].map((tab) => {
+                        const isActive = (tab.value === null && !filters.status) || filters.status === tab.value;
+                        const href = tab.value
+                            ? `/rfp/records?status=${tab.value}${filters.overdue === '1' ? '&overdue=1' : ''}`
+                            : '/rfp/records';
+                        return (
+                            <Link
+                                key={tab.label}
+                                href={href}
+                                className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
+                                    isActive
+                                        ? 'bg-primary text-primary-foreground border-primary'
+                                        : 'bg-card text-muted-foreground border-border hover:bg-muted'
+                                }`}
+                            >
+                                {tab.label}
+                            </Link>
+                        );
+                    })}
+
+                    {filters.overdue === '1' && (
+                        <span className="inline-flex items-center gap-1 text-xs bg-orange-50 text-orange-700 border border-orange-200 rounded px-2 py-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Overdue only
+                            <Link
+                                href={`/rfp/records${filters.status ? `?status=${filters.status}` : ''}`}
+                                className="ml-1 hover:text-destructive"
+                            >✕</Link>
+                        </span>
+                    )}
+                </div>
+
                 <div className="border rounded-lg bg-card">
                     <Table>
                         <TableHeader>
@@ -169,12 +212,21 @@ export default function Index({ rfp_records }: Props) {
                                 filteredRfps.map((rfp_record) => (
                                     <TableRow key={rfp_record.id}>
                                         <TableCell className="font-medium">
-                                            <Link
-                                                href={`/rfp/records/${rfp_record.id}`}
-                                                className="hover:underline text-primary"
-                                            >
-                                                {rfp_record.rfp_number}
-                                            </Link>
+                                            <div className="flex items-center gap-2">
+                                                <Link
+                                                    href={`/rfp/records/${rfp_record.id}`}
+                                                    className="hover:underline text-primary"
+                                                >
+                                                    {rfp_record.rfp_number}
+                                                </Link>
+                                                {rfp_record.status === 'draft' &&
+                                                    new Date(rfp_record.due_date) < new Date(new Date().toDateString()) && (
+                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
+                                                        <AlertTriangle className="h-3 w-3" />
+                                                        Overdue
+                                                    </span>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <RfpBadge type="area" value={rfp_record.area} />
@@ -249,38 +301,6 @@ export default function Index({ rfp_records }: Props) {
                                                         <Printer className="h-4 w-4 mr-2" />
                                                         Print
                                                     </DropdownMenuItem>
-                                                    {can('rfp-record-edit') && rfp_record.status !== 'cancelled' && (
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href={`/rfp/records/${rfp_record.id}/edit`}>
-                                                                <Pencil className="h-4 w-4 mr-2" />
-                                                                Edit
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                    )}
-                                                    {can('rfp-record-cancel') && rfp_record.status !== 'cancelled' && (
-                                                        <>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                onClick={() => setCancelId(rfp_record.id)}
-                                                                className="text-orange-600 focus:text-orange-600"
-                                                            >
-                                                                <Ban className="h-4 w-4 mr-2" />
-                                                                Cancel
-                                                            </DropdownMenuItem>
-                                                        </>
-                                                    )}
-                                                    {can('rfp-record-delete') && (
-                                                        <>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                onClick={() => setDeleteId(rfp_record.id)}
-                                                                className="text-destructive focus:text-destructive"
-                                                            >
-                                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                                Delete
-                                                            </DropdownMenuItem>
-                                                        </>
-                                                    )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>

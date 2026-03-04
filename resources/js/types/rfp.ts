@@ -60,13 +60,6 @@ export type RfpSign = {
     updated_at: string;
 };
 
-// User option for react-select
-export type UserOption = {
-    value: number;
-    label: string;
-    department?: string;
-};
-
 export type RfpLog = {
     id: number;
     rfp_record_id: number;
@@ -118,6 +111,15 @@ export type RfpRecord = {
     supplier?: SapSupplier;
     created_at: string;
     updated_at: string;
+};
+
+export type RfpDashboardStats = {
+    total_records: number;
+    total_draft: number;
+    total_paid: number;
+    total_cancelled: number;
+    total_grand_amount: number;
+    overdue_count: number;
 };
 
 // SAP Data Types
