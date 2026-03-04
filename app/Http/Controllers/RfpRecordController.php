@@ -2,26 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\RfpRequest;
+use App\Models\RfpRecord;
 use App\Models\RfpCurrency;
 use App\Models\RfpCategory;
 use App\Models\RfpUsage;
 use App\Models\RfpLog;
-use App\Http\Requests\StoreRfpRequest;
-use App\Http\Requests\UpdateRfpRequest;
+use App\Http\Requests\StoreRfpRecordRequest;
+use App\Http\Requests\UpdateRfpRecordRequest;
 use Inertia\Inertia;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
-class RfpController extends Controller implements HasMiddleware
+class RfpRecordController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:rfp-request-list', only: ['index', 'show']),
-            new Middleware('permission:rfp-request-create', only: ['create', 'store']),
-            new Middleware('permission:rfp-request-edit', only: ['edit', 'update']),
-            new Middleware('permission:rfp-request-delete', only: ['destroy']),
+            new Middleware('permission:rfp-record-view', only: ['index', 'show']),
+            new Middleware('permission:rfp-record-create', only: ['create', 'store']),
+            new Middleware('permission:rfp-record-edit', only: ['edit', 'update']),
+            new Middleware('permission:rfp-record-delete', only: ['destroy']),
         ];
     }
 
@@ -38,10 +38,10 @@ class RfpController extends Controller implements HasMiddleware
 
         // Get RFP IDs where user is a signatory
         $signedRfpIds = \App\Models\RfpSign::where('user_id', $userId)
-            ->pluck('rfp_request_id')
+            ->pluck('rfp_record_id')
             ->toArray();
 
-        $rfp_requests = RfpRequest::with([
+        $rfp_records = RfpRecord::with([
             'currency',
             'usage.category',
             'details',
@@ -57,8 +57,8 @@ class RfpController extends Controller implements HasMiddleware
         ->latest()
         ->paginate(15);
 
-        return Inertia::render('rfp/requests/index', [
-            'rfp_requests' => $rfp_requests
+        return Inertia::render('rfp/records/index', [
+            'rfp_records' => $rfp_records
         ]);
     }
 
@@ -68,7 +68,7 @@ class RfpController extends Controller implements HasMiddleware
             ->where('is_active', true)
             ->first();
 
-        return Inertia::render('rfp/requests/create', [
+        return Inertia::render('rfp/records/create', [
             'currencies' => RfpCurrency::select('id', 'code', 'name')
                 ->where('is_active', true)
                 ->get(),
@@ -79,7 +79,7 @@ class RfpController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function store(StoreRfpRequest $request)
+    public function store(StoreRfpRecordRequest $request)
     {
         $validated = $request->validated();
 
@@ -88,36 +88,35 @@ class RfpController extends Controller implements HasMiddleware
         $validated['subtotal_details_amount'] = $detailsSubtotal;
 
         $validated['prepared_by'] = auth()->id();
-        $rfpRequest = RfpRequest::create($validated);
+        $rfpRecord = RfpRecord::create($validated);
 
         if ($request->has('details')) {
-            $rfpRequest->details()->createMany($request->details);
+            $rfpRecord->details()->createMany($request->details);
         }
 
-        return redirect()->route('rfp.requests.index')->with('success', "RFP {$rfpRequest->rfp_request_number} created successfully.");
+        return redirect()->route('rfp.records.index')->with('success', "RFP {$rfpRecord->rfp_number} created successfully.");
     }
 
-    public function show(RfpRequest $request)
+    public function show(RfpRecord $record)
     {
         $user = auth()->user();
         $userId = $user->id;
         $departmentId = $user->department_id;
 
-        // Authorization check — same logic as index
         $sameDeptUserIds = \App\Models\User::where('department_id', $departmentId)
             ->pluck('id')
             ->toArray();
 
-        $isSignatory = \App\Models\RfpSign::where('rfp_request_id', $request->id)
+        $isSignatory = \App\Models\RfpSign::where('rfp_record_id', $record->id)
             ->where('user_id', $userId)
             ->exists();
 
-        $isPreparedByDept = in_array($request->prepared_by, $sameDeptUserIds);
-        $isOwner = $request->prepared_by === $userId;
+        $isPreparedByDept = in_array($record->prepared_by, $sameDeptUserIds);
+        $isOwner = $record->prepared_by === $userId;
 
         abort_unless($isOwner || $isPreparedByDept || $isSignatory, 403);
 
-        $request->load([
+        $record->load([
             'currency',
             'usage.category',
             'details',
@@ -126,23 +125,23 @@ class RfpController extends Controller implements HasMiddleware
             'supplier',
         ]);
 
-        $logs = RfpLog::where('rfp_request_id', $request->id)
+        $logs = RfpLog::where('rfp_record_id', $record->id)
             ->with('user.department')
             ->latest()
             ->paginate(10, ['*'], 'logs_page');
 
-        return Inertia::render('rfp/requests/show', [
-            'rfp_request' => $request,
+        return Inertia::render('rfp/records/show', [
+            'rfp_record' => $record,
             'logs' => $logs,
         ]);
     }
 
-    public function edit(RfpRequest $request)
+    public function edit(RfpRecord $record)
     {
-        $request->load(['details', 'usage']);
+        $record->load(['details', 'usage.category']);
 
-        return Inertia::render('rfp/requests/edit', [
-            'rfp_request' => $request,
+        return Inertia::render('rfp/records/edit', [
+            'rfp_record' => $record,
             'currencies' => RfpCurrency::select('id', 'code', 'name')
                 ->where('is_active', true)
                 ->get(),
@@ -152,7 +151,7 @@ class RfpController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function update(UpdateRfpRequest $updateRequest, RfpRequest $request)
+    public function update(UpdateRfpRecordRequest $updateRequest, RfpRecord $record)
     {
         $validated = $updateRequest->validated();
 
@@ -161,7 +160,7 @@ class RfpController extends Controller implements HasMiddleware
         $validated['subtotal_details_amount'] = $detailsSubtotal;
 
         // Track changes for logging
-        $changes = $this->detectChanges($request, $validated);
+        $changes = $this->detectChanges($record, $validated);
 
         // Extract details and log_remarks before updating
         $details = $validated['details'] ?? [];
@@ -170,33 +169,33 @@ class RfpController extends Controller implements HasMiddleware
         unset($validated['log_remarks']);
 
         // Update RFP
-        $request->update($validated);
+        $record->update($validated);
 
         // Update details
         if (!empty($details)) {
-            $request->details()->delete();
-            $request->details()->createMany($details);
+            $record->details()->delete();
+            $record->details()->createMany($details);
         }
 
         // Create log entry if there are changes
         if (!empty($changes)) {
             RfpLog::create([
-                'rfp_request_id' => $request->id,
+                'rfp_record_id' => $record->id,
                 'user_id' => auth()->id(),
-                'from' => $request->status,
-                'into' => $request->status,
+                'from' => $record->status,
+                'into' => $record->status,
                 'details' => json_encode($changes),
                 'remarks' => $logRemarks,
             ]);
         }
 
-        return redirect()->route('rfp.requests.show', $request->id)->with('success', "RFP {$request->rfp_request_number} updated successfully.");
+        return redirect()->route('rfp.records.show', $record->id)->with('success', "RFP {$record->rfp_number} updated successfully.");
     }
 
     /**
      * Detect changes between original and new values
      */
-    private function detectChanges(RfpRequest $original, array $newData): array
+    private function detectChanges(RfpRecord $original, array $newData): array
     {
         $changes = [];
 
@@ -205,6 +204,8 @@ class RfpController extends Controller implements HasMiddleware
             'due_date' => 'Due Date',
             'rr_no' => 'RR No.',
             'po_no' => 'PO No.',
+            'requisition_no' => 'Requisition No.',
+            'contract_no' => 'Contract No.',
             'area' => 'Area',
             'payee_type' => 'Payee Type',
             'employee_code' => 'Employee Code',
@@ -267,7 +268,7 @@ class RfpController extends Controller implements HasMiddleware
     /**
      * Format value for logging
      */
-    private function formatValue(string $field, $value, RfpRequest $original)
+    private function formatValue(string $field, $value, RfpRecord $original)
     {
         if ($value === null || $value === '') {
             return 'N/A';
@@ -298,14 +299,14 @@ class RfpController extends Controller implements HasMiddleware
         return $value;
     }
 
-    public function destroy(RfpRequest $request)
+    public function destroy(RfpRecord $record)
     {
-        $rfpNumber = $request->rfp_request_number;
-        $request->delete();
+        $rfpNumber = $record->rfp_number;
+        $record->delete();
 
-        return redirect()->route('rfp.requests.index')
+        return redirect()->route('rfp.records.index')
             ->with('success', "RFP {$rfpNumber} deleted successfully.");
-    }
+}
 
     public function getUsagesByCategory($categoryId)
     {

@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 
-class UpdateRfpRequest extends FormRequest
+class UpdateRfpRecordRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,11 +14,13 @@ class UpdateRfpRequest extends FormRequest
 
     public function rules(): array
     {
-        // get the bound RfpRequest model from route
-        $rfpRequest = $this->route('request');
+        // get the bound RfpRecord model from route
+        $rfpRecord = $this->route('record');
 
         // normalize both dates to Y-m-d for comparison
-        $existingDueDate = $rfpRequest?->due_date?->format('Y-m-d');
+        $existingDueDate = $rfpRecord?->due_date
+            ? \Carbon\Carbon::parse($rfpRecord->due_date)->format('Y-m-d')
+            : null;
         $incomingDueDate = $this->due_date
             ? \Carbon\Carbon::parse($this->due_date)->format('Y-m-d')
             : null;
@@ -33,6 +35,8 @@ class UpdateRfpRequest extends FormRequest
             'due_date' => $dueDateRule,
             'rr_no' => 'nullable|string',
             'po_no' => 'nullable|string',
+            'requisition_no' => 'nullable|string',
+            'contract_no' => 'nullable|string',
             'area' => 'required|in:head_office,mine_site',
             'payee_type' => 'required|in:employee,supplier',
             'employee_code' => 'required_if:payee_type,employee|nullable|string',

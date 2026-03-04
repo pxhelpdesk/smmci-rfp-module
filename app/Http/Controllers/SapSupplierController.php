@@ -13,7 +13,7 @@ class SapSupplierController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:sap-supplier-list', only: ['index', 'show']),
+            new Middleware('permission:sap-supplier-view', only: ['index', 'show']),
         ];
     }
 

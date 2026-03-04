@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 
-class StoreRfpRequest extends FormRequest
+class StoreRfpRecordRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -19,6 +19,8 @@ class StoreRfpRequest extends FormRequest
             'due_date' => 'required|date|after_or_equal:today',
             'rr_no' => 'nullable|string',
             'po_no' => 'nullable|string',
+            'requisition_no' => 'nullable|string',
+            'contract_no' => 'nullable|string',
             'area' => 'required|in:head_office,mine_site',
             'payee_type' => 'required|in:employee,supplier',
             'employee_code' => 'required_if:payee_type,employee|nullable|string',

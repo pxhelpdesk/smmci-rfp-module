@@ -13,7 +13,7 @@ class RfpCurrencyController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:rfp-currency-list', only: ['index', 'show']),
+            new Middleware('permission:rfp-currency-view', only: ['index', 'show']),
             new Middleware('permission:rfp-currency-create', only: ['create', 'store']),
             new Middleware('permission:rfp-currency-edit', only: ['edit', 'update']),
             new Middleware('permission:rfp-currency-delete', only: ['destroy']),

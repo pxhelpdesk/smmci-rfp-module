@@ -7,7 +7,7 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\RfpCategoryController;
 use App\Http\Controllers\RfpUsageController;
 use App\Http\Controllers\RfpCurrencyController;
-use App\Http\Controllers\RfpController;
+use App\Http\Controllers\RfpRecordController;
 use App\Http\Controllers\SapController;
 use App\Http\Controllers\SapSupplierController;
 
@@ -32,19 +32,19 @@ Route::prefix('rfp')->group(function () {
             return Inertia::render('dashboard');
         })->name('dashboard');
 
-        // Requests
-        Route::resource('requests', RfpController::class)->names([
-            'index' => 'rfp.requests.index',
-            'create' => 'rfp.requests.create',
-            'store' => 'rfp.requests.store',
-            'show' => 'rfp.requests.show',
-            'edit' => 'rfp.requests.edit',
-            'update' => 'rfp.requests.update',
-            'destroy' => 'rfp.requests.destroy',
+        // Records
+        Route::resource('records', RfpRecordController::class)->names([
+            'index' => 'rfp.records.index',
+            'create' => 'rfp.records.create',
+            'store' => 'rfp.records.store',
+            'show' => 'rfp.records.show',
+            'edit' => 'rfp.records.edit',
+            'update' => 'rfp.records.update',
+            'destroy' => 'rfp.records.destroy',
         ]);
 
         // Get usages by category (for dropdown)
-        Route::get('usages/category/{categoryId}', [RfpController::class, 'getUsagesByCategory'])
+        Route::get('usages/category/{categoryId}', [RfpRecordController::class, 'getUsagesByCategory'])
             ->name('rfp.usages.by-category');
 
         // Categories

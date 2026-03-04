@@ -13,7 +13,7 @@ class RfpCategoryController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:rfp-category-list', only: ['index', 'show']),
+            new Middleware('permission:rfp-category-view', only: ['index', 'show']),
             new Middleware('permission:rfp-category-create', only: ['create', 'store']),
             new Middleware('permission:rfp-category-edit', only: ['edit', 'update']),
             new Middleware('permission:rfp-category-delete', only: ['destroy']),

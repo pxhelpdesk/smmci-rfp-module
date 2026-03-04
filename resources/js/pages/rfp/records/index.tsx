@@ -1,4 +1,4 @@
-// pages/rfp/requests/index.tsx
+// pages/rfp/records/index.tsx
 import { Link, router, Head } from '@inertiajs/react';
 import { FileText, MoreVertical, Pencil, Plus, Search, Trash2, Printer } from 'lucide-react';
 import { useState } from 'react';
@@ -40,15 +40,15 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
-import type { RfpRequest } from '@/types';
+import type { RfpRecord } from '@/types';
 import { formatDate, formatTime } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
 import { RfpBadge } from '@/components/rfp/rfp-badge';
 import { RfpPdfPreviewDialog } from '@/components/rfp/rfp-pdf-preview-dialog';
 
 type Props = {
-    rfp_requests: {
-        data: RfpRequest[];
+    rfp_records: {
+        data: RfpRecord[];
         current_page: number;
         last_page: number;
         per_page: number;
@@ -56,40 +56,40 @@ type Props = {
     };
 };
 
-export default function Index({ rfp_requests }: Props) {
+export default function Index({ rfp_records }: Props) {
     const [search, setSearch] = useState('');
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [previewPdf, setPreviewPdf] = useState<string | null>(null);
 
     const handleDelete = () => {
         if (deleteId) {
-            router.delete(`/rfp/requests/${deleteId}`, {
+            router.delete(`/rfp/records/${deleteId}`, {
                 onSuccess: () => {
                     setDeleteId(null);
                 },
                 onError: () => {
-                    toast.error('Failed to delete RFP request');
+                    toast.error('Failed to delete RFP');
                 },
             });
         }
     };
 
-    const [previewRfp, setPreviewRfp] = useState<RfpRequest | null>(null);
+    const [previewRfp, setPreviewRfp] = useState<RfpRecord | null>(null);
 
-    const handlePrint = (rfp_request: RfpRequest) => {
-        setPreviewRfp(rfp_request);
+    const handlePrint = (rfp_record: RfpRecord) => {
+        setPreviewRfp(rfp_record);
     };
 
     const handleClosePdf = () => {
         setPreviewRfp(null);
     };
 
-    const filteredRfps = rfp_requests.data.filter(
-        (rfp_request) =>
-            rfp_request.rfp_request_number.toLowerCase().includes(search.toLowerCase()) ||
-            rfp_request.usage?.description.toLowerCase().includes(search.toLowerCase()) ||
-            rfp_request.supplier_name?.toLowerCase().includes(search.toLowerCase()) ||
-            rfp_request.employee_name?.toLowerCase().includes(search.toLowerCase())
+    const filteredRfps = rfp_records.data.filter(
+        (rfp_record) =>
+            rfp_record.rfp_number.toLowerCase().includes(search.toLowerCase()) ||
+            rfp_record.usage?.description.toLowerCase().includes(search.toLowerCase()) ||
+            rfp_record.supplier_name?.toLowerCase().includes(search.toLowerCase()) ||
+            rfp_record.employee_name?.toLowerCase().includes(search.toLowerCase())
     );
 
     const { can } = usePermission();
@@ -98,23 +98,23 @@ export default function Index({ rfp_requests }: Props) {
         <AppLayout
             breadcrumbs={[
                 { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Requests', href: '/rfp/requests' },
+                { title: 'Records', href: '/rfp/records' },
             ]}
         >
-            <Head title="RFP Requests" />
+            <Head title="RFP Records" />
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">Requests</h1>
+                        <h1 className="text-2xl font-semibold">Records</h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            Manage request for payment documents
+                            Manage records for RFP
                         </p>
                     </div>
-                    {can('rfp-request-create') && (
+                    {can('rfp-record-create') && (
                         <Button asChild size="sm">
-                            <Link href="/rfp/requests/create">
+                            <Link href="/rfp/records/create">
                                 <Plus className="h-4 w-4 mr-1.5" />
-                                New Request
+                                New Record
                             </Link>
                         </Button>
                     )}
@@ -153,68 +153,68 @@ export default function Index({ rfp_requests }: Props) {
                                 <TableRow>
                                     <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                                         <FileText className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                                        <p className="text-sm">No Requests found</p>
+                                        <p className="text-sm">No Records found</p>
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredRfps.map((rfp_request) => (
-                                    <TableRow key={rfp_request.id}>
+                                filteredRfps.map((rfp_record) => (
+                                    <TableRow key={rfp_record.id}>
                                         <TableCell className="font-medium">
                                             <Link
-                                                href={`/rfp/requests/${rfp_request.id}`}
+                                                href={`/rfp/records/${rfp_record.id}`}
                                                 className="hover:underline text-primary"
                                             >
-                                                {rfp_request.rfp_request_number}
+                                                {rfp_record.rfp_number}
                                             </Link>
                                         </TableCell>
                                         <TableCell>
-                                            <RfpBadge type="area" value={rfp_request.area} />
+                                            <RfpBadge type="area" value={rfp_record.area} />
                                         </TableCell>
                                         <TableCell>
                                             <div>
-                                                <p className="text-sm">{rfp_request.prepared_by?.name ?? 'N/A'}</p>
+                                                <p className="text-sm">{rfp_record.prepared_by?.name ?? 'N/A'}</p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    {rfp_request.prepared_by?.department?.department ?? ''}
+                                                    {rfp_record.prepared_by?.department?.department ?? ''}
                                                 </p>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div>
-                                                <RfpBadge type="payee" value={rfp_request.payee_type} />
+                                                <RfpBadge type="payee" value={rfp_record.payee_type} />
 
                                                 <p className="text-xs text-muted-foreground">
-                                                    {rfp_request.payee_type === 'supplier'
-                                                    ? rfp_request.supplier_code
-                                                    : rfp_request.employee_code}
+                                                    {rfp_record.payee_type === 'supplier'
+                                                    ? rfp_record.supplier_code
+                                                    : rfp_record.employee_code}
                                                 </p>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
-                                                <div>{formatDate(rfp_request.created_at)}</div>
+                                                <div>{formatDate(rfp_record.created_at)}</div>
                                                 <div className="text-xs">
-                                                    {formatTime(rfp_request.created_at)}
+                                                    {formatTime(rfp_record.created_at)}
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
-                                                {formatDate(rfp_request.due_date)}
+                                                {formatDate(rfp_record.due_date)}
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <span className="text-sm font-medium">
-                                                {rfp_request.currency?.code || 'PHP'}
+                                                {rfp_record.currency?.code || 'PHP'}
                                             </span>
                                         </TableCell>
                                         <TableCell>
-                                            <RfpBadge type="status" value={rfp_request.status} />
+                                            <RfpBadge type="status" value={rfp_record.status} />
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-sm text-muted-foreground">
-                                                <div>{formatDate(rfp_request.updated_at)}</div>
+                                                <div>{formatDate(rfp_record.updated_at)}</div>
                                                 <div className="text-xs">
-                                                    {formatTime(rfp_request.updated_at)}
+                                                    {formatTime(rfp_record.updated_at)}
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -231,28 +231,28 @@ export default function Index({ rfp_requests }: Props) {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuItem asChild>
-                                                        <Link href={`/rfp/requests/${rfp_request.id}`}>
+                                                        <Link href={`/rfp/records/${rfp_record.id}`}>
                                                             <FileText className="h-4 w-4 mr-2" />
                                                             View
                                                         </Link>
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handlePrint(rfp_request)}>
+                                                    <DropdownMenuItem onClick={() => handlePrint(rfp_record)}>
                                                         <Printer className="h-4 w-4 mr-2" />
                                                         Print
                                                     </DropdownMenuItem>
-                                                    {can('rfp-request-edit') && (
+                                                    {can('rfp-record-edit') && (
                                                         <DropdownMenuItem asChild>
-                                                            <Link href={`/rfp/requests/${rfp_request.id}/edit`}>
+                                                            <Link href={`/rfp/records/${rfp_record.id}/edit`}>
                                                                 <Pencil className="h-4 w-4 mr-2" />
                                                                 Edit
                                                             </Link>
                                                         </DropdownMenuItem>
                                                     )}
-                                                    {can('rfp-request-delete') && (
+                                                    {can('rfp-record-delete') && (
                                                         <>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem
-                                                                onClick={() => setDeleteId(rfp_request.id)}
+                                                                onClick={() => setDeleteId(rfp_record.id)}
                                                                 className="text-destructive focus:text-destructive"
                                                             >
                                                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -270,46 +270,46 @@ export default function Index({ rfp_requests }: Props) {
                     </Table>
                 </div>
 
-                {rfp_requests.last_page > 1 && (
+                {rfp_records.last_page > 1 && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground px-2">
                         <p>
-                            Showing {(rfp_requests.current_page - 1) * rfp_requests.per_page + 1} to{' '}
-                            {Math.min(rfp_requests.current_page * rfp_requests.per_page, rfp_requests.total)} of{' '}
-                            {rfp_requests.total} results
+                            Showing {(rfp_records.current_page - 1) * rfp_records.per_page + 1} to{' '}
+                            {Math.min(rfp_records.current_page * rfp_records.per_page, rfp_records.total)} of{' '}
+                            {rfp_records.total} results
                         </p>
                         <Pagination className="w-auto mx-0">
                             <PaginationContent>
                                 <PaginationItem>
                                     <PaginationPrevious
-                                        href={rfp_requests.current_page > 1 ? `/rfp/requests?page=${rfp_requests.current_page - 1}` : '#'}
-                                        className={rfp_requests.current_page === 1 ? 'pointer-events-none opacity-50' : ''}
+                                        href={rfp_records.current_page > 1 ? `/rfp/records?page=${rfp_records.current_page - 1}` : '#'}
+                                        className={rfp_records.current_page === 1 ? 'pointer-events-none opacity-50' : ''}
                                     />
                                 </PaginationItem>
 
                                 {/* First page */}
                                 <PaginationItem>
                                     <PaginationLink
-                                        href="/rfp/requests?page=1"
-                                        isActive={rfp_requests.current_page === 1}
+                                        href="/rfp/records?page=1"
+                                        isActive={rfp_records.current_page === 1}
                                     >
                                         1
                                     </PaginationLink>
                                 </PaginationItem>
 
-                                {rfp_requests.current_page > 3 && <PaginationEllipsis />}
+                                {rfp_records.current_page > 3 && <PaginationEllipsis />}
 
-                                {Array.from({ length: rfp_requests.last_page }, (_, i) => i + 1)
+                                {Array.from({ length: rfp_records.last_page }, (_, i) => i + 1)
                                     .filter(page =>
                                         page !== 1 &&
-                                        page !== rfp_requests.last_page &&
-                                        page >= rfp_requests.current_page - 1 &&
-                                        page <= rfp_requests.current_page + 1
+                                        page !== rfp_records.last_page &&
+                                        page >= rfp_records.current_page - 1 &&
+                                        page <= rfp_records.current_page + 1
                                     )
                                     .map(page => (
                                         <PaginationItem key={page}>
                                             <PaginationLink
-                                                href={`/rfp/requests?page=${page}`}
-                                                isActive={rfp_requests.current_page === page}
+                                                href={`/rfp/records?page=${page}`}
+                                                isActive={rfp_records.current_page === page}
                                             >
                                                 {page}
                                             </PaginationLink>
@@ -317,24 +317,24 @@ export default function Index({ rfp_requests }: Props) {
                                     ))
                                 }
 
-                                {rfp_requests.current_page < rfp_requests.last_page - 2 && <PaginationEllipsis />}
+                                {rfp_records.current_page < rfp_records.last_page - 2 && <PaginationEllipsis />}
 
                                 {/* Last page */}
-                                {rfp_requests.last_page > 1 && (
+                                {rfp_records.last_page > 1 && (
                                     <PaginationItem>
                                         <PaginationLink
-                                            href={`/rfp/requests?page=${rfp_requests.last_page}`}
-                                            isActive={rfp_requests.current_page === rfp_requests.last_page}
+                                            href={`/rfp/records?page=${rfp_records.last_page}`}
+                                            isActive={rfp_records.current_page === rfp_records.last_page}
                                         >
-                                            {rfp_requests.last_page}
+                                            {rfp_records.last_page}
                                         </PaginationLink>
                                     </PaginationItem>
                                 )}
 
                                 <PaginationItem>
                                     <PaginationNext
-                                        href={rfp_requests.current_page < rfp_requests.last_page ? `/rfp/requests?page=${rfp_requests.current_page + 1}` : '#'}
-                                        className={rfp_requests.current_page === rfp_requests.last_page ? 'pointer-events-none opacity-50' : ''}
+                                        href={rfp_records.current_page < rfp_records.last_page ? `/rfp/records?page=${rfp_records.current_page + 1}` : '#'}
+                                        className={rfp_records.current_page === rfp_records.last_page ? 'pointer-events-none opacity-50' : ''}
                                     />
                                 </PaginationItem>
                             </PaginationContent>
@@ -346,10 +346,10 @@ export default function Index({ rfp_requests }: Props) {
             <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete RFP Request</AlertDialogTitle>
+                        <AlertDialogTitle>Delete RFP</AlertDialogTitle>
                         <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete the RFP
-                            request and all associated details.
+                            record and all associated details.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -362,7 +362,7 @@ export default function Index({ rfp_requests }: Props) {
             </AlertDialog>
 
             <RfpPdfPreviewDialog
-                rfp_request={previewRfp}
+                rfp_record={previewRfp}
                 open={!!previewRfp}
                 onClose={handleClosePdf}
             />

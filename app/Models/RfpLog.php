@@ -13,7 +13,7 @@ class RfpLog extends Model
     protected $connection = 'mysql_rfp';
 
     protected $fillable = [
-        'rfp_request_id',
+        'rfp_record_id',
         'code',
         'user_id',
         'from',
@@ -22,9 +22,9 @@ class RfpLog extends Model
         'remarks',
     ];
 
-    public function rfpRequest()
+    public function rfpRecord()
     {
-        return $this->belongsTo(RfpRequest::class);
+        return $this->belongsTo(RfpRecord::class);
     }
 
     public function user()

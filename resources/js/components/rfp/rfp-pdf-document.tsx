@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import type { RfpRequest } from '@/types';
+import type { RfpRecord } from '@/types';
 
 // ── Local PDF-safe formatters ─────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ function pdfFormatArea(area: string | null | undefined): string {
 const styles = StyleSheet.create({
     page: {
         paddingTop: 42,
-        paddingBottom: 80,
+        paddingBottom: 90,
         paddingLeft: 42,
         paddingRight: 42,
         fontSize: 11,
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
         borderBottomColor: '#000000',
         borderBottomStyle: 'dashed',
         position: 'absolute',
-        bottom: 90,
+        bottom: 70,
         left: 42,
         right: 42,
     },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 42,
         right: 42,
-        bottom: 65,
+        bottom: 52,
         fontSize: 8.5,
         fontWeight: 'bold',
         textDecoration: 'underline',
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     footerDraftLeft: {
         position: 'absolute',
         left: 42,
-        bottom: 52,
+        bottom: 36,
         fontSize: 8,
         fontStyle: 'italic',
         textAlign: 'left',
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     footerGeneratedLeft: {
         position: 'absolute',
         left: 42,
-        bottom: 40,
+        bottom: 24,
         fontSize: 8,
         textAlign: 'left',
         color: '#000000',
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     footerPageRight: {
         position: 'absolute',
         right: 42,
-        bottom: 52,
+        bottom: 36,
         fontSize: 8,
         textAlign: 'right',
         color: '#000000',
@@ -296,9 +296,38 @@ const styles = StyleSheet.create({
     footerPortalRight: {
         position: 'absolute',
         right: 42,
-        bottom: 40,
+        bottom: 24,
         fontSize: 7.5,
         textAlign: 'right',
+        color: '#000000',
+    },
+
+    footerRequisitionLeft: {
+        position: 'absolute',
+        left: 42,
+        bottom: 48,
+        fontSize: 8,
+        textAlign: 'left',
+        color: '#000000',
+    },
+
+    footerContractRight: {
+        position: 'absolute',
+        right: 42,
+        bottom: 48,
+        fontSize: 8,
+        textAlign: 'right',
+        color: '#000000',
+    },
+
+    footerRfpNumber: {
+        position: 'absolute',
+        left: 42,
+        right: 42,
+        bottom: 36,
+        fontSize: 8,
+        fontWeight: 'bold',
+        textAlign: 'center',
         color: '#000000',
     },
 });
@@ -306,11 +335,11 @@ const styles = StyleSheet.create({
 const LOGO_URL = '/storage/images/logos/SMMCI_Logo_icon-text.png';
 
 type Props = {
-    rfp_request: RfpRequest;
+    rfp_record: RfpRecord;
 };
 
-export function RfpPdfDocument({ rfp_request }: Props) {
-    const currencyCode = rfp_request.currency?.code ?? '';
+export function RfpPdfDocument({ rfp_record }: Props) {
+    const currencyCode = rfp_record.currency?.code ?? '';
     const generatedAt = pdfFormatDateTime(new Date().toISOString());
 
     return (
@@ -347,27 +376,27 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Supplier</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValue}>{rfp_request.supplier_name ?? '—'}</Text>
+                            <Text style={styles.infoValue}>{rfp_record.supplier_name ?? '—'}</Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Address</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValue}>{rfp_request.supplier?.address ?? '—'}</Text>
+                            <Text style={styles.infoValue}>{rfp_record.supplier?.address ?? '—'}</Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>TIN</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValue}>{rfp_request.supplier?.tin ?? '—'}</Text>
+                            <Text style={styles.infoValue}>{rfp_record.supplier?.tin ?? '—'}</Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Vendor Ref.</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValue}>{rfp_request.vendor_ref ?? '—'}</Text>
+                            <Text style={styles.infoValue}>{rfp_record.vendor_ref ?? '—'}</Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Currency</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValue}>{rfp_request.currency?.code ?? '—'}</Text>
+                            <Text style={styles.infoValue}>{rfp_record.currency?.code ?? '—'}</Text>
                         </View>
                     </View>
 
@@ -376,31 +405,31 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabelRight}>AP No</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValueRight}>{rfp_request.ap_no ?? '—'}</Text>
+                            <Text style={styles.infoValueRight}>{rfp_record.ap_no ?? '—'}</Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabelRight}>Date</Text>
                             <Text style={styles.infoColon}>:</Text>
                             <Text style={styles.infoValueRight}>
-                                {pdfFormatDate(rfp_request.created_at)}
+                                {pdfFormatDate(rfp_record.created_at)}
                             </Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabelRight}>Due Date</Text>
                             <Text style={styles.infoColon}>:</Text>
                             <Text style={styles.infoValueRight}>
-                                {pdfFormatDate(rfp_request.due_date)}
+                                {pdfFormatDate(rfp_record.due_date)}
                             </Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabelRight}>RR No.</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValueRight}>{rfp_request.rr_no ?? '—'}</Text>
+                            <Text style={styles.infoValueRight}>{rfp_record.rr_no ?? '—'}</Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabelRight}>PO No.</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValueRight}>{rfp_request.po_no ?? '—'}</Text>
+                            <Text style={styles.infoValueRight}>{rfp_record.po_no ?? '—'}</Text>
                         </View>
                     </View>
 
@@ -416,7 +445,7 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                         <Text style={styles.detailsHeaderLabel}>Details</Text>
                     </View>
                     <Text style={styles.detailsHeaderArea}>
-                        {pdfFormatArea(rfp_request.area)}
+                        {pdfFormatArea(rfp_record.area)}
                     </Text>
                 </View>
 
@@ -431,13 +460,13 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                 </View>
 
                 {/* Table Rows */}
-                {rfp_request.details && rfp_request.details.length > 0 ? (
-                    rfp_request.details.map((detail, index) => (
+                {rfp_record.details && rfp_record.details.length > 0 ? (
+                    rfp_record.details.map((detail, index) => (
                         <View
                             key={detail.id ?? index}
                             style={[
                                 styles.detailsTableRow,
-                                index === rfp_request.details.length - 1 ? styles.detailsTableRowLast : {},
+                                index === rfp_record.details.length - 1 ? styles.detailsTableRowLast : {},
                             ]}
                         >
                             <Text style={[styles.detailsTableText, styles.detailsColDescription]}>
@@ -460,7 +489,7 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                     <View style={{ flex: 1 }}>
                         <Text style={styles.remarksLabel}>Remarks :</Text>
                         <View style={styles.remarksBox}>
-                            <Text style={styles.remarksText}>{rfp_request.remarks ?? 'None'}</Text>
+                            <Text style={styles.remarksText}>{rfp_record.remarks ?? 'None'}</Text>
                         </View>
                     </View>
                     <View style={{ flex: 1 }} />
@@ -473,6 +502,10 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                     "THIS DOCUMENT IS NOT VALID FOR CLAIM OF INPUT TAX"
                 </Text>
 
+                <Text style={styles.footerRequisitionLeft} fixed>
+                    SWP PR: {rfp_record.requisition_no ?? 'N/A'}
+                </Text>
+
                 <Text style={styles.footerDraftLeft} fixed>
                     DRAFT RFP FORM
                 </Text>
@@ -481,11 +514,19 @@ export function RfpPdfDocument({ rfp_request }: Props) {
                     Generation: {generatedAt}
                 </Text>
 
+                <Text style={styles.footerRfpNumber} fixed>
+                    Reference No.: {rfp_record.rfp_number}
+                </Text>
+
                 <Text
                     style={styles.footerPageRight}
                     fixed
                     render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
                 />
+
+                <Text style={styles.footerContractRight} fixed>
+                    SWP RCW: {rfp_record.contract_no ?? 'N/A'}
+                </Text>
 
                 <Text style={styles.footerPortalRight} fixed>
                     Generated by: SMMCI WEB PORTAL

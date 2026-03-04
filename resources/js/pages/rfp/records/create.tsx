@@ -1,6 +1,6 @@
 import { useForm, Head, usePage } from '@inertiajs/react';
 import { Save, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Select from 'react-select';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -24,35 +24,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import type { RfpRequest, RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
+import type { RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
 import type { SharedData } from '@/types';
-import { RfpBadge } from '@/components/rfp/rfp-badge';
-
-type ChangeLog = {
-    field: string;
-    old: string;
-    new: string;
-};
 
 type Props = {
-    rfp_request: RfpRequest;
     categories: RfpCategory[];
     currencies: RfpCurrency[];
+    defaultCurrencyId?: number | null;
 };
 
 const Req = () => <span className="text-destructive ml-0.5">*</span>;
 
-export default function Edit({ rfp_request, categories, currencies }: Props) {
+export default function Create({ categories, currencies, defaultCurrencyId }: Props) {
     const { auth } = usePage<SharedData>().props;
     const [accounts, setAccounts] = useState<SapAccountOption[]>([]);
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
@@ -60,59 +43,9 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
     const [loadingAccounts, setLoadingAccounts] = useState(false);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
     const [loadingUsages, setLoadingUsages] = useState(false);
-    const [showLogDialog, setShowLogDialog] = useState(false);
-    const [logRemarks, setLogRemarks] = useState('');
-    const [detectedChanges, setDetectedChanges] = useState<ChangeLog[]>([]);
+    const [usageSelectKey, setUsageSelectKey] = useState(0);
 
-    const loadUsages = async (categoryId: number) => {
-        setLoadingUsages(true);
-        try {
-            const res = await fetch(`/rfp/usages/category/${categoryId}`);
-            const data = await res.json();
-            setUsages(data);
-        } catch (error) {
-            console.error('Failed to load usages', error);
-        }
-        setLoadingUsages(false);
-    };
-
-    const loadSuppliers = async () => {
-        setLoadingSuppliers(true);
-        try {
-            const res = await fetch('/rfp/api/suppliers');
-            const data = await res.json();
-            setSuppliers(data);
-        } catch (error) {
-            console.error('Failed to load suppliers', error);
-        }
-        setLoadingSuppliers(false);
-    };
-
-    // const loadAccounts = async () => {
-    //     setLoadingAccounts(true);
-    //     try {
-    //         const res = await fetch('/rfp/api/accounts');
-    //         const data = await res.json();
-    //         setAccounts(data);
-    //     } catch (error) {
-    //         console.error('Failed to load accounts', error);
-    //     }
-    //     setLoadingAccounts(false);
-    // };
-
-    useEffect(() => {
-        if (rfp_request.usage?.rfp_category_id) {
-            loadUsages(rfp_request.usage.rfp_category_id);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (rfp_request.supplier_code) {
-            loadSuppliers();
-        }
-    }, []);
-
-    const { data, setData, put, processing, errors } = useForm<{
+    const { data, setData, post, processing, errors } = useForm<{
         ap_no: string;
         due_date: string;
         rr_no: string;
@@ -138,96 +71,74 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         grand_total_amount: string;
         remarks: string;
         details: Partial<RfpDetail>[];
-        log_remarks?: string;
     }>({
-        ap_no: rfp_request.ap_no || '',
-        due_date: rfp_request.due_date || '',
-        rr_no: rfp_request.rr_no || '',
-        po_no: rfp_request.po_no || '',
-        requisition_no: rfp_request.requisition_no || '',
-        contract_no: rfp_request.contract_no || '',
-        area: rfp_request.area,
-        payee_type: rfp_request.payee_type,
-        employee_code: rfp_request.employee_code || '',
-        employee_name: rfp_request.employee_name || '',
-        supplier_code: rfp_request.supplier_code,
-        supplier_name: rfp_request.supplier_name || '',
-        vendor_ref: rfp_request.vendor_ref || '',
-        rfp_currency_id: rfp_request.rfp_currency_id,
-        rfp_usage_id: rfp_request.rfp_usage_id,
-        rfp_category_id: rfp_request.usage?.rfp_category_id || null,
-        total_before_vat_amount: rfp_request.total_before_vat_amount?.toString() || '',
-        less_down_payment_amount: rfp_request.less_down_payment_amount?.toString() || '',
-        is_vatable: rfp_request.is_vatable,
-        vat_type: rfp_request.vat_type,
-        vat_amount: rfp_request.vat_amount?.toString() || '',
-        wtax_amount: rfp_request.wtax_amount?.toString() || '',
-        grand_total_amount: rfp_request.grand_total_amount?.toString() || '',
-        remarks: rfp_request.remarks || '',
-        details: rfp_request.details && rfp_request.details.length > 0
-            ? rfp_request.details.map(item => ({
-                id: item.id,
-                account_code: item.account_code,
-                account_name: item.account_name,
-                description: item.description,
-                total_amount: item.total_amount,
-            })) as Partial<RfpDetail>[]
-            : [{
-                account_code: null,
-                account_name: null,
-                description: null,
-                total_amount: null
-            }],
+        ap_no: '',
+        due_date: '',
+        rr_no: '',
+        po_no: '',
+        requisition_no: '',
+        contract_no: '',
+        area: 'mine_site',
+        payee_type: 'supplier',
+        employee_code: '',
+        employee_name: '',
+        supplier_code: null,
+        supplier_name: null,
+        vendor_ref: '',
+        rfp_currency_id: defaultCurrencyId ?? null,
+        rfp_usage_id: null,
+        rfp_category_id: null,
+        total_before_vat_amount: '',
+        less_down_payment_amount: '',
+        is_vatable: true,
+        vat_type: 'inclusive',
+        vat_amount: '',
+        wtax_amount: '',
+        grand_total_amount: '',
+        remarks: '',
+        details: [{
+            account_code: null,
+            account_name: null,
+            description: null,
+            total_amount: null
+        }],
     });
 
-    useEffect(() => {
-        const changes: ChangeLog[] = [];
+    // const loadAccounts = async () => {
+    //     setLoadingAccounts(true);
+    //     try {
+    //         const res = await fetch('/rfp/api/accounts');
+    //         const data = await res.json();
+    //         setAccounts(data);
+    //     } catch (error) {
+    //         console.error('Failed to load accounts', error);
+    //     }
+    //     setLoadingAccounts(false);
+    // };
 
-        const formatDisplayValue = (field: string, value: any) => {
-            if (!value) return 'N/A';
-            if (field === 'due_date') return value.split('T')[0];
-            return value;
-        };
+    const loadSuppliers = async () => {
+        setLoadingSuppliers(true);
+        try {
+            const res = await fetch('/rfp/api/suppliers');
+            const data = await res.json();
+            setSuppliers(data);
+        } catch (error) {
+            console.error('Failed to load suppliers', error);
+        }
+        setLoadingSuppliers(false);
+    };
 
-        const checkField = (field: string, label: string, oldVal: any, newVal: any) => {
-            let oldStr = oldVal?.toString() || '';
-            let newStr = newVal?.toString() || '';
-
-            // Special handling for dates - normalize to YYYY-MM-DD format
-            if (field === 'due_date') {
-                if (oldVal) oldStr = oldVal.split('T')[0];
-                if (newVal) newStr = newVal.split('T')[0];
-            }
-
-            if (oldStr !== newStr) {
-                changes.push({
-                    field: label,
-                    old: formatDisplayValue(field, oldVal),
-                    new: formatDisplayValue(field, newVal),
-                });
-            }
-        };
-
-        checkField('ap_no', 'AP No.', rfp_request.ap_no, data.ap_no);
-        checkField('due_date', 'Due Date', rfp_request.due_date, data.due_date);
-        checkField('rr_no', 'RR No.', rfp_request.rr_no, data.rr_no);
-        checkField('po_no', 'PO No.', rfp_request.po_no, data.po_no);
-        checkField('requisition_no', 'Requisition No.', rfp_request.requisition_no, data.requisition_no);
-        checkField('contract_no', 'Contract No.', rfp_request.contract_no, data.contract_no);
-        checkField('area', 'Area', rfp_request.area, data.area);
-        checkField('employee_code', 'Employee Code', rfp_request.employee_code, data.employee_code);
-        checkField('employee_name', 'Employee Name', rfp_request.employee_name, data.employee_name);
-        checkField('supplier_code', 'Supplier Code', rfp_request.supplier_code, data.supplier_code);
-        checkField('vendor_ref', 'Vendor Reference', rfp_request.vendor_ref, data.vendor_ref);
-        checkField('rfp_currency_id', 'Currency', rfp_request.rfp_currency_id, data.rfp_currency_id);
-        checkField('rfp_usage_id', 'Usage', rfp_request.rfp_usage_id, data.rfp_usage_id);
-        checkField('less_down_payment_amount', 'Down Payment', rfp_request.less_down_payment_amount, data.less_down_payment_amount);
-        checkField('wtax_amount', 'Withholding Tax', rfp_request.wtax_amount, data.wtax_amount);
-        checkField('grand_total_amount', 'Grand Total', rfp_request.grand_total_amount, data.grand_total_amount);
-        checkField('remarks', 'Remarks', rfp_request.remarks, data.remarks);
-
-        setDetectedChanges(changes);
-    }, [data]);
+    const loadUsages = async (categoryId: number) => {
+        setLoadingUsages(true);
+        try {
+            const res = await fetch(`/rfp/usages/category/${categoryId}`);
+            const data = await res.json();
+            setUsages(data);
+        } catch (error) {
+            console.error('Failed to load usages', error);
+        }
+        setLoadingUsages(false);
+    };
 
     const addDetail = () => {
         setData('details', [...data.details, {
@@ -250,25 +161,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (detectedChanges.length > 0) {
-            setShowLogDialog(true);
-        } else {
-            // If no changes, submit directly without log
-            put(`/rfp/requests/${rfp_request.id}`);
-        }
-    };
-
-    const handleConfirmUpdate = () => {
-        setShowLogDialog(false);
-
-        // set log_remarks directly since it's already in form type
-        setData('log_remarks', logRemarks);
-
-        setTimeout(() => {
-            put(`/rfp/requests/${rfp_request.id}`, {
-                preserveScroll: true,
-            });
-        }, 10);
+        post('/rfp/records');
     };
 
     const categoryOptions = categories.map(c => ({
@@ -293,30 +186,30 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
         <AppLayout
             breadcrumbs={[
                 { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Requests', href: '/rfp/requests' },
-                { title: rfp_request.rfp_request_number, href: `/rfp/requests/${rfp_request.id}/edit` },
+                { title: 'Records', href: '/rfp/records' },
+                { title: 'Create', href: '/rfp/records/create' },
             ]}
         >
-            <Head title={`Edit ${rfp_request.rfp_request_number}`} />
+            <Head title="Create RFP" />
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">Edit RFP Request</h1>
+                        <h1 className="text-2xl font-semibold">Create RFP</h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            {rfp_request.rfp_request_number}
+                            Fill in the details below
                         </p>
                     </div>
                     <div className="flex gap-2">
                         <Button type="button" variant="outline" size="sm" asChild>
-                            <a href="/rfp/requests">
+                            <a href="/rfp/records">
                                 <X className="h-4 w-4 mr-1.5" />
                                 Cancel
                             </a>
                         </Button>
-                        <Button type="submit" size="sm" disabled={processing || detectedChanges.length === 0}>
+                        <Button type="submit" size="sm" disabled={processing}>
                             <Save className="h-4 w-4 mr-1.5" />
-                            Update
+                            Save
                         </Button>
                     </div>
                 </div>
@@ -331,7 +224,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Prepared By</Label>
                                 <Input
-                                    value={rfp_request.prepared_by?.name ?? auth.user.name as string}
+                                    value={auth.user.name as string}
                                     className="h-9"
                                     readOnly
                                 />
@@ -339,22 +232,24 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Department</Label>
                                 <Input
-                                    value={rfp_request.prepared_by?.department?.department ?? auth.user.department?.department ?? 'N/A'}
+                                    value={auth.user.department?.department ?? 'N/A'}
                                     className="h-9"
                                     readOnly
                                 />
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Status</Label>
-                                <div className="h-9 flex items-center">
-                                    <RfpBadge type="status" value={rfp_request.status} />
-                                </div>
+                                <Input
+                                    value="Draft"
+                                    className="h-9"
+                                    readOnly
+                                />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Basic Information) */}
+                {/* Basic Information */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Basic Information</CardTitle>
@@ -381,11 +276,19 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                     options={categoryOptions}
                                     value={categoryOptions.find(o => o.value === data.rfp_category_id)}
                                     onChange={(opt) => {
-                                        setData('rfp_category_id', opt?.value || null);
-                                        setData('rfp_usage_id', null);
-                                        setUsages([]);
-                                        if (opt?.value) {
-                                            loadUsages(opt.value);
+                                        const categoryId = opt?.value ?? null;
+
+                                        // Only reset if category actually changed
+                                        if (categoryId !== data.rfp_category_id) {
+                                            setData('rfp_usage_id', null);
+                                            setUsages([]);
+                                            setUsageSelectKey((k) => k + 1);
+                                        }
+
+                                        setData('rfp_category_id', categoryId);
+
+                                        if (categoryId) {
+                                            loadUsages(categoryId);
                                         }
                                     }}
                                     isClearable
@@ -396,11 +299,13 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                         menu: (base) => ({ ...base, fontSize: '14px' }),
                                     }}
                                 />
+                                {errors.rfp_category_id && <p className="text-xs text-destructive">{errors.rfp_category_id}</p>}
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Usage <Req /></Label>
                                 <Select
+                                    key={usageSelectKey}
                                     options={usageOptions}
                                     value={usageOptions.find(o => o.value === data.rfp_usage_id)}
                                     onChange={(opt) => setData('rfp_usage_id', opt?.value || null)}
@@ -448,11 +353,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                         <Label className="text-sm">Supplier <Req /></Label>
                                         <Select
                                             options={suppliers}
-                                            value={
-                                                suppliers.find(s => s.value === data.supplier_code)
-                                                // fallback synthetic option while suppliers list is loading
-                                                ?? (data.supplier_code ? { value: data.supplier_code, label: `${data.supplier_code} - ${data.supplier_name}` } : null)
-                                            }
+                                            value={suppliers.find(s => s.value === data.supplier_code)}
                                             onChange={(opt) => {
                                                 setData({
                                                     ...data,
@@ -563,7 +464,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm">Prepared Date</Label>
                                     <Input
-                                        value={formatDate(rfp_request.created_at)}
+                                        value={formatDate(new Date().toISOString())}
                                         className="h-9"
                                         readOnly
                                     />
@@ -606,7 +507,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="requisition_no" className="text-sm">Requisition No.</Label>
+                                    <Label htmlFor="requisition_no" className="text-sm">SWP Requisition No.</Label>
                                     <Input
                                         id="requisition_no"
                                         value={data.requisition_no}
@@ -616,7 +517,7 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="contract_no" className="text-sm">Contract No.</Label>
+                                    <Label htmlFor="contract_no" className="text-sm">SWP Contract No.</Label>
                                     <Input
                                         id="contract_no"
                                         value={data.contract_no}
@@ -824,68 +725,6 @@ export default function Edit({ rfp_request, categories, currencies }: Props) {
                     </CardContent>
                 </Card>
             </form>
-
-            {/* Change Log Alert Dialog */}
-            <AlertDialog open={showLogDialog} onOpenChange={setShowLogDialog}>
-                <AlertDialogContent className="max-w-3xl p-0">
-                    <AlertDialogHeader className="px-6 pt-6 pb-3">
-                        <AlertDialogTitle>Confirm Update</AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                            <div className="space-y-3 pt-2">
-                                <p>The following changes will be logged:</p>
-                            </div>
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    <div className="px-6 space-y-3">
-                        <div className="border rounded-lg max-h-60 overflow-y-auto">
-                            <table className="w-full text-sm table-fixed">
-                                <thead className="bg-muted sticky top-0">
-                                    <tr>
-                                        <th className="px-3 py-2 text-left font-medium w-[25%]">Field</th>
-                                        <th className="px-3 py-2 text-left font-medium w-[37.5%]">Old Value</th>
-                                        <th className="px-3 py-2 text-left font-medium w-[37.5%]">New Value</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {detectedChanges.map((change, index) => (
-                                        <tr key={index} className="border-t">
-                                            <td className="px-3 py-2 font-medium align-top">{change.field}</td>
-                                            <td className="px-3 py-2 text-muted-foreground align-top wrap-break-word">
-                                                {change.old}
-                                            </td>
-                                            <td className="px-3 py-2 text-primary align-top wrap-break-word">
-                                                {change.new}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label htmlFor="log_remarks" className="text-sm">
-                                Remarks <span className="text-muted-foreground">(Optional)</span>
-                            </Label>
-                            <Textarea
-                                id="log_remarks"
-                                value={logRemarks}
-                                onChange={(e) => setLogRemarks(e.target.value)}
-                                placeholder="Add any additional notes about these changes..."
-                                rows={3}
-                                className="resize-none"
-                            />
-                        </div>
-                    </div>
-
-                    <AlertDialogFooter className="px-6 pb-6 pt-4">
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmUpdate} disabled={processing}>
-                            Confirm Update
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </AppLayout>
     );
 }

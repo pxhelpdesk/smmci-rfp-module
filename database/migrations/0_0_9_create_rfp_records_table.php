@@ -8,10 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::connection('mysql_rfp')->create('rfp_requests', function (Blueprint $table) {
+        Schema::connection('mysql_rfp')->create('rfp_records', function (Blueprint $table) {
             $table->id();
 
-            $table->string('rfp_request_number')->unique();
+            $table->string('rfp_number')->unique();
 
             $table->unsignedBigInteger('prepared_by')->nullable();
 
@@ -52,6 +52,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::connection('mysql_rfp')->dropIfExists('rfp_requests');
+        Schema::connection('mysql_rfp')->dropIfExists('rfp_records');
     }
 };

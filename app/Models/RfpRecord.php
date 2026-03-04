@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class RfpRequest extends Model
+class RfpRecord extends Model
 {
     use SoftDeletes;
 
@@ -19,7 +19,7 @@ class RfpRequest extends Model
         'po_no',
         'requisition_no',
         'contract_no',
-        'rfp_request_number',
+        'rfp_number',
         'area',
         'payee_type',
         'employee_code',

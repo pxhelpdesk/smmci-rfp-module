@@ -27,8 +27,8 @@ class RfpUsage extends Model
         return $this->belongsTo(RfpCategory::class, 'rfp_category_id');
     }
 
-    public function rfp_requests()
+    public function rfp_records()
     {
-        return $this->hasMany(RfpRequest::class);
+        return $this->hasMany(RfpRecord::class);
     }
 }

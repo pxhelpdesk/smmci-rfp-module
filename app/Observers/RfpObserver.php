@@ -2,17 +2,17 @@
 
 namespace App\Observers;
 
-use App\Models\RfpRequest;
+use App\Models\RfpRecord;
 
 class RfpObserver
 {
     /**
-     * Handle the RfpRequest "creating" event.
+     * Handle the RfpRecord "creating" event.
      */
-    public function creating(RfpRequest $rfpRequest): void
+    public function creating(RfpRecord $rfpRecord): void
     {
-        if (empty($rfpRequest->rfp_request_number)) {
-            $rfpRequest->rfp_request_number = $this->generateRfpNumber();
+        if (empty($rfpRecord->rfp_number)) {
+            $rfpRecord->rfp_number = $this->generateRfpNumber();
         }
     }
 
@@ -28,14 +28,14 @@ class RfpObserver
         $prefix = "RFP-{$year}-{$month}";
 
         // Get the last RFP number for this month (including soft deleted)
-        $lastRfp = RfpRequest::withTrashed()
-            ->where('rfp_request_number', 'LIKE', "{$prefix}-%")
-            ->orderBy('rfp_request_number', 'desc')
+        $lastRfp = RfpRecord::withTrashed()
+            ->where('rfp_number', 'LIKE', "{$prefix}-%")
+            ->orderBy('rfp_number', 'desc')
             ->first();
 
         if ($lastRfp) {
             // Extract the sequence number and increment
-            $lastNumber = intval(substr($lastRfp->rfp_request_number, -4));
+            $lastNumber = intval(substr($lastRfp->rfp_number, -4));
             $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
         } else {
             // First RFP of the month

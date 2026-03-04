@@ -38,7 +38,7 @@ export type RfpUsage = {
 
 export type RfpDetail = {
     id?: number;
-    rfp_request_id?: number;
+    rfp_record_id?: number;
     account_code: string | null;
     account_name: string | null;
     description: string | null;
@@ -47,7 +47,7 @@ export type RfpDetail = {
 
 export type RfpSign = {
     id: number;
-    rfp_request_id: number;
+    rfp_record_id: number;
     code: string | null;
     user_id: number | null;
     user?: RfpUser;
@@ -60,7 +60,7 @@ export type RfpSign = {
 
 export type RfpLog = {
     id: number;
-    rfp_request_id: number;
+    rfp_record_id: number;
     code: string | null;
     user_id: number | null;
     user?: RfpUser;
@@ -72,7 +72,7 @@ export type RfpLog = {
     updated_at: string;
 };
 
-export type RfpRequest = {
+export type RfpRecord = {
     id: number;
     prepared_by?: RfpUser;
     ap_no: string | null;
@@ -81,7 +81,7 @@ export type RfpRequest = {
     po_no: string | null;
     requisition_no: string | null;
     contract_no: string | null;
-    rfp_request_number: string;
+    rfp_number: string;
     area: 'head_office' | 'mine_site';
     payee_type: 'employee' | 'supplier';
     employee_code: string | null;

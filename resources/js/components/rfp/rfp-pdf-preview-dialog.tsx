@@ -9,27 +9,27 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RfpPdfDocument } from '@/components/rfp/rfp-pdf-document';
-import type { RfpRequest } from '@/types';
+import type { RfpRecord } from '@/types';
 
 type Props = {
-    rfp_request: RfpRequest | null;
+    rfp_record: RfpRecord | null;
     open: boolean;
     onClose: () => void;
 };
 
-export function RfpPdfPreviewDialog({ rfp_request, open, onClose }: Props) {
+export function RfpPdfPreviewDialog({ rfp_record, open, onClose }: Props) {
     const urlRef = useRef<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
-        if (!open || !rfp_request) return;
+        if (!open || !rfp_record) return;
 
         let cancelled = false;
 
         const generate = async () => {
             setIsGenerating(true);
             try {
-                const blob = await pdf(<RfpPdfDocument rfp_request={rfp_request} />).toBlob();
+                const blob = await pdf(<RfpPdfDocument rfp_record={rfp_record} />).toBlob();
                 if (cancelled) return;
                 const url = URL.createObjectURL(blob);
                 urlRef.current = url;
@@ -47,7 +47,7 @@ export function RfpPdfPreviewDialog({ rfp_request, open, onClose }: Props) {
         return () => {
             cancelled = true;
         };
-    }, [open, rfp_request]);
+    }, [open, rfp_record]);
 
     const handleClose = () => {
         if (urlRef.current) {
@@ -58,10 +58,10 @@ export function RfpPdfPreviewDialog({ rfp_request, open, onClose }: Props) {
     };
 
     const handleDownload = () => {
-        if (!urlRef.current || !rfp_request) return;
+        if (!urlRef.current || !rfp_record) return;
         const link = document.createElement('a');
         link.href = urlRef.current;
-        link.download = `${rfp_request.rfp_request_number}_generated-pdf.pdf`;
+        link.download = `${rfp_record.rfp_number}_generated-pdf.pdf`;
         link.click();
     };
 
@@ -79,7 +79,7 @@ export function RfpPdfPreviewDialog({ rfp_request, open, onClose }: Props) {
                 <DialogHeader className="px-6 py-3 border-b shrink-0">
                     <div className="flex items-center justify-between pr-8">
                         <DialogTitle className="text-lg">
-                            {rfp_request?.rfp_request_number || 'PDF Preview'}
+                            {rfp_record?.rfp_number || 'PDF Preview'}
                         </DialogTitle>
                         <Button
                             size="sm"
@@ -95,7 +95,7 @@ export function RfpPdfPreviewDialog({ rfp_request, open, onClose }: Props) {
                     <iframe
                         id="rfp-pdf-iframe"
                         className="w-full h-full border-0"
-                        title={rfp_request?.rfp_request_number || 'PDF Preview'}
+                        title={rfp_record?.rfp_number || 'PDF Preview'}
                     />
                 </div>
             </DialogContent>

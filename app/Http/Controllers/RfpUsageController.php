@@ -14,7 +14,7 @@ class RfpUsageController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:rfp-usage-list', only: ['index', 'show']),
+            new Middleware('permission:rfp-usage-view', only: ['index', 'show']),
             new Middleware('permission:rfp-usage-create', only: ['create', 'store']),
             new Middleware('permission:rfp-usage-edit', only: ['edit', 'update']),
             new Middleware('permission:rfp-usage-delete', only: ['destroy']),
