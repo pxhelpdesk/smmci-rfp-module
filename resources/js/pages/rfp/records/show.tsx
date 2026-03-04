@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, FileCheck, Trash2, Users, Activity, Printer, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ import {
 import type { RfpRecord, RfpLog } from '@/types';
 import { formatDate, formatDateTime, formatAmount } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
-import { RfpBadge } from '@/components/rfp/rfp-badge';
+import { RfpBadge } from '@/components/rfp/rfp-display';
 import { RfpPdfPreviewDialog } from '@/components/rfp/rfp-pdf-preview-dialog';
 
 type Props = {
@@ -177,7 +177,7 @@ export default function Show({ rfp_record, logs }: Props) {
                                 Back
                             </Link>
                         </Button>
-                        <Button variant="outline" className='cursor-pointer' size="sm" onClick={handlePrint}>
+                        <Button variant="outline" size="sm" onClick={handlePrint}>
                             <Printer className="h-4 w-4 mr-1.5" />
                             Print
                         </Button>
@@ -194,7 +194,7 @@ export default function Show({ rfp_record, logs }: Props) {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setDeleteOpen(true)}
-                                className="text-destructive hover:text-destructive cursor-pointer"
+                                className="text-destructive hover:text-destructive"
                             >
                                 <Trash2 className="h-4 w-4 mr-1.5" />
                                 Delete
@@ -444,36 +444,34 @@ export default function Show({ rfp_record, logs }: Props) {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead>Role</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Department</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Date Signed</TableHead>
                                         <TableHead>Remarks</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {!rfp_record.signs || rfp_record.signs.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                                            <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                                                 No signatories found
                                             </TableCell>
                                         </TableRow>
                                     ) : (
                                         rfp_record.signs.map((sign) => (
                                             <TableRow key={sign.id}>
+                                                <TableCell className="text-sm">
+                                                    {sign.details === 'prepared_by' && 'Prepared By'}
+                                                    {sign.details === 'recommending_approval_by' && 'Recommending Approval'}
+                                                    {sign.details === 'approved_by' && 'Approved By'}
+                                                    {sign.details === 'concurred_by' && 'Concurred By'}
+                                                    {!sign.details && 'N/A'}
+                                                </TableCell>
                                                 <TableCell className="font-medium">
                                                     {sign.user?.name || 'N/A'}
                                                 </TableCell>
                                                 <TableCell>
                                                     {sign.user?.department?.department || 'N/A'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant={sign.is_signed ? "default" : "secondary"}>
-                                                        {sign.is_signed ? 'Signed' : 'Pending'}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {sign.updated_at ? formatDateTime(sign.updated_at) : 'N/A'}
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground">
                                                     {sign.remarks || 'N/A'}

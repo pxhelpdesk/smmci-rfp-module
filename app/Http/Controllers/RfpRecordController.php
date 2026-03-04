@@ -64,18 +64,19 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $phpCurrency = RfpCurrency::where('code', 'PHP')
-            ->where('is_active', true)
-            ->first();
+        $phpCurrency = RfpCurrency::where('code', 'PHP')->where('is_active', true)->first();
+
+        $users = \App\Models\User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
+            ->with('department:id,department')
+            ->orderBy('first_name')
+            ->get()
+            ->map(fn($u) => ['id' => $u->id, 'name' => $u->name, 'department' => $u->department?->department]);
 
         return Inertia::render('rfp/records/create', [
-            'currencies' => RfpCurrency::select('id', 'code', 'name')
-                ->where('is_active', true)
-                ->get(),
-            'categories' => RfpCategory::select('id', 'code', 'name')
-                ->where('is_active', true)
-                ->get(),
+            'currencies' => RfpCurrency::select('id', 'code', 'name')->where('is_active', true)->get(),
+            'categories' => RfpCategory::select('id', 'code', 'name')->where('is_active', true)->get(),
             'defaultCurrencyId' => $phpCurrency?->id ?? null,
+            'users' => $users,
         ]);
     }
 
@@ -92,6 +93,17 @@ class RfpRecordController extends Controller implements HasMiddleware
 
         if ($request->has('details')) {
             $rfpRecord->details()->createMany($request->details);
+        }
+
+        if ($request->has('signs') && is_array($request->signs)) {
+            $signs = collect($request->signs)->map(function ($sign) {
+                return [
+                    'user_id' => $sign['user_id'],
+                    'details' => $sign['details'],
+                    'is_signed' => null,
+                ];
+            })->toArray();
+            $rfpRecord->signs()->createMany($signs);
         }
 
         return redirect()->route('rfp.records.index')->with('success', "RFP {$rfpRecord->rfp_number} created successfully.");
@@ -138,16 +150,19 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function edit(RfpRecord $record)
     {
-        $record->load(['details', 'usage.category']);
+        $record->load(['details', 'usage.category', 'signs.user.department']);
+
+        $users = \App\Models\User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
+            ->with('department:id,department')
+            ->orderBy('first_name')
+            ->get()
+            ->map(fn($u) => ['id' => $u->id, 'name' => $u->name, 'department' => $u->department?->department]);
 
         return Inertia::render('rfp/records/edit', [
             'rfp_record' => $record,
-            'currencies' => RfpCurrency::select('id', 'code', 'name')
-                ->where('is_active', true)
-                ->get(),
-            'categories' => RfpCategory::select('id', 'code', 'name')
-                ->where('is_active', true)
-                ->get(),
+            'currencies' => RfpCurrency::select('id', 'code', 'name')->where('is_active', true)->get(),
+            'categories' => RfpCategory::select('id', 'code', 'name')->where('is_active', true)->get(),
+            'users' => $users,
         ]);
     }
 
@@ -162,11 +177,11 @@ class RfpRecordController extends Controller implements HasMiddleware
         // Track changes for logging
         $changes = $this->detectChanges($record, $validated);
 
-        // Extract details and log_remarks before updating
+        // Extract details, log_remarks, and signs before updating
         $details = $validated['details'] ?? [];
         $logRemarks = $validated['log_remarks'] ?? null;
-        unset($validated['details']);
-        unset($validated['log_remarks']);
+        $signs = $validated['signs'] ?? null;
+        unset($validated['details'], $validated['log_remarks'], $validated['signs']);
 
         // Update RFP
         $record->update($validated);
@@ -175,6 +190,17 @@ class RfpRecordController extends Controller implements HasMiddleware
         if (!empty($details)) {
             $record->details()->delete();
             $record->details()->createMany($details);
+        }
+
+        // Update signs  ← remove the duplicate $signs = $validated['signs'] ?? null; line
+        if ($signs !== null) {
+            $record->signs()->delete();
+            $signsToCreate = collect($signs)->map(fn($s) => [
+                'user_id' => $s['user_id'],
+                'details' => $s['details'],
+                'is_signed' => null,
+            ])->toArray();
+            $record->signs()->createMany($signsToCreate);
         }
 
         // Create log entry if there are changes
@@ -226,11 +252,9 @@ class RfpRecordController extends Controller implements HasMiddleware
             $oldValue = $original->$field;
             $newValue = $newData[$field] ?? null;
 
-            // Normalize values for comparison
             $oldNormalized = $this->normalizeValue($field, $oldValue);
             $newNormalized = $this->normalizeValue($field, $newValue);
 
-            // Only log if actually different
             if ($oldNormalized !== $newNormalized) {
                 $changes[] = [
                     'field' => $label,
@@ -238,6 +262,96 @@ class RfpRecordController extends Controller implements HasMiddleware
                     'new' => $this->formatValue($field, $newValue, $original),
                 ];
             }
+        }
+
+        // Detect details changes
+        $oldDetails = $original->details()
+            ->whereNull('deleted_at')
+            ->get();
+
+        $newDetails = collect($newData['details'] ?? [])
+            ->filter(fn($d) => !empty($d['description']) || !empty($d['total_amount']));
+
+        $oldDetailsStr = $oldDetails
+            ->map(fn($d) => $d->description . '|' . number_format((float) $d->total_amount, 2, '.', ''))
+            ->sort()
+            ->values()
+            ->join(';');
+
+        $newDetailsStr = $newDetails
+            ->map(fn($d) => ($d['description'] ?? '') . '|' . number_format((float) ($d['total_amount'] ?? 0), 2, '.', ''))
+            ->sort()
+            ->values()
+            ->join(';');
+
+        if ($oldDetailsStr !== $newDetailsStr) {
+            $changes[] = [
+                'field' => 'Details',
+                'old' => $oldDetails->count() > 0
+                    ? $oldDetails->map(fn($d) => ($d->description ?? 'N/A') . ' — ' . number_format((float) $d->total_amount, 2))->join(', ')
+                    : 'N/A',
+                'new' => $newDetails->count() > 0
+                    ? $newDetails->map(fn($d) => ($d['description'] ?? 'N/A') . ' — ' . number_format((float) ($d['total_amount'] ?? 0), 2))->join(', ')
+                    : 'N/A',
+            ];
+        }
+
+        // Detect signatories changes (exclude prepared_by)
+        $oldSigns = $original->signs()
+            ->whereNull('deleted_at')
+            ->where('details', '!=', 'prepared_by')
+            ->get();
+
+        $newSigns = collect($newData['signs'] ?? [])
+            ->filter(fn($s) => ($s['details'] ?? '') !== 'prepared_by');
+
+        $oldSignsStr = $oldSigns
+            ->map(fn($s) => ($s->details ?? '') . ':' . ($s->user_id ?? ''))
+            ->sort()
+            ->values()
+            ->join(';');
+
+        $newSignsStr = $newSigns
+            ->map(fn($s) => ($s['details'] ?? '') . ':' . ($s['user_id'] ?? ''))
+            ->sort()
+            ->values()
+            ->join(';');
+
+        if ($oldSignsStr !== $newSignsStr) {
+            $roleLabels = [
+                'recommending_approval_by' => 'Recommending Approval By',
+                'approved_by' => 'Approved By',
+                'concurred_by' => 'Concurred By',
+            ];
+
+            $formatSigns = fn($signs) => $signs->count() > 0
+                ? $signs->map(fn($s) => ($roleLabels[$s['details'] ?? $s->details ?? ''] ?? 'N/A') . ': ' . ($s['name'] ?? $s->user?->name ?? 'N/A'))->join(', ')
+                : 'N/A';
+
+            // Load user names for old signs
+            $oldSignsMapped = $oldSigns->map(fn($s) => [
+                'details' => $s->details,
+                'name' => $s->user?->name ?? 'N/A',
+            ]);
+
+            // Load user names for new signs
+            $newUserIds = $newSigns->pluck('user_id')->filter()->unique()->toArray();
+            $newUsers = \App\Models\User::whereIn('id', $newUserIds)
+                ->get()
+                ->keyBy('id');
+
+            $newSignsMapped = $newSigns->map(fn($s) => [
+                'details' => $s['details'] ?? '',
+                'name' => isset($s['user_id']) && isset($newUsers[$s['user_id']])
+                    ? $newUsers[$s['user_id']]->name
+                    : 'N/A',
+            ]);
+
+            $changes[] = [
+                'field' => 'Signatories',
+                'old' => $formatSigns(collect($oldSignsMapped)),
+                'new' => $formatSigns(collect($newSignsMapped)),
+            ];
         }
 
         return $changes;

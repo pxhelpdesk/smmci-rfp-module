@@ -45,17 +45,26 @@ export type RfpDetail = {
     total_amount: number | null;
 };
 
+export type RfpSignatoryRole = 'prepared_by' | 'recommending_approval_by' | 'approved_by' | 'concurred_by';
+
 export type RfpSign = {
     id: number;
     rfp_record_id: number;
     code: string | null;
     user_id: number | null;
     user?: RfpUser;
-    is_signed: boolean;
-    details: string | null;
+    is_signed: boolean | null;
+    details: RfpSignatoryRole | null;
     remarks: string | null;
     created_at: string;
     updated_at: string;
+};
+
+// User option for react-select
+export type UserOption = {
+    value: number;
+    label: string;
+    department?: string;
 };
 
 export type RfpLog = {

@@ -1,4 +1,4 @@
-import { useForm, Head, usePage } from '@inertiajs/react';
+import { useForm, Head, usePage, router } from '@inertiajs/react';
 import { Save, X } from 'lucide-react';
 import { useState } from 'react';
 import Select from 'react-select';
@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import InputAmount from '@/components/ui/input-amount';
 import DateTimePicker from '@/components/ui/date-time-picker';
 import { formatDate } from '@/lib/formatters';
@@ -24,18 +23,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { RfpCategory, RfpUsage, RfpCurrency, RfpDetail, SapAccountOption, SapSupplierOption } from '@/types';
-import type { SharedData } from '@/types';
+import type { RfpCategory, RfpUsage, RfpCurrency, RfpDetail, UserOption, SapAccountOption, SapSupplierOption, SharedData } from '@/types';
 
 type Props = {
     categories: RfpCategory[];
     currencies: RfpCurrency[];
     defaultCurrencyId?: number | null;
+    users: { id: number; name: string; department?: string }[];
 };
 
 const Req = () => <span className="text-destructive ml-0.5">*</span>;
 
-export default function Create({ categories, currencies, defaultCurrencyId }: Props) {
+export default function Create({ categories, currencies, defaultCurrencyId, users }: Props) {
     const { auth } = usePage<SharedData>().props;
     const [accounts, setAccounts] = useState<SapAccountOption[]>([]);
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
@@ -44,6 +43,15 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
     const [loadingUsages, setLoadingUsages] = useState(false);
     const [usageSelectKey, setUsageSelectKey] = useState(0);
+    const [signatories, setSignatories] = useState<{
+        recommending_approval_by: UserOption[];
+        approved_by: UserOption[];
+        concurred_by: UserOption[];
+    }>({
+        recommending_approval_by: [],
+        approved_by: [],
+        concurred_by: [],
+    });
 
     const { data, setData, post, processing, errors } = useForm<{
         ap_no: string;
@@ -159,9 +167,40 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
         setData('details', updated);
     };
 
+    // Helper to add/remove signatory rows per role:
+    const addSignatory = (role: keyof typeof signatories) => {
+        setSignatories(prev => ({
+            ...prev,
+            [role]: [...prev[role], null],
+        }));
+    };
+
+    const removeSignatory = (role: keyof typeof signatories, index: number) => {
+        setSignatories(prev => ({
+            ...prev,
+            [role]: prev[role].filter((_, i) => i !== index),
+        }));
+    };
+
+    const updateSignatory = (role: keyof typeof signatories, index: number, opt: UserOption | null) => {
+        setSignatories(prev => {
+            const updated = [...prev[role]];
+            updated[index] = opt as UserOption;
+            return { ...prev, [role]: updated };
+        });
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/rfp/records');
+
+        const builtSigns = [
+            { user_id: auth.user.id, details: 'prepared_by' },
+            ...signatories.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u.value, details: 'recommending_approval_by' })),
+            ...signatories.approved_by.filter(Boolean).map(u => ({ user_id: u.value, details: 'approved_by' })),
+            ...signatories.concurred_by.filter(Boolean).map(u => ({ user_id: u.value, details: 'concurred_by' })),
+        ];
+
+        router.post('/rfp/records', { ...data, signs: builtSigns });
     };
 
     const categoryOptions = categories.map(c => ({
@@ -177,6 +216,12 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
     const currencyOptions = currencies.map(c => ({
         value: c.id,
         label: `${c.code} - ${c.name}`,
+    }));
+
+    const userOptions: UserOption[] = users.map(u => ({
+        value: u.id,
+        label: u.name,
+        department: u.department,
     }));
 
     const today = new Date();
@@ -621,6 +666,149 @@ export default function Create({ categories, currencies, defaultCurrencyId }: Pr
                         {errors['details'] && (
                             <p className="text-xs text-destructive px-3">{errors['details']}</p>
                         )}
+                    </CardContent>
+                </Card>
+
+                {/* Signatories */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Signatories</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {/* Header row */}
+                        <div className="flex gap-2 px-3 pb-2">
+                            <div className="flex-1 grid grid-cols-4 gap-4">
+                                <p className="text-xs font-medium text-muted-foreground">Prepared By</p>
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs font-medium text-muted-foreground">Recommending Approval By</p>
+                                    <Button type="button" variant="outline" size="sm" className="h-5 text-xs px-1"
+                                        onClick={() => addSignatory('recommending_approval_by')}>
+                                        + Add
+                                    </Button>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs font-medium text-muted-foreground">Approved By</p>
+                                    <Button type="button" variant="outline" size="sm" className="h-5 text-xs px-1"
+                                        onClick={() => addSignatory('approved_by')}>
+                                        + Add
+                                    </Button>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <p className="text-xs font-medium text-muted-foreground">Concurred By</p>
+                                    <Button type="button" variant="outline" size="sm" className="h-5 text-xs px-1"
+                                        onClick={() => addSignatory('concurred_by')}>
+                                        + Add
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Body row */}
+                        <div className="flex gap-2 items-start px-3">
+                            <div className="flex-1 grid grid-cols-4 gap-4">
+                                {/* Prepared By — always 1 fixed row */}
+                                <div>
+                                    <Input
+                                        value={auth.user.name as string}
+                                        className="h-9 bg-muted"
+                                        readOnly
+                                    />
+                                </div>
+
+                                {/* Recommending Approval By */}
+                                <div className="space-y-1.5">
+                                    {signatories.recommending_approval_by.length === 0 ? (
+                                        <Input placeholder="None" className="h-9" readOnly disabled />
+                                    ) : (
+                                        signatories.recommending_approval_by.map((opt, i) => (
+                                            <div key={i} className="flex gap-1 items-center">
+                                                <div className="flex-1">
+                                                    <Select
+                                                        options={userOptions}
+                                                        value={opt ?? null}
+                                                        onChange={(val) => updateSignatory('recommending_approval_by', i, val)}
+                                                        placeholder="Select user..."
+                                                        isClearable
+                                                        className="text-sm"
+                                                        styles={{
+                                                            control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                                            menu: (base) => ({ ...base, fontSize: '14px' }),
+                                                        }}
+                                                    />
+                                                </div>
+                                                <Button type="button" variant="ghost" size="sm"
+                                                    onClick={() => removeSignatory('recommending_approval_by', i)}
+                                                    className="text-destructive hover:text-destructive h-9 w-9 p-0 shrink-0">
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Approved By */}
+                                <div className="space-y-1.5">
+                                    {signatories.approved_by.length === 0 ? (
+                                        <Input placeholder="None" className="h-9" readOnly disabled />
+                                    ) : (
+                                        signatories.approved_by.map((opt, i) => (
+                                            <div key={i} className="flex gap-1 items-center">
+                                                <div className="flex-1">
+                                                    <Select
+                                                        options={userOptions}
+                                                        value={opt ?? null}
+                                                        onChange={(val) => updateSignatory('approved_by', i, val)}
+                                                        placeholder="Select user..."
+                                                        isClearable
+                                                        className="text-sm"
+                                                        styles={{
+                                                            control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                                            menu: (base) => ({ ...base, fontSize: '14px' }),
+                                                        }}
+                                                    />
+                                                </div>
+                                                <Button type="button" variant="ghost" size="sm"
+                                                    onClick={() => removeSignatory('approved_by', i)}
+                                                    className="text-destructive hover:text-destructive h-9 w-9 p-0 shrink-0">
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Concurred By */}
+                                <div className="space-y-1.5">
+                                    {signatories.concurred_by.length === 0 ? (
+                                        <Input placeholder="None" className="h-9" readOnly disabled />
+                                    ) : (
+                                        signatories.concurred_by.map((opt, i) => (
+                                            <div key={i} className="flex gap-1 items-center">
+                                                <div className="flex-1">
+                                                    <Select
+                                                        options={userOptions}
+                                                        value={opt ?? null}
+                                                        onChange={(val) => updateSignatory('concurred_by', i, val)}
+                                                        placeholder="Select user..."
+                                                        isClearable
+                                                        className="text-sm"
+                                                        styles={{
+                                                            control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                                            menu: (base) => ({ ...base, fontSize: '14px' }),
+                                                        }}
+                                                    />
+                                                </div>
+                                                <Button type="button" variant="ghost" size="sm"
+                                                    onClick={() => removeSignatory('concurred_by', i)}
+                                                    className="text-destructive hover:text-destructive h-9 w-9 p-0 shrink-0">
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 

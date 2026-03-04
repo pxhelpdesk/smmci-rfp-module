@@ -1,3 +1,4 @@
+// components/rfp/rfp-display.tsx
 import { Badge } from '@/components/ui/badge';
 
 // Status
@@ -17,7 +18,6 @@ const statusLabels = {
     paid: 'Paid',
 };
 
-// Area
 const areaColors = {
     head_office: 'bg-purple-100 text-purple-800',
     mine_site: 'bg-orange-100 text-orange-800',
@@ -28,7 +28,6 @@ const areaLabels = {
     mine_site: 'Mine Site',
 };
 
-// Payee
 const payeeColors = {
     employee: 'bg-blue-100 text-blue-800',
     supplier: 'bg-teal-100 text-teal-800',
@@ -39,10 +38,17 @@ const payeeLabels = {
     supplier: 'Supplier',
 };
 
-// Types
+const signatoryLabels = {
+    prepared_by: 'Prepared By',
+    recommending_approval_by: 'Recommending Approval By',
+    approved_by: 'Approved By',
+    concurred_by: 'Concurred By',
+};
+
 export type RfpStatus = keyof typeof statusLabels;
 export type RfpArea = keyof typeof areaLabels;
 export type RfpPayeeType = keyof typeof payeeLabels;
+export type RfpSignatoryRole = keyof typeof signatoryLabels;
 
 type RfpBadgeProps =
     | { type: 'status'; value: RfpStatus }
@@ -65,4 +71,23 @@ export function RfpBadge({ type, value }: RfpBadgeProps) {
             {label}
         </Badge>
     );
+}
+
+// Plain text label formatter — no badge, just readable string
+type RfpLabelProps =
+    | { type: 'status'; value: RfpStatus }
+    | { type: 'area'; value: RfpArea }
+    | { type: 'payee'; value: RfpPayeeType }
+    | { type: 'signatory'; value: RfpSignatoryRole };
+
+const labelConfigs: Record<string, Record<string, string>> = {
+    status: statusLabels,
+    area: areaLabels,
+    payee: payeeLabels,
+    signatory: signatoryLabels,
+};
+
+export function RfpLabel({ type, value }: RfpLabelProps) {
+    const map = labelConfigs[type] ?? {};
+    return <span>{map[value] ?? value}</span>;
 }

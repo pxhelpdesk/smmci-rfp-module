@@ -44,6 +44,9 @@ class StoreRfpRecordRequest extends FormRequest
             'details.*.account_name' => 'nullable|string',
             'details.*.description' => 'required|string',
             'details.*.total_amount' => 'required|numeric|min:0.01',
+            'signs' => 'nullable|array',
+            'signs.*.user_id' => 'required|integer|exists:mysql.users,id',
+            'signs.*.details' => 'required|in:prepared_by,recommending_approval_by,approved_by,concurred_by',
         ];
     }
 
@@ -65,6 +68,8 @@ class StoreRfpRecordRequest extends FormRequest
             'details.*.description.required' => 'Description is required for each detail.',
             'details.*.total_amount.required' => 'Amount is required for each detail.',
             'details.*.total_amount.min' => 'Amount must be greater than zero.',
+            'signs.*.user_id.required' => 'A user is required for each signatory.',
+            'signs.*.details.required' => 'Signatory role is required.',
         ];
     }
 

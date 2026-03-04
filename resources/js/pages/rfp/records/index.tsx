@@ -43,7 +43,7 @@ import {
 import type { RfpRecord } from '@/types';
 import { formatDate, formatTime } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
-import { RfpBadge } from '@/components/rfp/rfp-badge';
+import { RfpBadge } from '@/components/rfp/rfp-display';
 import { RfpPdfPreviewDialog } from '@/components/rfp/rfp-pdf-preview-dialog';
 
 type Props = {
