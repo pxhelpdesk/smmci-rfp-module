@@ -665,7 +665,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                             <CardTitle className="text-base">Document Information</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="space-y-1.5">
+                            {/* <div className="space-y-1.5">
                                 <Label htmlFor="ap_no" className="text-sm">AP No.</Label>
                                 <Input
                                     id="ap_no"
@@ -673,7 +673,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                                     onChange={(e) => setData('ap_no', e.target.value)}
                                     className="h-9"
                                 />
-                            </div>
+                            </div> */}
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">

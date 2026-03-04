@@ -286,6 +286,17 @@ export default function Show({ rfp_record, logs }: Props) {
                                             <p className="text-sm">{rfp_record.supplier_name || 'N/A'}</p>
                                         </div>
                                     </div>
+                                    <Separator />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Supplier TIN</p>
+                                            <p className="text-sm">{rfp_record.supplier?.tin || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Supplier Address</p>
+                                            <p className="text-sm">{rfp_record.supplier?.address || 'N/A'}</p>
+                                        </div>
+                                    </div>
                                     {rfp_record.vendor_ref && (
                                         <>
                                             <Separator />
@@ -334,13 +345,21 @@ export default function Show({ rfp_record, logs }: Props) {
                     <CardContent className="space-y-3">
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <p className="text-xs text-muted-foreground">AP No.</p>
-                                <p className="text-sm font-medium">{rfp_record.ap_no || 'N/A'}</p>
+                                {/* <p className="text-xs text-muted-foreground">AP No.</p>
+                                <p className="text-sm font-medium">{rfp_record.ap_no || 'N/A'}</p> */}
+                                <p className="text-xs text-muted-foreground">Prepared Date</p>
+                                <p className="text-sm font-medium">
+                                    {formatDate(rfp_record.created_at)}
+                                </p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground">Prepared Date - Due Date</p>
+                                {/* <p className="text-xs text-muted-foreground">Prepared Date - Due Date</p>
                                 <p className="text-sm font-medium">
                                     {formatDate(rfp_record.created_at)} – {formatDate(rfp_record.due_date)}
+                                </p> */}
+                                <p className="text-xs text-muted-foreground">Due Date</p>
+                                <p className="text-sm font-medium">
+                                    {formatDate(rfp_record.due_date)}
                                 </p>
                             </div>
                             <div>

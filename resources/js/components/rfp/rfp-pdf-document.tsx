@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     },
     infoLabelRight: {
         fontSize: 8.5,
-        width: 50,
+        width: 75,
         flexShrink: 0,
     },
     infoColon: {
@@ -437,13 +437,13 @@ export function RfpPdfDocument({ rfp_record }: Props) {
 
                     {/* Right Column */}
                     <View style={styles.infoColRight}>
-                        <View style={styles.infoRow}>
+                        {/* <View style={styles.infoRow}>
                             <Text style={styles.infoLabelRight}>AP No</Text>
                             <Text style={styles.infoColon}>:</Text>
                             <Text style={styles.infoValueRight}>{rfp_record.ap_no ?? '—'}</Text>
-                        </View>
+                        </View> */}
                         <View style={styles.infoRow}>
-                            <Text style={styles.infoLabelRight}>Date</Text>
+                            <Text style={styles.infoLabelRight}>Prepared Date</Text>
                             <Text style={styles.infoColon}>:</Text>
                             <Text style={styles.infoValueRight}>
                                 {pdfFormatDate(rfp_record.created_at)}
