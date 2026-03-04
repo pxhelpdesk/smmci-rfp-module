@@ -72,12 +72,12 @@ export function AppSidebar() {
     const [showUpdates, setShowUpdates] = useState(false);
 
     const footerNavItems: NavItem[] = [
-        {
-            title: 'System Updates',
-            href: '#',
-            icon: GitBranch,
-            onClick: () => setShowUpdates(true),
-        },
+        // {
+        //     title: 'System Updates',
+        //     href: '#',
+        //     icon: GitBranch,
+        //     onClick: () => setShowUpdates(true),
+        // },
     ];
 
     return (

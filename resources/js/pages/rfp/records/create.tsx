@@ -1,4 +1,4 @@
-import { useForm, Head, usePage, router } from '@inertiajs/react';
+import { useForm, Head, usePage } from '@inertiajs/react';
 import { Save, X } from 'lucide-react';
 import { useState } from 'react';
 import Select from 'react-select';
@@ -53,7 +53,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         concurred_by: [],
     });
 
-    const { data, setData, post, processing, errors } = useForm<{
+    const { data, setData, post, processing, errors, transform } = useForm<{
         ap_no: string;
         due_date: string;
         rr_no: string;
@@ -79,6 +79,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         grand_total_amount: string;
         remarks: string;
         details: Partial<RfpDetail>[];
+        signs: { user_id: number; details: string }[];
     }>({
         ap_no: '',
         due_date: '',
@@ -110,6 +111,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
             description: null,
             total_amount: null
         }],
+        signs: [],
     });
 
     // const loadAccounts = async () => {
@@ -193,14 +195,17 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const builtSigns = [
-            { user_id: auth.user.id, details: 'prepared_by' },
-            ...signatories.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u.value, details: 'recommending_approval_by' })),
-            ...signatories.approved_by.filter(Boolean).map(u => ({ user_id: u.value, details: 'approved_by' })),
-            ...signatories.concurred_by.filter(Boolean).map(u => ({ user_id: u.value, details: 'concurred_by' })),
-        ];
+        transform(d => ({
+            ...d,
+            signs: [
+                { user_id: auth.user.id, details: 'prepared_by' },
+                ...signatories.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u.value, details: 'recommending_approval_by' })),
+                ...signatories.approved_by.filter(Boolean).map(u => ({ user_id: u.value, details: 'approved_by' })),
+                ...signatories.concurred_by.filter(Boolean).map(u => ({ user_id: u.value, details: 'concurred_by' })),
+            ],
+        }));
 
-        router.post('/rfp/records', { ...data, signs: builtSigns });
+        post('/rfp/records');
     };
 
     const categoryOptions = categories.map(c => ({

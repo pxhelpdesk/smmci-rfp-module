@@ -1,4 +1,4 @@
-import { useForm, Head, usePage, router } from '@inertiajs/react';
+import { useForm, Head, usePage } from '@inertiajs/react';
 import { Save, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
@@ -128,7 +128,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
         }
     }, []);
 
-    const { data, setData, put, processing, errors } = useForm<{
+    const { data, setData, put, processing, errors, transform } = useForm<{
         ap_no: string;
         due_date: string;
         rr_no: string;
@@ -154,6 +154,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
         grand_total_amount: string;
         remarks: string;
         details: Partial<RfpDetail>[];
+        signs: { user_id: number; details: string }[];
         log_remarks?: string;
     }>({
         ap_no: rfp_record.ap_no || '',
@@ -194,6 +195,8 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                 description: null,
                 total_amount: null
             }],
+        signs: [],
+        log_remarks: '',
     });
 
     useEffect(() => {
@@ -355,38 +358,27 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
         });
     };
 
+    const buildSigns = () => [
+        { user_id: rfp_record.prepared_by?.id ?? auth.user.id, details: 'prepared_by' },
+        ...signatories.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
+        ...signatories.approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
+        ...signatories.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
+    ];
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (detectedChanges.length > 0) {
             setShowLogDialog(true);
         } else {
-            const builtSigns = [
-                { user_id: rfp_record.prepared_by?.id ?? auth.user.id, details: 'prepared_by' },
-                ...signatories.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
-                ...signatories.approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
-                ...signatories.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
-            ];
-            router.put(`/rfp/records/${rfp_record.id}`, { ...data, signs: builtSigns }, { preserveScroll: true });
+            transform(d => ({ ...d, signs: buildSigns() }));
+            put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
         }
     };
 
     const handleConfirmUpdate = () => {
         setShowLogDialog(false);
-
-        const builtSigns = [
-            { user_id: rfp_record.prepared_by?.id ?? auth.user.id, details: 'prepared_by' },
-            ...signatories.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
-            ...signatories.approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
-            ...signatories.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
-        ];
-
-        router.put(`/rfp/records/${rfp_record.id}`, {
-            ...data,
-            log_remarks: logRemarks,
-            signs: builtSigns,
-        }, {
-            preserveScroll: true,
-        });
+        transform(d => ({ ...d, signs: buildSigns(), log_remarks: logRemarks }));
+        put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
     };
 
     const categoryOptions = categories.map(c => ({
