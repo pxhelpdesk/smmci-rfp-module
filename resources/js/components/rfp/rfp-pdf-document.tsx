@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import type { RfpRecord } from '@/types';
+import type { RfpRecord, RfpSign } from '@/types';
 
 // ── Local PDF-safe formatters ─────────────────────────────────────────────────
 
@@ -330,9 +330,44 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#000000',
     },
+
+    // ── Signatories ────────────────────────────────────────────────
+    signatorySection: {
+        marginTop: 12,
+    },
+    signatoryRow: {
+        flexDirection: 'row' as const,
+        marginBottom: 16,
+    },
+    signatoryCell: {
+        flex: 1,
+        alignItems: 'center' as const,
+    },
+    signatoryLabel: {
+        fontSize: 8,
+        textAlign: 'center' as const,
+    },
+    signatoryLine: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#000000',
+        marginBottom: 4,
+        width: 180,
+    },
+    signatoryName: {
+        fontSize: 8.5,
+        fontWeight: 'bold' as const,
+        textAlign: 'center' as const,
+    },
+    signatoryEntry: {
+        alignItems: 'center' as const,
+        marginTop: 20,
+    },
 });
 
 const LOGO_URL = '/storage/images/logos/SMMCI_Logo_icon-text.png';
+
+const getSignsByRole = (signs: RfpSign[] | undefined, role: string) =>
+    (signs ?? []).filter(s => s.details === role);
 
 type Props = {
     rfp_record: RfpRecord;
@@ -370,7 +405,6 @@ export function RfpPdfDocument({ rfp_record }: Props) {
 
                 {/* Info Grid */}
                 <View style={styles.infoGrid}>
-
                     {/* Left Column */}
                     <View style={styles.infoColLeft}>
                         <View style={styles.infoRow}>
@@ -432,7 +466,6 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                             <Text style={styles.infoValueRight}>{rfp_record.po_no ?? '—'}</Text>
                         </View>
                     </View>
-
                 </View>
 
                 {/* Dashed Divider */}
@@ -485,7 +518,7 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                 )}
 
                 {/* Remarks */}
-                <View style={{ flexDirection: 'row', marginTop: 12 }}>
+                <View style={{ flexDirection: 'row', marginTop: 12 }} wrap={false}>
                     <View style={{ flex: 1 }}>
                         <Text style={styles.remarksLabel}>Remarks :</Text>
                         <View style={styles.remarksBox}>
@@ -493,6 +526,79 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                         </View>
                     </View>
                     <View style={{ flex: 1 }} />
+                </View>
+
+                {/* Signatories */}
+                <View style={styles.signatorySection} wrap={false}>
+
+                    <View style={styles.signatoryRow} wrap={false}>
+                        {/* Prepared By */}
+                        <View style={styles.signatoryCell}>
+                            <Text style={styles.signatoryLabel}>Prepared By :</Text>
+                            {getSignsByRole(rfp_record.signs, 'prepared_by').length === 0 ? (
+                                <View style={styles.signatoryEntry}>
+                                    <View style={styles.signatoryLine} />
+                                    <Text style={styles.signatoryName}> </Text>
+                                </View>
+                            ) : getSignsByRole(rfp_record.signs, 'prepared_by').map((s, i) => (
+                                <View key={i} style={styles.signatoryEntry}>
+                                    <View style={styles.signatoryLine} />
+                                    <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                </View>
+                            ))}
+                        </View>
+
+                        {/* Approved By */}
+                        <View style={styles.signatoryCell}>
+                            <Text style={styles.signatoryLabel}>Approved By :</Text>
+                            {getSignsByRole(rfp_record.signs, 'approved_by').length === 0 ? (
+                                <View style={styles.signatoryEntry}>
+                                    <View style={styles.signatoryLine} />
+                                    <Text style={styles.signatoryName}> </Text>
+                                </View>
+                            ) : getSignsByRole(rfp_record.signs, 'approved_by').map((s, i) => (
+                                <View key={i} style={styles.signatoryEntry}>
+                                    <View style={styles.signatoryLine} />
+                                    <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+
+                    <View style={styles.signatoryRow}>
+                        {/* Recommending Approval By */}
+                        <View style={styles.signatoryCell}>
+                            <Text style={styles.signatoryLabel}>Recommending Approval By :</Text>
+                            {getSignsByRole(rfp_record.signs, 'recommending_approval_by').length === 0 ? (
+                                <View style={styles.signatoryEntry}>
+                                    <View style={styles.signatoryLine} />
+                                    <Text style={styles.signatoryName}> </Text>
+                                </View>
+                            ) : getSignsByRole(rfp_record.signs, 'recommending_approval_by').map((s, i) => (
+                                <View key={i} style={styles.signatoryEntry}>
+                                    <View style={styles.signatoryLine} />
+                                    <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                </View>
+                            ))}
+                        </View>
+
+                        {/* Concurred By */}
+                        <View style={styles.signatoryCell}>
+                            <Text style={styles.signatoryLabel}>Concurred By :</Text>
+                            {getSignsByRole(rfp_record.signs, 'concurred_by').length === 0 ? (
+                                <View style={styles.signatoryEntry}>
+                                    <View style={styles.signatoryLine} />
+                                    <Text style={styles.signatoryName}> </Text>
+                                </View>
+                            ) : getSignsByRole(rfp_record.signs, 'concurred_by').map((s, i) => (
+                                <View key={i} style={styles.signatoryEntry}>
+                                    <View style={styles.signatoryLine} />
+                                    <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+
                 </View>
 
                 {/* Footer */}
@@ -515,7 +621,11 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                 </Text>
 
                 <Text style={styles.footerRfpNumber} fixed>
-                    Reference No.: {rfp_record.rfp_number}
+                    Ref. No.: {rfp_record.rfp_number}
+                </Text>
+
+                <Text style={[styles.footerRfpNumber, { bottom: 27 }]} fixed>
+                    Ref. Dept.: {getSignsByRole(rfp_record.signs, 'prepared_by')[0]?.user?.department?.department ?? 'N/A'}
                 </Text>
 
                 <Text

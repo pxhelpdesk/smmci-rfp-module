@@ -446,7 +446,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                     <TableRow>
                                         <TableHead>Role</TableHead>
                                         <TableHead>Name</TableHead>
-                                        <TableHead>Department</TableHead>
                                         <TableHead>Remarks</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -469,9 +468,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                                 </TableCell>
                                                 <TableCell className="font-medium">
                                                     {sign.user?.name || 'N/A'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {sign.user?.department?.department || 'N/A'}
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground">
                                                     {sign.remarks || 'N/A'}
