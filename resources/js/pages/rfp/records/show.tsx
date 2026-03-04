@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -297,21 +297,18 @@ export default function Show({ rfp_record, logs }: Props) {
                                             <p className="text-sm">{rfp_record.supplier?.address || 'N/A'}</p>
                                         </div>
                                     </div>
-                                    {rfp_record.vendor_ref && (
-                                        <>
-                                            <Separator />
-                                            <div>
-                                                <p className="text-xs text-muted-foreground">Vendor Reference</p>
-                                                <p className="text-sm">{rfp_record.vendor_ref}</p>
-                                            </div>
-                                        </>
-                                    )}
                                     <Separator />
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Currency</p>
-                                        <p className="text-sm">
-                                            {rfp_record.currency?.code} - {rfp_record.currency?.name}
-                                        </p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Vendor Reference</p>
+                                            <p className="text-sm">{rfp_record.vendor_ref || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Currency</p>
+                                            <p className="text-sm">
+                                                {rfp_record.currency?.code} - {rfp_record.currency?.name}
+                                            </p>
+                                        </div>
                                     </div>
                                 </>
                             ) : (
@@ -440,15 +437,16 @@ export default function Show({ rfp_record, logs }: Props) {
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">Timestamps</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-2.5">
-                            <div>
-                                <p className="text-xs text-muted-foreground">Created</p>
-                                <p className="text-sm">{formatDateTime(rfp_record.created_at)}</p>
-                            </div>
-                            <Separator />
-                            <div>
-                                <p className="text-xs text-muted-foreground">Last Updated</p>
-                                <p className="text-sm">{formatDateTime(rfp_record.updated_at)}</p>
+                        <CardContent>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Created</p>
+                                    <p className="text-sm">{formatDateTime(rfp_record.created_at)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Last Updated</p>
+                                    <p className="text-sm">{formatDateTime(rfp_record.updated_at)}</p>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -459,43 +457,28 @@ export default function Show({ rfp_record, logs }: Props) {
                         <CardTitle className="text-base">Signatories</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="border rounded-lg">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Role</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Remarks</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {!rfp_record.signs || rfp_record.signs.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                                                No signatories found
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        rfp_record.signs.map((sign) => (
-                                            <TableRow key={sign.id}>
-                                                <TableCell className="text-sm">
-                                                    {sign.details === 'prepared_by' && 'Prepared By'}
-                                                    {sign.details === 'recommending_approval_by' && 'Recommending Approval'}
-                                                    {sign.details === 'approved_by' && 'Approved By'}
-                                                    {sign.details === 'concurred_by' && 'Concurred By'}
-                                                    {!sign.details && 'N/A'}
-                                                </TableCell>
-                                                <TableCell className="font-medium">
-                                                    {sign.user?.name || 'N/A'}
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    {sign.remarks || 'N/A'}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
+                        <div className="grid grid-cols-4 divide-x border rounded-lg">
+                            {(['prepared_by', 'recommending_approval_by', 'approved_by', 'concurred_by'] as const).map((role) => {
+                                const labels: Record<string, string> = {
+                                    prepared_by: 'Prepared By',
+                                    recommending_approval_by: 'Recommending Approval',
+                                    approved_by: 'Approved By',
+                                    concurred_by: 'Concurred By',
+                                };
+                                const signs = rfp_record.signs?.filter((s) => s.details === role) ?? [];
+                                return (
+                                    <div key={role} className="flex flex-col p-4 gap-2">
+                                        <p className="text-xs text-muted-foreground font-medium">{labels[role]}</p>
+                                        {signs.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">N/A</p>
+                                        ) : (
+                                            signs.map((sign) => (
+                                                <p key={sign.id} className="text-sm font-medium">{sign.user?.name || 'N/A'}</p>
+                                            ))
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </CardContent>
                 </Card>
@@ -531,8 +514,8 @@ export default function Show({ rfp_record, logs }: Props) {
                                             const hasDetails = parsedDetails && Array.isArray(parsedDetails) && parsedDetails.length > 0;
 
                                             return (
-                                                <>
-                                                    <TableRow key={log.id}>
+                                                <React.Fragment key={log.id}>
+                                                    <TableRow>
                                                         <TableCell>
                                                             {hasDetails && (
                                                                 <Button
@@ -606,7 +589,7 @@ export default function Show({ rfp_record, logs }: Props) {
                                                             </TableCell>
                                                         </TableRow>
                                                     )}
-                                                </>
+                                                </React.Fragment>
                                             );
                                         })
                                     )}
