@@ -237,6 +237,7 @@ const styles = StyleSheet.create({
         borderColor: '#000000',
         padding: 8,
         minHeight: 40,
+        marginBottom: 12,
     },
     remarksText: {
         fontSize: 8.5,
@@ -531,73 +532,69 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                 {/* Signatories */}
                 <View style={styles.signatorySection} wrap={false}>
 
-                    <View style={styles.signatoryRow} wrap={false}>
-                        {/* Prepared By */}
-                        <View style={styles.signatoryCell}>
-                            <Text style={styles.signatoryLabel}>Prepared By :</Text>
-                            {getSignsByRole(rfp_record.signs, 'prepared_by').length === 0 ? (
-                                <View style={styles.signatoryEntry}>
-                                    <View style={styles.signatoryLine} />
-                                    <Text style={styles.signatoryName}> </Text>
+                    {/* only show row if at least one has signatories */}
+                    {(getSignsByRole(rfp_record.signs, 'prepared_by').length > 0 ||
+                    getSignsByRole(rfp_record.signs, 'approved_by').length > 0) && (
+                        <View style={styles.signatoryRow} wrap={false}>
+                            {/* Prepared By */}
+                            {getSignsByRole(rfp_record.signs, 'prepared_by').length > 0 && (
+                                <View style={styles.signatoryCell}>
+                                    <Text style={styles.signatoryLabel}>Prepared By :</Text>
+                                    {getSignsByRole(rfp_record.signs, 'prepared_by').map((s, i) => (
+                                        <View key={i} style={styles.signatoryEntry}>
+                                            <View style={styles.signatoryLine} />
+                                            <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                        </View>
+                                    ))}
                                 </View>
-                            ) : getSignsByRole(rfp_record.signs, 'prepared_by').map((s, i) => (
-                                <View key={i} style={styles.signatoryEntry}>
-                                    <View style={styles.signatoryLine} />
-                                    <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
-                                </View>
-                            ))}
-                        </View>
+                            )}
 
-                        {/* Approved By */}
-                        <View style={styles.signatoryCell}>
-                            <Text style={styles.signatoryLabel}>Approved By :</Text>
-                            {getSignsByRole(rfp_record.signs, 'approved_by').length === 0 ? (
-                                <View style={styles.signatoryEntry}>
-                                    <View style={styles.signatoryLine} />
-                                    <Text style={styles.signatoryName}> </Text>
+                            {/* Approved By */}
+                            {getSignsByRole(rfp_record.signs, 'approved_by').length > 0 && (
+                                <View style={styles.signatoryCell}>
+                                    <Text style={styles.signatoryLabel}>Approved By :</Text>
+                                    {getSignsByRole(rfp_record.signs, 'approved_by').map((s, i) => (
+                                        <View key={i} style={styles.signatoryEntry}>
+                                            <View style={styles.signatoryLine} />
+                                            <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                        </View>
+                                    ))}
                                 </View>
-                            ) : getSignsByRole(rfp_record.signs, 'approved_by').map((s, i) => (
-                                <View key={i} style={styles.signatoryEntry}>
-                                    <View style={styles.signatoryLine} />
-                                    <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
-                                </View>
-                            ))}
+                            )}
                         </View>
-                    </View>
+                    )}
 
-                    <View style={styles.signatoryRow}>
-                        {/* Recommending Approval By */}
-                        <View style={styles.signatoryCell}>
-                            <Text style={styles.signatoryLabel}>Recommending Approval By :</Text>
-                            {getSignsByRole(rfp_record.signs, 'recommending_approval_by').length === 0 ? (
-                                <View style={styles.signatoryEntry}>
-                                    <View style={styles.signatoryLine} />
-                                    <Text style={styles.signatoryName}> </Text>
+                    {/* only show row if at least one has signatories */}
+                    {(getSignsByRole(rfp_record.signs, 'recommending_approval_by').length > 0 ||
+                    getSignsByRole(rfp_record.signs, 'concurred_by').length > 0) && (
+                        <View style={styles.signatoryRow} wrap={false}>
+                            {/* Recommending Approval By */}
+                            {getSignsByRole(rfp_record.signs, 'recommending_approval_by').length > 0 && (
+                                <View style={styles.signatoryCell}>
+                                    <Text style={styles.signatoryLabel}>Recommending Approval By :</Text>
+                                    {getSignsByRole(rfp_record.signs, 'recommending_approval_by').map((s, i) => (
+                                        <View key={i} style={styles.signatoryEntry}>
+                                            <View style={styles.signatoryLine} />
+                                            <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                        </View>
+                                    ))}
                                 </View>
-                            ) : getSignsByRole(rfp_record.signs, 'recommending_approval_by').map((s, i) => (
-                                <View key={i} style={styles.signatoryEntry}>
-                                    <View style={styles.signatoryLine} />
-                                    <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
-                                </View>
-                            ))}
-                        </View>
+                            )}
 
-                        {/* Concurred By */}
-                        <View style={styles.signatoryCell}>
-                            <Text style={styles.signatoryLabel}>Concurred By :</Text>
-                            {getSignsByRole(rfp_record.signs, 'concurred_by').length === 0 ? (
-                                <View style={styles.signatoryEntry}>
-                                    <View style={styles.signatoryLine} />
-                                    <Text style={styles.signatoryName}> </Text>
+                            {/* Concurred By */}
+                            {getSignsByRole(rfp_record.signs, 'concurred_by').length > 0 && (
+                                <View style={styles.signatoryCell}>
+                                    <Text style={styles.signatoryLabel}>Concurred By :</Text>
+                                    {getSignsByRole(rfp_record.signs, 'concurred_by').map((s, i) => (
+                                        <View key={i} style={styles.signatoryEntry}>
+                                            <View style={styles.signatoryLine} />
+                                            <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                        </View>
+                                    ))}
                                 </View>
-                            ) : getSignsByRole(rfp_record.signs, 'concurred_by').map((s, i) => (
-                                <View key={i} style={styles.signatoryEntry}>
-                                    <View style={styles.signatoryLine} />
-                                    <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
-                                </View>
-                            ))}
+                            )}
                         </View>
-                    </View>
+                    )}
 
                 </View>
 
