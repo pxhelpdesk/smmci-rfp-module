@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight, Ban } from 'lucide-react';
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,7 @@ type Props = {
 
 export default function Show({ rfp_record, logs }: Props) {
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [cancelOpen, setCancelOpen] = useState(false);
     const [expandedLogIds, setExpandedLogIds] = useState<Set<number>>(new Set());
     const [previewPdf, setPreviewPdf] = useState(false);
 
@@ -60,6 +61,12 @@ export default function Show({ rfp_record, logs }: Props) {
             onSuccess: () => {
                 router.visit('/rfp/records');
             },
+        });
+    };
+
+    const handleCancel = () => {
+        router.patch(`/rfp/records/${rfp_record.id}/cancel`, {}, {
+            onSuccess: () => setCancelOpen(false),
         });
     };
 
@@ -181,12 +188,23 @@ export default function Show({ rfp_record, logs }: Props) {
                             <Printer className="h-4 w-4 mr-1.5" />
                             Print
                         </Button>
-                        {can('rfp-record-edit') && (
+                        {can('rfp-record-edit') && rfp_record.status !== 'cancelled' && (
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={`/rfp/records/${rfp_record.id}/edit`}>
                                     <Edit className="h-4 w-4 mr-1.5" />
                                     Edit
                                 </Link>
+                            </Button>
+                        )}
+                        {can('rfp-record-cancel') && rfp_record.status !== 'cancelled' && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCancelOpen(true)}
+                                className="text-orange-600 hover:text-orange-600"
+                            >
+                                <Ban className="h-4 w-4 mr-1.5" />
+                                Cancel
                             </Button>
                         )}
                         {can('rfp-record-delete') && (
@@ -638,6 +656,27 @@ export default function Show({ rfp_record, logs }: Props) {
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
                             Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Cancel Dialog */}
+            <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel RFP</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to cancel {rfp_record.rfp_number}? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Back</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleCancel}
+                            className="bg-orange-600 text-white hover:bg-orange-700"
+                        >
+                            Cancel RFP
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

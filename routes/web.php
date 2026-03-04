@@ -43,6 +43,8 @@ Route::prefix('rfp')->group(function () {
             'destroy' => 'rfp.records.destroy',
         ]);
 
+        Route::patch('records/{record}/cancel', [RfpRecordController::class, 'cancel'])->name('rfp.records.cancel');
+
         // Get usages by category (for dropdown)
         Route::get('usages/category/{categoryId}', [RfpRecordController::class, 'getUsagesByCategory'])
             ->name('rfp.usages.by-category');

@@ -1,6 +1,6 @@
 // pages/rfp/records/index.tsx
 import { Link, router, Head } from '@inertiajs/react';
-import { FileText, MoreVertical, Pencil, Plus, Search, Trash2, Printer } from 'lucide-react';
+import { FileText, MoreVertical, Pencil, Plus, Search, Trash2, Printer, Ban } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
@@ -59,7 +59,9 @@ type Props = {
 export default function Index({ rfp_records }: Props) {
     const [search, setSearch] = useState('');
     const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [previewPdf, setPreviewPdf] = useState<string | null>(null);
+    const [cancelId, setCancelId] = useState<number | null>(null);
+
+    const [previewRfp, setPreviewRfp] = useState<RfpRecord | null>(null);
 
     const handleDelete = () => {
         if (deleteId) {
@@ -74,7 +76,14 @@ export default function Index({ rfp_records }: Props) {
         }
     };
 
-    const [previewRfp, setPreviewRfp] = useState<RfpRecord | null>(null);
+    const handleCancel = () => {
+        if (cancelId) {
+            router.patch(`/rfp/records/${cancelId}/cancel`, {}, {
+                onSuccess: () => setCancelId(null),
+                onError: () => toast.error('Failed to cancel RFP'),
+            });
+        }
+    };
 
     const handlePrint = (rfp_record: RfpRecord) => {
         setPreviewRfp(rfp_record);
@@ -240,13 +249,25 @@ export default function Index({ rfp_records }: Props) {
                                                         <Printer className="h-4 w-4 mr-2" />
                                                         Print
                                                     </DropdownMenuItem>
-                                                    {can('rfp-record-edit') && (
+                                                    {can('rfp-record-edit') && rfp_record.status !== 'cancelled' && (
                                                         <DropdownMenuItem asChild>
                                                             <Link href={`/rfp/records/${rfp_record.id}/edit`}>
                                                                 <Pencil className="h-4 w-4 mr-2" />
                                                                 Edit
                                                             </Link>
                                                         </DropdownMenuItem>
+                                                    )}
+                                                    {can('rfp-record-cancel') && rfp_record.status !== 'cancelled' && (
+                                                        <>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                onClick={() => setCancelId(rfp_record.id)}
+                                                                className="text-orange-600 focus:text-orange-600"
+                                                            >
+                                                                <Ban className="h-4 w-4 mr-2" />
+                                                                Cancel
+                                                            </DropdownMenuItem>
+                                                        </>
                                                     )}
                                                     {can('rfp-record-delete') && (
                                                         <>
@@ -356,6 +377,26 @@ export default function Index({ rfp_records }: Props) {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                             Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={!!cancelId} onOpenChange={() => setCancelId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel RFP</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to cancel this RFP? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Back</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleCancel}
+                            className="bg-orange-600 text-white hover:bg-orange-700"
+                        >
+                            Cancel RFP
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

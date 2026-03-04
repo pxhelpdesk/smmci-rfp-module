@@ -22,6 +22,7 @@ class RfpRecordController extends Controller implements HasMiddleware
             new Middleware('permission:rfp-record-create', only: ['create', 'store']),
             new Middleware('permission:rfp-record-edit', only: ['edit', 'update']),
             new Middleware('permission:rfp-record-delete', only: ['destroy']),
+            new Middleware('permission:rfp-record-cancel', only: ['cancel']),
         ];
     }
 
@@ -150,6 +151,8 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function edit(RfpRecord $record)
     {
+        abort_if($record->status === 'cancelled', 403, 'Cancelled RFP cannot be edited.');
+
         $record->load(['details', 'usage.category', 'signs.user.department']);
 
         $users = \App\Models\User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
@@ -168,6 +171,8 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function update(UpdateRfpRecordRequest $updateRequest, RfpRecord $record)
     {
+        abort_if($record->status === 'cancelled', 403, 'Cancelled RFP cannot be edited.');
+
         $validated = $updateRequest->validated();
 
         // Calculate details subtotal
@@ -418,9 +423,28 @@ class RfpRecordController extends Controller implements HasMiddleware
         $rfpNumber = $record->rfp_number;
         $record->delete();
 
-        return redirect()->route('rfp.records.index')
-            ->with('success', "RFP {$rfpNumber} deleted successfully.");
-}
+        return redirect()->route('rfp.records.index')->with('success', "RFP {$rfpNumber} deleted successfully.");
+    }
+
+    public function cancel(RfpRecord $record)
+    {
+        abort_if($record->status === 'cancelled', 422, 'RFP is already cancelled.');
+
+        $previousStatus = $record->status;
+
+        $record->update(['status' => 'cancelled']);
+
+        RfpLog::create([
+            'rfp_record_id' => $record->id,
+            'user_id' => auth()->id(),
+            'from' => $previousStatus,
+            'into' => 'cancelled',
+            'details' => null,
+            'remarks' => 'Record cancelled.',
+        ]);
+
+        return redirect()->back()->with('success', "RFP {$record->rfp_number} has been cancelled.");
+    }
 
     public function getUsagesByCategory($categoryId)
     {
