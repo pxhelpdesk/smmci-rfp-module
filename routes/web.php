@@ -10,6 +10,7 @@ use App\Http\Controllers\RfpCurrencyController;
 use App\Http\Controllers\RfpRecordController;
 use App\Http\Controllers\SapController;
 use App\Http\Controllers\SapSupplierController;
+use App\Http\Controllers\RfpApprovalMatrixController;
 
 // Route::get('/', function () {
 //     return Inertia::render('welcome', [
@@ -44,6 +45,8 @@ Route::prefix('rfp')->group(function () {
         ]);
 
         Route::patch('records/{record}/cancel', [RfpRecordController::class, 'cancel'])->name('rfp.records.cancel');
+
+        Route::get('approval-matrix', [RfpApprovalMatrixController::class, 'index'])->name('rfp.approval-matrix.index');
 
         // Get usages by category (for dropdown)
         Route::get('usages/category/{categoryId}', [RfpRecordController::class, 'getUsagesByCategory'])

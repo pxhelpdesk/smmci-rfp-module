@@ -16,4 +16,5 @@ export type Permission =
     | 'rfp-currency-create'
     | 'rfp-currency-edit'
     | 'rfp-currency-delete'
-    | 'sap-supplier-view';
+    | 'sap-supplier-view'
+    | 'rfp-approval-matrix-view';

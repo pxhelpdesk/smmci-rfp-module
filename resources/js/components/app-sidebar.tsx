@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { FileText, GitBranch, Home, LayoutGrid, Layers, FolderTree, DollarSign, Users } from 'lucide-react';
+import { FileText, GitBranch, Home, LayoutGrid, Layers, FolderTree, DollarSign, Users, TableProperties } from 'lucide-react';
 import { useState } from 'react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -34,6 +34,12 @@ const mainNavItems: NavItem[] = [
         href: '/rfp/records',
         icon: FileText,
         permission: 'rfp-record-view',
+    },
+    {
+        title: 'Approval Matrix',
+        href: '/rfp/approval-matrix',
+        icon: TableProperties,
+        permission: 'rfp-approval-matrix-view',
     },
     {
         title: 'Setup',
