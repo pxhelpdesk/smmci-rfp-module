@@ -17,7 +17,6 @@ return new class extends Migration
 
             $table->enum('office', ['head_office', 'mine_site'])->default('mine_site');
             $table->foreignId('rfp_currency_id')->constrained('rfp_currencies');
-            $table->foreignId('rfp_usage_id')->constrained('rfp_usages');
 
             $table->enum('payee_type', ['employee', 'supplier'])->default('supplier');
             $table->string('employee_code')->nullable();
@@ -34,13 +33,6 @@ return new class extends Migration
             $table->string('contract_no')->nullable();
 
             $table->decimal('subtotal_details_amount', 15, 2)->nullable();
-            $table->decimal('total_before_vat_amount', 15, 2)->nullable();
-            $table->decimal('less_down_payment_amount', 15, 2)->nullable();
-            $table->boolean('is_vatable')->nullable();
-            $table->enum('vat_type', ['inclusive', 'exclusive'])->nullable();
-            $table->decimal('vat_amount', 15, 2)->nullable();
-            $table->decimal('wtax_amount', 15, 2)->nullable();
-            $table->decimal('grand_total_amount', 15, 2)->nullable();
 
             $table->text('purpose')->nullable();
             $table->enum('status', ['cancelled', 'draft', 'for_approval', 'approved', 'paid'])->default('draft');

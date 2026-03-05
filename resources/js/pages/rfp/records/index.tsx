@@ -100,7 +100,6 @@ export default function Index({ rfp_records, filters }: Props) {
     const filteredRfps = rfp_records.data.filter(
         (rfp_record) =>
             rfp_record.rfp_number.toLowerCase().includes(search.toLowerCase()) ||
-            rfp_record.usage?.description.toLowerCase().includes(search.toLowerCase()) ||
             rfp_record.supplier_name?.toLowerCase().includes(search.toLowerCase()) ||
             rfp_record.employee_name?.toLowerCase().includes(search.toLowerCase())
     );

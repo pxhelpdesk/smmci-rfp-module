@@ -2,21 +2,6 @@
 
 import type { Department } from './auth';
 
-export type RfpUser = {
-    id: number;
-    first_name: string;
-    last_name: string;
-    department_id?: number;
-    department?: Department;
-    name: string;
-};
-
-export type UserOption = {
-    value: number;
-    label: string;
-    department?: string;
-};
-
 export type RfpCurrency = {
     id: number;
     code: string;
@@ -42,43 +27,21 @@ export type RfpUsage = {
     is_active: boolean;
 };
 
-export type RfpDetail = {
-    id?: number;
-    rfp_record_id?: number;
-    account_code: string | null;
-    account_name: string | null;
-    description: string | null;
-    total_amount: number | null;
-};
-
-export type RfpSignatoryRole = 'prepared_by' | 'recommending_approval_by' | 'approved_by' | 'concurred_by';
-
-export type RfpSign = {
+export type RfpUser = {
     id: number;
-    rfp_record_id: number;
-    code: string | null;
-    user_id: number | null;
-    user?: RfpUser;
-    is_signed: boolean | null;
-    details: RfpSignatoryRole | null;
-    remarks: string | null;
-    created_at: string;
-    updated_at: string;
+    first_name: string;
+    last_name: string;
+    department_id?: number;
+    department?: Department;
+    name: string;
 };
 
-export type RfpLog = {
-    id: number;
-    rfp_record_id: number;
-    code: string | null;
-    user_id: number | null;
-    user?: RfpUser;
-    from: string | null;
-    into: string | null;
-    details: string | null;
-    remarks: string | null;
-    created_at: string;
-    updated_at: string;
+export type UserOption = {
+    value: number;
+    label: string;
+    department?: string;
 };
+
 
 export type RfpRecord = {
     id: number;
@@ -99,22 +62,51 @@ export type RfpRecord = {
     vendor_ref: string | null;
     rfp_currency_id: number;
     currency?: RfpCurrency;
-    rfp_usage_id: number;
-    usage?: RfpUsage;
     subtotal_details_amount: number | null;
-    total_before_vat_amount: number | null;
-    less_down_payment_amount: number | null;
-    is_vatable: boolean;
-    vat_type: 'inclusive' | 'exclusive';
-    vat_amount: number | null;
-    wtax_amount: number | null;
-    grand_total_amount: number | null;
     purpose: string | null;
     status: 'cancelled' | 'draft' | 'for_approval' | 'approved' | 'paid';
     details: RfpDetail[];
     signs?: RfpSign[];
     logs?: RfpLog[];
     supplier?: SapSupplier;
+    created_at: string;
+    updated_at: string;
+};
+
+export type RfpDetail = {
+    id?: number;
+    rfp_record_id?: number;
+    rfp_usage_id: number | null;
+    usage?: RfpUsage;
+    total_amount: number | null;
+};
+
+export type RfpSignatoryRole = 'prepared_by' | 'recommending_approval_by' | 'approved_by' | 'concurred_by';
+
+export type RfpSign = {
+    id: number;
+    rfp_record_id: number;
+    code: string | null;
+    user_id: number | null;
+    user?: RfpUser;
+    is_signed: boolean | null;
+    details: RfpSignatoryRole | null;
+    remarks: string | null;
+    created_at: string;
+    updated_at: string;
+};
+
+
+export type RfpLog = {
+    id: number;
+    rfp_record_id: number;
+    code: string | null;
+    user_id: number | null;
+    user?: RfpUser;
+    from: string | null;
+    into: string | null;
+    details: string | null;
+    remarks: string | null;
     created_at: string;
     updated_at: string;
 };
@@ -127,6 +119,7 @@ export type RfpDashboardStats = {
     total_grand_amount: number;
     overdue_count: number;
 };
+
 
 // SAP Data Types
 export type SapAccountOption = {

@@ -307,20 +307,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                     <RfpBadge type="office" value={rfp_record.office} />
                                 </p>
                             </div>
-                            <Separator />
-                            <div>
-                                <p className="text-xs text-muted-foreground">Category</p>
-                                <p className="text-sm">
-                                    {rfp_record.usage?.category?.code} - {rfp_record.usage?.category?.name}
-                                </p>
-                            </div>
-                            <Separator />
-                            <div>
-                                <p className="text-xs text-muted-foreground">Usage</p>
-                                <p className="text-sm">
-                                    {rfp_record.usage?.code} - {rfp_record.usage?.description}
-                                </p>
-                            </div>
                         </CardContent>
                     </Card>
 
@@ -401,43 +387,23 @@ export default function Show({ rfp_record, logs }: Props) {
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Document Information</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="grid grid-cols-3 gap-4">
+                    <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
-                                {/* <p className="text-xs text-muted-foreground">AP No.</p>
-                                <p className="text-sm font-medium">{rfp_record.ap_no || 'N/A'}</p> */}
                                 <p className="text-xs text-muted-foreground">Prepared Date</p>
-                                <p className="text-sm font-medium">
-                                    {formatDate(rfp_record.created_at)}
-                                </p>
+                                <p className="text-sm font-medium">{formatDate(rfp_record.created_at)}</p>
                             </div>
                             <div>
-                                {/* <p className="text-xs text-muted-foreground">Prepared Date - Due Date</p>
-                                <p className="text-sm font-medium">
-                                    {formatDate(rfp_record.created_at)} – {formatDate(rfp_record.due_date)}
-                                </p> */}
                                 <p className="text-xs text-muted-foreground">Due Date</p>
-                                <p className="text-sm font-medium">
-                                    {formatDate(rfp_record.due_date)}
-                                </p>
+                                <p className="text-sm font-medium">{formatDate(rfp_record.due_date)}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground">RR No.</p>
                                 <p className="text-sm font-medium">{rfp_record.rr_no || 'N/A'}</p>
                             </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
                             <div>
                                 <p className="text-xs text-muted-foreground">PO No.</p>
                                 <p className="text-sm font-medium">{rfp_record.po_no || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground">SWP Requisition No.</p>
-                                <p className="text-sm font-medium">{rfp_record.requisition_no || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground">SWP Contract No.</p>
-                                <p className="text-sm font-medium">{rfp_record.contract_no || 'N/A'}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -466,7 +432,11 @@ export default function Show({ rfp_record, logs }: Props) {
                                     ) : (
                                         rfp_record.details.map((detail) => (
                                             <TableRow key={detail.id}>
-                                                <TableCell>{detail.description || 'N/A'}</TableCell>
+                                                <TableCell>
+                                                    {detail.usage
+                                                        ? `${detail.usage.code} - ${detail.usage.description}`
+                                                        : 'N/A'}
+                                                </TableCell>
                                                 <TableCell className="text-right font-medium">
                                                     {formatAmount(Number(detail.total_amount))}
                                                 </TableCell>

@@ -11,9 +11,7 @@ return new class extends Migration
         Schema::connection('mysql_rfp')->create('rfp_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('rfp_record_id')->constrained('rfp_records')->cascadeOnDelete();
-            $table->string('account_code')->nullable();
-            $table->string('account_name')->nullable();
-            $table->text('description');
+            $table->foreignId('rfp_usage_id')->constrained('rfp_usages');
             $table->decimal('total_amount', 15, 2);
             $table->timestamps();
             $table->softDeletes();

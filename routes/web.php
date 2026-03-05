@@ -28,70 +28,37 @@ Route::post('/logout', function () {
     return Inertia::location('http://172.17.2.25:8001/login');
 })->name('logout');
 
-Route::prefix('rfp')->group(function () {
-    Route::middleware(['auth'])->group(function () {
+Route::prefix('rfp')->middleware(['auth'])->group(function () {
+    Route::name('rfp.')->group(function () {
         Route::get('dashboard', [RfpDashboardController::class, 'index'])->name('dashboard');
 
         // Records
-        Route::resource('records', RfpRecordController::class)->names([
-            'index' => 'rfp.records.index',
-            'create' => 'rfp.records.create',
-            'store' => 'rfp.records.store',
-            'show' => 'rfp.records.show',
-            'edit' => 'rfp.records.edit',
-            'update' => 'rfp.records.update',
-            'destroy' => 'rfp.records.destroy',
-        ]);
+        Route::resource('records', RfpRecordController::class);
+        Route::patch('records/{record}/cancel', [RfpRecordController::class, 'cancel'])->name('records.cancel');
+        Route::patch('records/{record}/paid', [RfpRecordController::class, 'markAsPaid'])->name('records.paid');
+        Route::patch('records/{record}/revert', [RfpRecordController::class, 'revert'])->name('records.revert');
 
-        Route::patch('records/{record}/cancel', [RfpRecordController::class, 'cancel'])->name('rfp.records.cancel');
-        Route::patch('records/{record}/paid', [RfpRecordController::class, 'markAsPaid'])->name('rfp.records.paid');
-        Route::patch('records/{record}/revert', [RfpRecordController::class, 'revert'])->name('rfp.records.revert');
+        Route::get('approval-matrix', [RfpApprovalMatrixController::class, 'index'])
+            ->name('approval-matrix.index');
 
-        Route::get('approval-matrix', [RfpApprovalMatrixController::class, 'index'])->name('rfp.approval-matrix.index');
-
-        // Get usages by category (for dropdown)
         Route::get('usages/category/{categoryId}', [RfpRecordController::class, 'getUsagesByCategory'])
-            ->name('rfp.usages.by-category');
+            ->name('usages.by-category');
 
-        // Categories
-        Route::resource('categories', RfpCategoryController::class)->names([
-            'index' => 'rfp.categories.index',
-            'create' => 'rfp.categories.create',
-            'store' => 'rfp.categories.store',
-            'show' => 'rfp.categories.show',
-            'edit' => 'rfp.categories.edit',
-            'update' => 'rfp.categories.update',
-            'destroy' => 'rfp.categories.destroy',
-        ]);
+        Route::resource('categories', RfpCategoryController::class);
+        Route::resource('usages', RfpUsageController::class);
+        Route::resource('currencies', RfpCurrencyController::class);
+    });
 
-        // Usages
-        Route::resource('usages', RfpUsageController::class)->names([
-            'index' => 'rfp.usages.index',
-            'create' => 'rfp.usages.create',
-            'store' => 'rfp.usages.store',
-            'show' => 'rfp.usages.show',
-            'edit' => 'rfp.usages.edit',
-            'update' => 'rfp.usages.update',
-            'destroy' => 'rfp.usages.destroy',
-        ]);
-
-        // Currencies
-        Route::resource('currencies', RfpCurrencyController::class)->names([
-            'index' => 'rfp.currencies.index',
-            'create' => 'rfp.currencies.create',
-            'store' => 'rfp.currencies.store',
-            'show' => 'rfp.currencies.show',
-            'edit' => 'rfp.currencies.edit',
-            'update' => 'rfp.currencies.update',
-            'destroy' => 'rfp.currencies.destroy',
-        ]);
-
-        // Suppliers
+    // SAP Supplier
+    Route::prefix('sap')->name('sap.')->group(function () {
         Route::get('suppliers', [SapSupplierController::class, 'index'])->name('suppliers.index');
+    });
 
-        // SAP API routes
-        Route::get('/api/accounts', [SapController::class, 'getAccounts']);
-        Route::get('/api/suppliers', [SapController::class, 'getSuppliers']);
+    // API SAP Supplier
+    Route::prefix('api')->group(function () {
+        Route::prefix('sap')->name('api.sap.')->group(function () {
+            Route::get('suppliers', [SapController::class, 'getSuppliers'])->name('suppliers');
+        });
     });
 });
 

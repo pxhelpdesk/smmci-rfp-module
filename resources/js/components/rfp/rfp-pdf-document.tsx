@@ -390,15 +390,6 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                             </Text>
                         </View>
                         <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Usage</Text>
-                            <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValue}>
-                                {rfp_record.usage
-                                    ? `${rfp_record.usage.description}`
-                                    : '—'}
-                            </Text>
-                        </View>
-                        <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Currency</Text>
                             <Text style={styles.infoColon}>:</Text>
                             <Text style={styles.infoValue}>{rfp_record.currency?.code ?? '—'}</Text>
@@ -463,7 +454,9 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                             ]}
                         >
                             <Text style={[styles.detailsTableText, styles.detailsColDescription]}>
-                                {detail.description ?? '—'}
+                                {detail.usage
+                                    ? `${detail.usage.code} - ${detail.usage.description}`
+                                    : '—'}
                             </Text>
                             <Text style={[styles.detailsTableTextRight, styles.detailsColTotal]}>
                                 {rfp_record.currency?.code ? `${rfp_record.currency.code} ${pdfFormatAmount(detail.total_amount)}` : pdfFormatAmount(detail.total_amount)}

@@ -29,20 +29,10 @@ class StoreRfpRecordRequest extends FormRequest
             'supplier_name' => 'required_if:payee_type,supplier|nullable|string',
             'vendor_ref' => 'nullable|string',
             'rfp_currency_id' => 'required|exists:mysql_rfp.rfp_currencies,id',
-            'rfp_usage_id' => 'required|exists:mysql_rfp.rfp_usages,id',
-            'total_before_vat_amount' => 'nullable|numeric',
-            'less_down_payment_amount' => 'nullable|numeric',
-            'is_vatable' => 'nullable|boolean',
-            'vat_type' => 'nullable|in:inclusive,exclusive',
-            'vat_amount' => 'nullable|numeric',
-            'wtax_amount' => 'nullable|numeric',
-            'grand_total_amount' => 'nullable|numeric',
             'purpose' => 'nullable|string',
             'status' => 'nullable|in:cancelled,draft,for_approval,approved,paid',
             'details' => 'required|array|min:1',
-            'details.*.account_code' => 'nullable|string',
-            'details.*.account_name' => 'nullable|string',
-            'details.*.description' => 'required|string',
+            'details.*.rfp_usage_id' => 'required|exists:mysql_rfp.rfp_usages,id',
             'details.*.total_amount' => 'required|numeric|min:0.01',
             'signs' => 'nullable|array',
             'signs.*.user_id' => 'required|integer|exists:mysql.users,id',
@@ -62,10 +52,10 @@ class StoreRfpRecordRequest extends FormRequest
             'supplier_code.required_if' => 'Supplier is required.',
             'supplier_name.required_if' => 'Supplier name is required.',
             'rfp_currency_id.required' => 'The currency is required.',
-            'rfp_usage_id.required' => 'The usage is required.',
-            'details.required' => 'At least one detail item is required.',
-            'details.min' => 'At least one detail item is required.',
-            'details.*.description.required' => 'Description is required for each detail.',
+            'details.required' => 'At least one item is required.',
+            'details.min' => 'At least one item is required.',
+            'details.*.rfp_usage_id.required' => 'Usage is required for each detail.',
+            'details.*.rfp_usage_id.exists' => 'Selected usage is invalid.',
             'details.*.total_amount.required' => 'Amount is required for each detail.',
             'details.*.total_amount.min' => 'Amount must be greater than zero.',
             'signs.*.user_id.required' => 'A user is required for each signatory.',
@@ -86,9 +76,7 @@ class StoreRfpRecordRequest extends FormRequest
             $this->merge([
                 'details' => collect($this->details)
                     ->filter(function($item) {
-                        return !empty($item['account_code']) ||
-                            !empty($item['account_name']) ||
-                            !empty($item['description']) ||
+                        return !empty($item['rfp_usage_id']) ||
                             !empty($item['total_amount']);
                     })
                     ->values()

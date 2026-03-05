@@ -13,9 +13,7 @@ class RfpDetail extends Model
 
     protected $fillable = [
         'rfp_record_id',
-        'account_code',
-        'account_name',
-        'description',
+        'rfp_usage_id',
         'total_amount',
     ];
 
@@ -26,5 +24,10 @@ class RfpDetail extends Model
     public function rfpRecord()
     {
         return $this->belongsTo(RfpRecord::class);
+    }
+
+    public function usage()
+    {
+        return $this->belongsTo(RfpUsage::class, 'rfp_usage_id');
     }
 }

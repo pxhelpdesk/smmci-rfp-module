@@ -7,20 +7,6 @@ use App\Models\SapSupplier;
 
 class SapController extends Controller
 {
-    public function getAccounts()
-    {
-        $accounts = DB::connection('sqlsrv')
-            ->table('OACT')
-            ->select('AcctCode', 'AcctName')
-            ->get()
-            ->map(fn($account) => [
-                'value' => $account->AcctCode,
-                'label' => "{$account->AcctCode} - {$account->AcctName}"
-            ]);
-
-        return response()->json($accounts);
-    }
-
     public function getSuppliers()
     {
         $suppliers = SapSupplier::select('card_code', 'card_name')

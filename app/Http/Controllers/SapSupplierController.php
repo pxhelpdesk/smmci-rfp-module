@@ -22,7 +22,7 @@ class SapSupplierController extends Controller implements HasMiddleware
         $suppliers = SapSupplier::orderBy('card_name')
             ->paginate(15);
 
-        return Inertia::render('rfp/suppliers/index', [
+        return Inertia::render('sap/suppliers/index', [
             'suppliers' => $suppliers,
         ]);
     }

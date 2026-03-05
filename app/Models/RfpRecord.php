@@ -28,51 +28,20 @@ class RfpRecord extends Model
         'supplier_name',
         'vendor_ref',
         'rfp_currency_id',
-        'rfp_usage_id',
         'subtotal_details_amount',
-        'total_before_vat_amount',
-        'less_down_payment_amount',
-        'is_vatable',
-        'vat_type',
-        'vat_amount',
-        'wtax_amount',
-        'grand_total_amount',
         'purpose',
         'status',
     ];
 
     protected $casts = [
         'due_date' => 'date',
-        'is_vatable' => 'boolean',
         'subtotal_details_amount' => 'decimal:2',
-        'total_before_vat_amount' => 'decimal:2',
-        'less_down_payment_amount' => 'decimal:2',
-        'vat_amount' => 'decimal:2',
-        'wtax_amount' => 'decimal:2',
-        'grand_total_amount' => 'decimal:2',
     ];
 
     // Relationships
     public function currency()
     {
         return $this->belongsTo(RfpCurrency::class, 'rfp_currency_id');
-    }
-
-    public function usage()
-    {
-        return $this->belongsTo(RfpUsage::class, 'rfp_usage_id');
-    }
-
-    public function category()
-    {
-        return $this->hasOneThrough(
-            RfpCategory::class,
-            RfpUsage::class,
-            'id',
-            'id',
-            'rfp_usage_id',
-            'rfp_category_id'
-        );
     }
 
     public function details()

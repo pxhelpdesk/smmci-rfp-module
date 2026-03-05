@@ -6,7 +6,9 @@ use App\Models\RfpRecord;
 use App\Models\RfpCurrency;
 use App\Models\RfpCategory;
 use App\Models\RfpUsage;
+use App\Models\RfpSign;
 use App\Models\RfpLog;
+use App\Models\User;
 use App\Http\Requests\StoreRfpRecordRequest;
 use App\Http\Requests\UpdateRfpRecordRequest;
 use Inertia\Inertia;
@@ -35,18 +37,17 @@ class RfpRecordController extends Controller implements HasMiddleware
         $userId = $user->id;
         $departmentId = $user->department_id;
 
-        $sameDeptUserIds = \App\Models\User::where('department_id', $departmentId)
+        $sameDeptUserIds = User::where('department_id', $departmentId)
             ->pluck('id')
             ->toArray();
 
-        $signedRfpIds = \App\Models\RfpSign::where('user_id', $userId)
+        $signedRfpIds = RfpSign::where('user_id', $userId)
             ->pluck('rfp_record_id')
             ->toArray();
 
         $query = RfpRecord::with([
             'currency',
-            'usage.category',
-            'details',
+            'details.usage.category',
             'signs.user.department',
             'preparedBy.department',
             'supplier',
@@ -77,7 +78,7 @@ class RfpRecordController extends Controller implements HasMiddleware
     {
         $phpCurrency = RfpCurrency::where('code', 'PHP')->where('is_active', true)->first();
 
-        $users = \App\Models\User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
+        $users = User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
             ->with('department:id,department')
             ->orderBy('first_name')
             ->get()
@@ -100,21 +101,27 @@ class RfpRecordController extends Controller implements HasMiddleware
         $validated['subtotal_details_amount'] = $detailsSubtotal;
 
         $validated['prepared_by'] = auth()->id();
+        $detailsData = $validated['details'] ?? [];
+        $signsData = $validated['signs'] ?? [];
         $rfpRecord = RfpRecord::create($validated);
 
-        if ($request->has('details')) {
-            $rfpRecord->details()->createMany($request->details);
+        if (!empty($validated['details'] ?? [])) {
+            $rfpRecord->details()->createMany(
+                collect($request->details)->map(fn($d) => [
+                    'rfp_usage_id' => $d['rfp_usage_id'],
+                    'total_amount' => $d['total_amount'],
+                ])->toArray()
+            );
         }
 
-        if ($request->has('signs') && is_array($request->signs)) {
-            $signs = collect($request->signs)->map(function ($sign) {
-                return [
-                    'user_id' => $sign['user_id'],
-                    'details' => $sign['details'],
+        if (!empty($signsData)) {
+            $rfpRecord->signs()->createMany(
+                collect($signsData)->map(fn($s) => [
+                    'user_id' => $s['user_id'],
+                    'details' => $s['details'],
                     'is_signed' => null,
-                ];
-            })->toArray();
-            $rfpRecord->signs()->createMany($signs);
+                ])->toArray()
+            );
         }
 
         return redirect()->route('rfp.records.index')->with('success', "RFP {$rfpRecord->rfp_number} created successfully.");
@@ -126,11 +133,11 @@ class RfpRecordController extends Controller implements HasMiddleware
         $userId = $user->id;
         $departmentId = $user->department_id;
 
-        $sameDeptUserIds = \App\Models\User::where('department_id', $departmentId)
+        $sameDeptUserIds = User::where('department_id', $departmentId)
             ->pluck('id')
             ->toArray();
 
-        $isSignatory = \App\Models\RfpSign::where('rfp_record_id', $record->id)
+        $isSignatory = RfpSign::where('rfp_record_id', $record->id)
             ->where('user_id', $userId)
             ->exists();
 
@@ -141,8 +148,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
         $record->load([
             'currency',
-            'usage.category',
-            'details',
+            'details.usage.category',
             'signs.user.department',
             'preparedBy.department',
             'supplier',
@@ -163,9 +169,9 @@ class RfpRecordController extends Controller implements HasMiddleware
     {
         abort_if($record->status === 'cancelled', 403, 'Cancelled RFP cannot be edited.');
 
-        $record->load(['details', 'usage.category', 'signs.user.department']);
+        $record->load(['details.usage.category', 'signs.user.department']);
 
-        $users = \App\Models\User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
+        $users = User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
             ->with('department:id,department')
             ->orderBy('first_name')
             ->get()
@@ -204,7 +210,12 @@ class RfpRecordController extends Controller implements HasMiddleware
         // Update details
         if (!empty($details)) {
             $record->details()->delete();
-            $record->details()->createMany($details);
+            $record->details()->createMany(
+                collect($details)->map(fn($d) => [
+                    'rfp_usage_id' => $d['rfp_usage_id'],
+                    'total_amount' => $d['total_amount'],
+                ])->toArray()
+            );
         }
 
         // Update signs  ← remove the duplicate $signs = $validated['signs'] ?? null; line
@@ -255,9 +266,7 @@ class RfpRecordController extends Controller implements HasMiddleware
             'supplier_name' => 'Supplier Name',
             'vendor_ref' => 'Vendor Ref',
             'rfp_currency_id' => 'Currency',
-            'rfp_usage_id' => 'Usage',
             'subtotal_details_amount' => 'Details Subtotal',
-            'less_down_payment_amount' => 'Down Payment',
             'wtax_amount' => 'Withholding Tax',
             'grand_total_amount' => 'Grand Total',
             'purpose' => 'Purpose',
@@ -281,20 +290,20 @@ class RfpRecordController extends Controller implements HasMiddleware
 
         // Detect details changes
         $oldDetails = $original->details()
+            ->with('usage')
             ->whereNull('deleted_at')
             ->get();
 
-        $newDetails = collect($newData['details'] ?? [])
-            ->filter(fn($d) => !empty($d['description']) || !empty($d['total_amount']));
+        $newDetails = collect($newData['details'] ?? [])->filter(fn($d) => !empty($d['rfp_usage_id']) || !empty($d['total_amount']));
 
         $oldDetailsStr = $oldDetails
-            ->map(fn($d) => $d->description . '|' . number_format((float) $d->total_amount, 2, '.', ''))
+            ->map(fn($d) => $d->rfp_usage_id . '|' . number_format((float) $d->total_amount, 2, '.', ''))
             ->sort()
             ->values()
             ->join(';');
 
         $newDetailsStr = $newDetails
-            ->map(fn($d) => ($d['description'] ?? '') . '|' . number_format((float) ($d['total_amount'] ?? 0), 2, '.', ''))
+            ->map(fn($d) => ($d['rfp_usage_id'] ?? '') . '|' . number_format((float) ($d['total_amount'] ?? 0), 2, '.', ''))
             ->sort()
             ->values()
             ->join(';');
@@ -303,10 +312,13 @@ class RfpRecordController extends Controller implements HasMiddleware
             $changes[] = [
                 'field' => 'Details',
                 'old' => $oldDetails->count() > 0
-                    ? $oldDetails->map(fn($d) => ($d->description ?? 'N/A') . ' — ' . number_format((float) $d->total_amount, 2))->join(', ')
+                    ? $oldDetails->map(fn($d) => ($d->usage?->description ?? 'N/A') . ' — ' . number_format((float) $d->total_amount, 2))->join(', ')
                     : 'N/A',
                 'new' => $newDetails->count() > 0
-                    ? $newDetails->map(fn($d) => ($d['description'] ?? 'N/A') . ' — ' . number_format((float) ($d['total_amount'] ?? 0), 2))->join(', ')
+                    ? $newDetails->map(function($d) {
+                        $usage = RfpUsage::find($d['rfp_usage_id'] ?? null);
+                        return ($usage ? "{$usage->code} - {$usage->description}" : 'N/A') . ' — ' . number_format((float) ($d['total_amount'] ?? 0), 2);
+                    })->join(', ')
                     : 'N/A',
             ];
         }
@@ -351,7 +363,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
             // Load user names for new signs
             $newUserIds = $newSigns->pluck('user_id')->filter()->unique()->toArray();
-            $newUsers = \App\Models\User::whereIn('id', $newUserIds)
+            $newUsers = User::whereIn('id', $newUserIds)
                 ->get()
                 ->keyBy('id');
 
@@ -382,7 +394,7 @@ class RfpRecordController extends Controller implements HasMiddleware
         }
 
         // Normalize numeric fields
-        if (in_array($field, ['subtotal_details_amount', 'less_down_payment_amount', 'wtax_amount', 'grand_total_amount'])) {
+        if (in_array($field, ['subtotal_details_amount'])) {
             return number_format((float) $value, 2, '.', '');
         }
 
@@ -404,7 +416,7 @@ class RfpRecordController extends Controller implements HasMiddleware
         }
 
         // Format currency fields
-        if (in_array($field, ['subtotal_details_amount', 'less_down_payment_amount', 'wtax_amount', 'grand_total_amount'])) {
+        if (in_array($field, ['subtotal_details_amount'])) {
             return number_format((float) $value, 2);
         }
 
@@ -412,12 +424,6 @@ class RfpRecordController extends Controller implements HasMiddleware
         if ($field === 'rfp_currency_id') {
             $currency = RfpCurrency::find($value);
             return $currency ? $currency->code : $value;
-        }
-
-        // Format usage ID to show code
-        if ($field === 'rfp_usage_id') {
-            $usage = RfpUsage::find($value);
-            return $usage ? "{$usage->code} - {$usage->description}" : $value;
         }
 
         // Format date
