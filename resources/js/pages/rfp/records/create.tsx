@@ -246,7 +246,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                     <CardContent>
                         <div className="grid md:grid-cols-3 gap-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="office" className="text-sm">Office <Req /></Label>
+                                <Label className="text-sm">Office <Req /></Label>
                                 <SelectUI value={data.office} onValueChange={(v) => setData('office', v as any)}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
@@ -270,7 +270,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="payee_type" className="text-sm">Type <Req /></Label>
+                                <Label className="text-sm">Type <Req /></Label>
                                 <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)} disabled>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
@@ -357,7 +357,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                     <Input value={formatDate(new Date().toISOString())} className="h-9" readOnly />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="due_date" className="text-sm">Due Date <Req /></Label>
+                                    <Label className="text-sm">Due Date <Req /></Label>
                                     <DateTimePicker
                                         value={data.due_date}
                                         onValueChange={(date) => setData('due_date', date)}
