@@ -152,7 +152,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
         vat_amount: string;
         wtax_amount: string;
         grand_total_amount: string;
-        remarks: string;
+        purpose: string;
         details: Partial<RfpDetail>[];
         signs: { user_id: number; details: string }[];
         log_remarks?: string;
@@ -180,7 +180,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
         vat_amount: rfp_record.vat_amount?.toString() || '',
         wtax_amount: rfp_record.wtax_amount?.toString() || '',
         grand_total_amount: rfp_record.grand_total_amount?.toString() || '',
-        remarks: rfp_record.remarks || '',
+        purpose: rfp_record.purpose || '',
         details: rfp_record.details && rfp_record.details.length > 0
             ? rfp_record.details.map(item => ({
                 id: item.id,
@@ -242,7 +242,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
         checkField('less_down_payment_amount', 'Down Payment', rfp_record.less_down_payment_amount, data.less_down_payment_amount);
         checkField('wtax_amount', 'Withholding Tax', rfp_record.wtax_amount, data.wtax_amount);
         checkField('grand_total_amount', 'Grand Total', rfp_record.grand_total_amount, data.grand_total_amount);
-        checkField('remarks', 'Remarks', rfp_record.remarks, data.remarks);
+        checkField('purpose', 'Purpose', rfp_record.purpose, data.purpose);
 
         // Check details changes
         const oldDetails = rfp_record.details ?? [];
@@ -839,6 +839,24 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Additional Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="purpose" className="text-sm">Purpose</Label>
+                            <Textarea
+                                id="purpose"
+                                value={data.purpose}
+                                onChange={(e) => setData('purpose', e.target.value)}
+                                rows={3}
+                                className="resize-none"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Signatories */}
                 <Card>
                     <CardHeader className="pb-3">
@@ -1064,24 +1082,6 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                         </div>
                     </CardContent>
                 </Card> */}
-
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Additional Information</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="remarks" className="text-sm">Remarks</Label>
-                            <Textarea
-                                id="remarks"
-                                value={data.remarks}
-                                onChange={(e) => setData('remarks', e.target.value)}
-                                rows={3}
-                                className="resize-none"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
             </form>
 
             {/* Change Log Alert Dialog */}

@@ -11,6 +11,12 @@ export type RfpUser = {
     name: string;
 };
 
+export type UserOption = {
+    value: number;
+    label: string;
+    department?: string;
+};
+
 export type RfpCurrency = {
     id: number;
     code: string;
@@ -103,7 +109,7 @@ export type RfpRecord = {
     vat_amount: number | null;
     wtax_amount: number | null;
     grand_total_amount: number | null;
-    remarks: string | null;
+    purpose: string | null;
     status: 'cancelled' | 'draft' | 'for_approval' | 'approved' | 'paid';
     details: RfpDetail[];
     signs?: RfpSign[];

@@ -42,7 +42,7 @@ return new class extends Migration
             $table->decimal('wtax_amount', 15, 2)->nullable();
             $table->decimal('grand_total_amount', 15, 2)->nullable();
 
-            $table->text('remarks')->nullable();
+            $table->text('purpose')->nullable();
             $table->enum('status', ['cancelled', 'draft', 'for_approval', 'approved', 'paid'])->default('draft');
 
             $table->timestamps();

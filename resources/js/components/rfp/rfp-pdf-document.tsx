@@ -226,20 +226,20 @@ const styles = StyleSheet.create({
         borderBottomColor: '#000000',
     },
 
-    // ── Remarks ───────────────────────────────────────────────────
-    remarksLabel: {
+    // ── Purpose ───────────────────────────────────────────────────
+    purposeLabel: {
         fontSize: 8.5,
         fontWeight: 'bold',
         marginBottom: 4,
     },
-    remarksBox: {
+    purposeBox: {
         borderWidth: 1,
         borderColor: '#000000',
         padding: 8,
         minHeight: 40,
         marginBottom: 12,
     },
-    remarksText: {
+    purposeText: {
         fontSize: 8.5,
     },
 
@@ -518,12 +518,12 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                     </View>
                 )}
 
-                {/* Remarks */}
+                {/* Purpose */}
                 <View style={{ flexDirection: 'row', marginTop: 12 }} wrap={false}>
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.remarksLabel}>Remarks :</Text>
-                        <View style={styles.remarksBox}>
-                            <Text style={styles.remarksText}>{rfp_record.remarks ?? 'None'}</Text>
+                        <Text style={styles.purposeLabel}>Purpose :</Text>
+                        <View style={styles.purposeBox}>
+                            <Text style={styles.purposeText}>{rfp_record.purpose ?? 'None'}</Text>
                         </View>
                     </View>
                     <View style={{ flex: 1 }} />

@@ -260,7 +260,7 @@ class RfpRecordController extends Controller implements HasMiddleware
             'less_down_payment_amount' => 'Down Payment',
             'wtax_amount' => 'Withholding Tax',
             'grand_total_amount' => 'Grand Total',
-            'remarks' => 'Remarks',
+            'purpose' => 'Purpose',
         ];
 
         foreach ($fieldsToTrack as $field => $label) {

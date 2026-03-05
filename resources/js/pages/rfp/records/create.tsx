@@ -77,7 +77,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         vat_amount: string;
         wtax_amount: string;
         grand_total_amount: string;
-        remarks: string;
+        purpose: string;
         details: Partial<RfpDetail>[];
         signs: { user_id: number; details: string }[];
     }>({
@@ -104,7 +104,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         vat_amount: '',
         wtax_amount: '',
         grand_total_amount: '',
-        remarks: '',
+        purpose: '',
         details: [{
             account_code: null,
             account_name: null,
@@ -674,6 +674,24 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Additional Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="purpose" className="text-sm">Purpose</Label>
+                            <Textarea
+                                id="purpose"
+                                value={data.purpose}
+                                onChange={(e) => setData('purpose', e.target.value)}
+                                rows={3}
+                                className="resize-none"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Signatories */}
                 <Card>
                     <CardHeader className="pb-3">
@@ -899,24 +917,6 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                         </div>
                     </CardContent>
                 </Card> */}
-
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Additional Information</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-1.5">
-                            <Label htmlFor="remarks" className="text-sm">Remarks</Label>
-                            <Textarea
-                                id="remarks"
-                                value={data.remarks}
-                                onChange={(e) => setData('remarks', e.target.value)}
-                                rows={3}
-                                className="resize-none"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
             </form>
         </AppLayout>
     );

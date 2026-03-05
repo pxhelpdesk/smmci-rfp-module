@@ -37,7 +37,7 @@ class StoreRfpRecordRequest extends FormRequest
             'vat_amount' => 'nullable|numeric',
             'wtax_amount' => 'nullable|numeric',
             'grand_total_amount' => 'nullable|numeric',
-            'remarks' => 'nullable|string',
+            'purpose' => 'nullable|string',
             'status' => 'nullable|in:cancelled,draft,for_approval,approved,paid',
             'details' => 'required|array|min:1',
             'details.*.account_code' => 'nullable|string',

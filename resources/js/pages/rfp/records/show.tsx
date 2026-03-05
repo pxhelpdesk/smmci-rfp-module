@@ -488,10 +488,10 @@ export default function Show({ rfp_record, logs }: Props) {
                 <div className="grid gap-4 md:grid-cols-2">
                     <Card>
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Remarks</CardTitle>
+                            <CardTitle className="text-base">Purpose</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm whitespace-pre-wrap">{rfp_record.remarks || 'N/A'}</p>
+                            <p className="text-sm whitespace-pre-wrap">{rfp_record.purpose || 'N/A'}</p>
                         </CardContent>
                     </Card>
 

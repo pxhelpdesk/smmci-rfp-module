@@ -61,7 +61,7 @@ const sectionI: MatrixRow[] = [
     },
 ];
 
-const sectionK: MatrixRow[] = [
+const sectionJ: MatrixRow[] = [
     {
         amount: '1 – 500k',
         ms: 'Resident Manager/Mine Site Head w/ Finance Head concurrence',
@@ -91,19 +91,19 @@ type Section = {
 };
 
 const sections: Section[] = [
+    // {
+    //     label: 'H. Covering Advance Payment Against PO – With Budget',
+    //     rows: sectionH,
+    //     mergedRows: [1, 2, 3],
+    // },
+    // {
+    //     label: 'I. Covering Indent PO – With Budget',
+    //     rows: sectionI,
+    //     mergedRows: [1, 2, 3],
+    // },
     {
-        label: 'H. Covering Advance Payment Against PO – With Budget',
-        rows: sectionH,
-        mergedRows: [1, 2, 3],
-    },
-    {
-        label: 'I. Covering Indent PO – With Budget',
-        rows: sectionI,
-        mergedRows: [1, 2, 3],
-    },
-    {
-        label: 'K. Without PO – With Budget',
-        rows: sectionK,
+        label: 'J. Without PO – With Budget',
+        rows: sectionJ,
         mergedRows: [2, 3],
     },
 ];

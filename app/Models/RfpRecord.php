@@ -37,7 +37,7 @@ class RfpRecord extends Model
         'vat_amount',
         'wtax_amount',
         'grand_total_amount',
-        'remarks',
+        'purpose',
         'status',
     ];
 
