@@ -135,7 +135,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
         po_no: string;
         requisition_no: string;
         contract_no: string;
-        area: 'head_office' | 'mine_site';
+        office: 'head_office' | 'mine_site';
         payee_type: 'employee' | 'supplier';
         employee_code: string;
         employee_name: string;
@@ -163,7 +163,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
         po_no: rfp_record.po_no || '',
         requisition_no: rfp_record.requisition_no || '',
         contract_no: rfp_record.contract_no || '',
-        area: rfp_record.area,
+        office: rfp_record.office,
         payee_type: rfp_record.payee_type,
         employee_code: rfp_record.employee_code || '',
         employee_name: rfp_record.employee_name || '',
@@ -232,11 +232,11 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
         checkField('po_no', 'PO No.', rfp_record.po_no, data.po_no);
         checkField('requisition_no', 'Requisition No.', rfp_record.requisition_no, data.requisition_no);
         checkField('contract_no', 'Contract No.', rfp_record.contract_no, data.contract_no);
-        checkField('area', 'Area', rfp_record.area, data.area);
+        checkField('office', 'Office', rfp_record.office, data.office);
         checkField('employee_code', 'Employee Code', rfp_record.employee_code, data.employee_code);
         checkField('employee_name', 'Employee Name', rfp_record.employee_name, data.employee_name);
         checkField('supplier_code', 'Supplier Code', rfp_record.supplier_code, data.supplier_code);
-        checkField('vendor_ref', 'Vendor Reference', rfp_record.vendor_ref, data.vendor_ref);
+        checkField('vendor_ref', 'Vendor Ref', rfp_record.vendor_ref, data.vendor_ref);
         checkField('rfp_currency_id', 'Currency', rfp_record.rfp_currency_id, data.rfp_currency_id);
         checkField('rfp_usage_id', 'Usage', rfp_record.rfp_usage_id, data.rfp_usage_id);
         checkField('less_down_payment_amount', 'Down Payment', rfp_record.less_down_payment_amount, data.less_down_payment_amount);
@@ -478,8 +478,8 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                     <CardContent>
                         <div className="grid md:grid-cols-3 gap-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor="area" className="text-sm">Area <Req /></Label>
-                                <SelectUI value={data.area} onValueChange={(v) => setData('area', v as any)}>
+                                <Label htmlFor="office" className="text-sm">Office <Req /></Label>
+                                <SelectUI value={data.office} onValueChange={(v) => setData('office', v as any)}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -488,7 +488,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                                         <SelectItem value="mine_site">Mine Site</SelectItem>
                                     </SelectContent>
                                 </SelectUI>
-                                {errors.area && <p className="text-xs text-destructive">{errors.area}</p>}
+                                {errors.office && <p className="text-xs text-destructive">{errors.office}</p>}
                             </div>
 
                             <div className="space-y-1.5">
@@ -590,29 +590,13 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="vendor_ref" className="text-sm">Vendor Reference</Label>
+                                        <Label htmlFor="vendor_ref" className="text-sm">Vendor Ref</Label>
                                         <Input
                                             id="vendor_ref"
                                             value={data.vendor_ref}
                                             onChange={(e) => setData('vendor_ref', e.target.value)}
                                             className="h-9"
                                         />
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <Label className="text-sm">Currency <Req /></Label>
-                                        <Select
-                                            options={currencyOptions}
-                                            value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
-                                            onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
-                                            placeholder="Select currency..."
-                                            className="text-sm"
-                                            styles={{
-                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
-                                            }}
-                                        />
-                                        {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
                                     </div>
                                 </>
                             ) : (
@@ -637,22 +621,6 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                                             className="h-9"
                                         />
                                         {errors.employee_name && <p className="text-xs text-destructive">{errors.employee_name}</p>}
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <Label className="text-sm">Currency <Req /></Label>
-                                        <Select
-                                            options={currencyOptions}
-                                            value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
-                                            onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
-                                            placeholder="Select currency..."
-                                            className="text-sm"
-                                            styles={{
-                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
-                                            }}
-                                        />
-                                        {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
                                     </div>
                                 </>
                             )}
@@ -720,7 +688,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            {/* <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="requisition_no" className="text-sm">SWP Requisition No.</Label>
                                     <Input
@@ -740,6 +708,22 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                                         className="h-9"
                                     />
                                 </div>
+                            </div> */}
+
+                            <div className="space-y-1.5">
+                                <Label className="text-sm">Currency <Req /></Label>
+                                <Select
+                                    options={currencyOptions}
+                                    value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
+                                    onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
+                                    placeholder="Select currency..."
+                                    className="text-sm"
+                                    styles={{
+                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+                                        menu: (base) => ({ ...base, fontSize: '14px' }),
+                                    }}
+                                />
+                                {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
                             </div>
                         </CardContent>
                     </Card>
@@ -749,20 +733,18 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
                 <Card>
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">Details <Req /></CardTitle>
+                            <CardTitle className="text-base">Main Information <Req /></CardTitle>
                             <Button type="button" size="sm" variant="outline" onClick={addDetail}>
-                                Add Detail
+                                Add Item
                             </Button>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
                         {data.details.length > 0 && (
                             <div className="flex gap-2 px-3 pb-2">
-                                {/* <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2"> */}
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {/* <p className="text-xs font-medium text-muted-foreground">Account</p> */}
-                                    <p className="text-xs font-medium text-muted-foreground">Description</p>
-                                    <p className="text-xs font-medium text-muted-foreground">Total</p>
+                                    <p className="text-xs font-medium text-muted-foreground">Short Description</p>
+                                    <p className="text-xs font-medium text-muted-foreground">Amount</p>
                                 </div>
                                 {data.details.length > 1 && <div className="w-9"></div>}
                             </div>
@@ -770,30 +752,7 @@ export default function Edit({ rfp_record, categories, currencies, users }: Prop
 
                         {data.details.map((detail, index) => (
                             <div key={index} className="flex gap-2 items-start px-3">
-                                {/* <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2"> */}
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {/* <Select
-                                        options={accounts}
-                                        value={accounts.find(a => a.value === detail.account_code)}
-                                        onChange={(opt) => {
-                                            const updated = [...data.details];
-                                            updated[index] = {
-                                                ...updated[index],
-                                                account_code: opt?.value || null,
-                                                account_name: opt ? opt.label.split(' - ')[1] : null,
-                                            };
-                                            setData('details', updated);
-                                        }}
-                                        onMenuOpen={() => !accounts.length && loadAccounts()}
-                                        isLoading={loadingAccounts}
-                                        isClearable
-                                        placeholder="Select account..."
-                                        className="text-sm"
-                                        styles={{
-                                            control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                            menu: (base) => ({ ...base, fontSize: '14px' }),
-                                        }}
-                                    /> */}
                                     <div className="space-y-1">
                                         <Input
                                             placeholder="Input here"

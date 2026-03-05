@@ -90,7 +90,7 @@ export type RfpRecord = {
     requisition_no: string | null;
     contract_no: string | null;
     rfp_number: string;
-    area: 'head_office' | 'mine_site';
+    office: 'head_office' | 'mine_site';
     payee_type: 'employee' | 'supplier';
     employee_code: string | null;
     employee_name: string | null;

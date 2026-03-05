@@ -189,7 +189,7 @@ export default function Index({ rfp_records, filters }: Props) {
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-32.5">RFP No.</TableHead>
-                                <TableHead>Area</TableHead>
+                                <TableHead>Office</TableHead>
                                 <TableHead>Requestor</TableHead>
                                 <TableHead>Payee</TableHead>
                                 <TableHead>Prepared</TableHead>
@@ -229,7 +229,7 @@ export default function Index({ rfp_records, filters }: Props) {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <RfpBadge type="area" value={rfp_record.area} />
+                                            <RfpBadge type="office" value={rfp_record.office} />
                                         </TableCell>
                                         <TableCell>
                                             <div>

@@ -18,12 +18,12 @@ const statusLabels = {
     paid: 'Paid',
 };
 
-const areaColors = {
+const officeColors = {
     head_office: 'bg-purple-100 text-purple-800',
     mine_site: 'bg-orange-100 text-orange-800',
 };
 
-const areaLabels = {
+const officeLabels = {
     head_office: 'Head Office',
     mine_site: 'Mine Site',
 };
@@ -46,18 +46,18 @@ const signatoryLabels = {
 };
 
 export type RfpStatus = keyof typeof statusLabels;
-export type RfpArea = keyof typeof areaLabels;
+export type RfpOffice = keyof typeof officeLabels;
 export type RfpPayeeType = keyof typeof payeeLabels;
 export type RfpSignatoryRole = keyof typeof signatoryLabels;
 
 type RfpBadgeProps =
     | { type: 'status'; value: RfpStatus }
-    | { type: 'area'; value: RfpArea }
+    | { type: 'office'; value: RfpOffice }
     | { type: 'payee'; value: RfpPayeeType };
 
 const configs = {
     status: { colors: statusColors, labels: statusLabels },
-    area:   { colors: areaColors,   labels: areaLabels   },
+    office:   { colors: officeColors,   labels: officeLabels   },
     payee:  { colors: payeeColors,  labels: payeeLabels  },
 };
 
@@ -76,13 +76,13 @@ export function RfpBadge({ type, value }: RfpBadgeProps) {
 // Plain text label formatter — no badge, just readable string
 type RfpLabelProps =
     | { type: 'status'; value: RfpStatus }
-    | { type: 'area'; value: RfpArea }
+    | { type: 'office'; value: RfpOffice }
     | { type: 'payee'; value: RfpPayeeType }
     | { type: 'signatory'; value: RfpSignatoryRole };
 
 const labelConfigs: Record<string, Record<string, string>> = {
     status: statusLabels,
-    area: areaLabels,
+    office: officeLabels,
     payee: payeeLabels,
     signatory: signatoryLabels,
 };

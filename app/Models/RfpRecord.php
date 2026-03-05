@@ -20,7 +20,7 @@ class RfpRecord extends Model
         'requisition_no',
         'contract_no',
         'rfp_number',
-        'area',
+        'office',
         'payee_type',
         'employee_code',
         'employee_name',

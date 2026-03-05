@@ -15,7 +15,7 @@ return new class extends Migration
 
             $table->unsignedBigInteger('prepared_by')->nullable();
 
-            $table->enum('area', ['head_office', 'mine_site'])->default('mine_site');
+            $table->enum('office', ['head_office', 'mine_site'])->default('mine_site');
             $table->foreignId('rfp_currency_id')->constrained('rfp_currencies');
             $table->foreignId('rfp_usage_id')->constrained('rfp_usages');
 

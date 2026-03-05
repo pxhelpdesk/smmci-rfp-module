@@ -302,9 +302,9 @@ export default function Show({ rfp_record, logs }: Props) {
                             </div>
                             <Separator />
                             <div>
-                                <p className="text-xs text-muted-foreground">Area</p>
+                                <p className="text-xs text-muted-foreground">Office</p>
                                 <p className="text-sm">
-                                    <RfpBadge type="area" value={rfp_record.area} />
+                                    <RfpBadge type="office" value={rfp_record.office} />
                                 </p>
                             </div>
                             <Separator />
@@ -362,7 +362,7 @@ export default function Show({ rfp_record, logs }: Props) {
                                     <Separator />
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <p className="text-xs text-muted-foreground">Vendor Reference</p>
+                                            <p className="text-xs text-muted-foreground">Vendor Ref</p>
                                             <p className="text-sm">{rfp_record.vendor_ref || 'N/A'}</p>
                                         </div>
                                         <div>
@@ -445,16 +445,14 @@ export default function Show({ rfp_record, logs }: Props) {
 
                 <Card>
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Details</CardTitle>
+                        <CardTitle className="text-base">Main Information</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="border rounded-lg">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        {/* <TableHead>Account Code</TableHead>
-                                        <TableHead>Account Name</TableHead> */}
-                                        <TableHead>Description</TableHead>
+                                        <TableHead>Short Description</TableHead>
                                         <TableHead className="text-right">Amount</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -462,16 +460,12 @@ export default function Show({ rfp_record, logs }: Props) {
                                     {rfp_record.details.length === 0 ? (
                                         <TableRow>
                                             <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                                                No details found
+                                                No information found
                                             </TableCell>
                                         </TableRow>
                                     ) : (
                                         rfp_record.details.map((detail) => (
                                             <TableRow key={detail.id}>
-                                                {/* <TableCell className="font-medium">
-                                                    {detail.account_code || 'N/A'}
-                                                </TableCell>
-                                                <TableCell>{detail.account_name || 'N/A'}</TableCell> */}
                                                 <TableCell>{detail.description || 'N/A'}</TableCell>
                                                 <TableCell className="text-right font-medium">
                                                     {formatAmount(Number(detail.total_amount))}
@@ -523,7 +517,7 @@ export default function Show({ rfp_record, logs }: Props) {
                             {(['prepared_by', 'recommending_approval_by', 'approved_by', 'concurred_by'] as const).map((role) => {
                                 const labels: Record<string, string> = {
                                     prepared_by: 'Prepared By',
-                                    recommending_approval_by: 'Recommending Approval',
+                                    recommending_approval_by: 'Recommending Approval By',
                                     approved_by: 'Approved By',
                                     concurred_by: 'Concurred By',
                                 };

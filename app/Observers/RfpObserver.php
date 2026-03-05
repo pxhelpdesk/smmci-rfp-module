@@ -9,16 +9,16 @@ class RfpObserver
     public function creating(RfpRecord $rfpRecord): void
     {
         if (empty($rfpRecord->rfp_number)) {
-            $rfpRecord->rfp_number = $this->generateRfpNumber($rfpRecord->area);
+            $rfpRecord->rfp_number = $this->generateRfpNumber($rfpRecord->office);
         }
     }
 
-    private function generateRfpNumber(string $area): string
+    private function generateRfpNumber(string $office): string
     {
         $year = date('Y');
         $month = date('m');
 
-        $prefix = match($area) {
+        $prefix = match($office) {
             'head_office' => "HO-{$year}-{$month}",
             'mine_site' => "MS-{$year}-{$month}",
             default => "RFP-{$year}-{$month}",

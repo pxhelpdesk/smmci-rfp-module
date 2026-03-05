@@ -37,7 +37,7 @@ class UpdateRfpRecordRequest extends FormRequest
             'po_no' => 'nullable|string',
             'requisition_no' => 'nullable|string',
             'contract_no' => 'nullable|string',
-            'area' => 'required|in:head_office,mine_site',
+            'office' => 'required|in:head_office,mine_site',
             'payee_type' => 'required|in:employee,supplier',
             'employee_code' => 'required_if:payee_type,employee|nullable|string',
             'employee_name' => 'required_if:payee_type,employee|nullable|string',
@@ -73,7 +73,7 @@ class UpdateRfpRecordRequest extends FormRequest
         return [
             'due_date.after_or_equal' => 'The due date must be today or a future date.',
             'due_date.required' => 'The due date is required.',
-            'area.required' => 'The area is required.',
+            'office.required' => 'The office is required.',
             'payee_type.required' => 'The payee type is required.',
             'employee_code.required_if' => 'Employee code is required.',
             'employee_name.required_if' => 'Employee name is required.',
