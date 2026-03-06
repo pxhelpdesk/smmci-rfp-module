@@ -39,7 +39,7 @@ class RfpDashboardController extends Controller
             ->count();
 
         $recentRecords = (clone $baseQuery)
-            ->with(['currency', 'usage', 'preparedBy.department'])
+            ->with(['currency', 'preparedBy.department'])
             ->where('created_at', '>=', now()->subDays(7))
             ->latest()
             ->take(5)
