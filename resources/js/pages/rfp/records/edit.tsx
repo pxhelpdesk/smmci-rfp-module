@@ -58,11 +58,14 @@ type Props = {
     users: { id: number; name: string; department?: string }[];
     scopeOwner?: { id: number; name: string; department?: string } | null;
     departmentHead?: { id: number; name: string; department?: string } | null;
+    residentManager?: { id: number; name: string; department?: string } | null;
+    cfo?: { id: number; name: string; department?: string } | null;
+    ceo?: { id: number; name: string; department?: string } | null;
 };
 
 const Req = () => <span className="text-destructive ml-0.5">*</span>;
 
-export default function Edit({ rfp_record, categories, currencies, users, scopeOwner, departmentHead }: Props) {
+export default function Edit({ rfp_record, categories, currencies, users, scopeOwner, departmentHead, residentManager, cfo, ceo }: Props) {
     const { auth } = usePage<SharedData>().props;
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
@@ -753,6 +756,12 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                     signatories={signatories}
                     userOptions={userOptions}
                     onChange={setSignatories}
+                    office={data.office}
+                    subtotalAmount={data.details.reduce((sum, d) => sum + (Number(d.total_amount) ?? 0), 0)}
+                    residentManager={residentManager}
+                    departmentHead={departmentHead}
+                    cfo={cfo}
+                    ceo={ceo}
                 />
             </form>
 

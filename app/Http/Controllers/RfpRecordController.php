@@ -94,6 +94,24 @@ class RfpRecordController extends Controller implements HasMiddleware
             ->with('user.department')
             ->first();
 
+        $residentManager = User::whereHas('roles', fn($q) => $q->where('name', 'Resident Manager'))
+            ->with('department')
+            ->first();
+
+        if (!$residentManager) {
+            $residentManager = User::whereHas('roles', fn($q) => $q->where('name', 'Project Lead'))
+                ->with('department')
+                ->first();
+        }
+
+        $cfo = User::whereHas('roles', fn($q) => $q->where('name', 'CFO'))
+            ->with('department')
+            ->first();
+
+        $ceo = User::whereHas('roles', fn($q) => $q->where('name', 'CEO'))
+            ->with('department')
+            ->first();
+
         return Inertia::render('rfp/records/create', [
             'currencies' => RfpCurrency::select('id', 'code', 'name')->where('is_active', true)->get(),
             'categories' => RfpCategory::select('id', 'code', 'name')->where('is_active', true)->get(),
@@ -109,6 +127,13 @@ class RfpRecordController extends Controller implements HasMiddleware
                 'name' => $departmentHead->user->name,
                 'department' => $departmentHead->user->department?->department,
             ] : null,
+            'residentManager' => $residentManager ? [
+                'id' => $residentManager->id,
+                'name' => $residentManager->name,
+                'department' => $residentManager->department?->department,
+            ] : null,
+            'cfo' => $cfo ? ['id' => $cfo->id, 'name' => $cfo->name, 'department' => $cfo->department?->department] : null,
+            'ceo' => $ceo ? ['id' => $ceo->id, 'name' => $ceo->name, 'department' => $ceo->department?->department] : null,
         ]);
     }
 
@@ -205,6 +230,24 @@ class RfpRecordController extends Controller implements HasMiddleware
             ->with('user.department')
             ->first();
 
+        $residentManager = User::whereHas('roles', fn($q) => $q->where('name', 'Resident Manager'))
+            ->with('department')
+            ->first();
+
+        if (!$residentManager) {
+            $residentManager = User::whereHas('roles', fn($q) => $q->where('name', 'Project Lead'))
+                ->with('department')
+                ->first();
+        }
+
+        $cfo = User::whereHas('roles', fn($q) => $q->where('name', 'CFO'))
+            ->with('department')
+            ->first();
+
+        $ceo = User::whereHas('roles', fn($q) => $q->where('name', 'CEO'))
+            ->with('department')
+            ->first();
+
         return Inertia::render('rfp/records/edit', [
             'rfp_record' => $record,
             'currencies' => RfpCurrency::select('id', 'code', 'name')->where('is_active', true)->get(),
@@ -220,6 +263,13 @@ class RfpRecordController extends Controller implements HasMiddleware
                 'name' => $departmentHead->user->name,
                 'department' => $departmentHead->user->department?->department,
             ] : null,
+            'residentManager' => $residentManager ? [
+                'id' => $residentManager->id,
+                'name' => $residentManager->name,
+                'department' => $residentManager->department?->department,
+            ] : null,
+            'cfo' => $cfo ? ['id' => $cfo->id, 'name' => $cfo->name, 'department' => $cfo->department?->department] : null,
+            'ceo' => $ceo ? ['id' => $ceo->id, 'name' => $ceo->name, 'department' => $ceo->department?->department] : null,
         ]);
     }
 
