@@ -2,6 +2,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Toaster } from 'sonner';
 import '../css/app.css';
 import { initializeTheme } from './hooks/use-appearance';
 
@@ -20,12 +21,18 @@ createInertiaApp({
         root.render(
             <StrictMode>
                 <App {...props} />
+                <Toaster position="top-right" richColors closeButton />
             </StrictMode>,
         );
     },
     progress: {
         color: '#4B5563',
     },
+});
+
+window.addEventListener('beforeunload', (e) => {
+    e.preventDefault();
+    e.returnValue = '';
 });
 
 // This will set light / dark mode on load...

@@ -1,5 +1,7 @@
+// types/navigation.ts
 import type { InertiaLinkProps } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
+import type { Permission } from './permissions';
 
 export type BreadcrumbItem = {
     title: string;
@@ -13,4 +15,7 @@ export type NavItem = {
     isActive?: boolean;
     items?: NavItem[];
     onClick?: () => void;
+    isExternal?: boolean;
+    badge?: number;
+    permission?: Permission;
 };

@@ -1,6 +1,5 @@
-// components/app-sidebar.tsx
 import { Link } from '@inertiajs/react';
-import { GitBranch, LayoutGrid } from 'lucide-react';
+import { FileText, GitBranch, Home, LayoutGrid, Layers, FolderTree, Banknote, Users, TableProperties } from 'lucide-react';
 import { useState } from 'react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -15,15 +14,63 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
+        title: 'Home',
+        href: '/',
+        icon: Home,
+        isExternal: true,
+    },
+    {
         title: 'Dashboard',
-        href: dashboard(),
+        href: '/rfp/dashboard',
         icon: LayoutGrid,
+    },
+    {
+        title: 'Records',
+        href: '/rfp/records',
+        icon: FileText,
+        permission: 'rfp-record-view',
+    },
+    {
+        title: 'Approval Matrix',
+        href: '/rfp/approval-matrix',
+        icon: TableProperties,
+        permission: 'rfp-approval-matrix-view',
+    },
+    {
+        title: 'Setup',
+        icon: Layers,
+        isActive: true,
+        items: [
+            {
+                title: 'Categories',
+                href: '/rfp/categories',
+                icon: FolderTree,
+                permission: 'rfp-category-view',
+            },
+            {
+                title: 'Usages',
+                href: '/rfp/usages',
+                icon: Layers,
+                permission: 'rfp-usage-view',
+            },
+            {
+                title: 'Currencies',
+                href: '/rfp/currencies',
+                icon: Banknote,
+                permission: 'rfp-currency-view',
+            },
+            {
+                title: 'Suppliers',
+                href: '/rfp/suppliers',
+                icon: Users,
+                permission: 'sap-supplier-view',
+            },
+        ],
     },
 ];
 
@@ -31,12 +78,12 @@ export function AppSidebar() {
     const [showUpdates, setShowUpdates] = useState(false);
 
     const footerNavItems: NavItem[] = [
-        {
-            title: 'System Updates',
-            href: '#',
-            icon: GitBranch,
-            onClick: () => setShowUpdates(true),
-        },
+        // {
+        //     title: 'System Updates',
+        //     href: '#',
+        //     icon: GitBranch,
+        //     onClick: () => setShowUpdates(true),
+        // },
     ];
 
     return (
@@ -46,7 +93,7 @@ export function AppSidebar() {
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton size="lg" asChild>
-                                <Link href={dashboard()} prefetch>
+                                <Link href="/rfp/dashboard" prefetch>
                                     <AppLogo />
                                 </Link>
                             </SidebarMenuButton>

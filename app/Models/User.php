@@ -38,4 +38,9 @@ class User extends Authenticatable
 
         return implode(' ', $nameParts);
     }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
 }

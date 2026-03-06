@@ -6,6 +6,8 @@ export type User = {
     last_name: string;
     suffix?: string;
     acronym?: string;
+    name: string;
+    department?: Department | null;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
@@ -15,8 +17,14 @@ export type User = {
     [key: string]: unknown;
 };
 
+export type Department = {
+    id: number;
+    department: string;
+};
+
 export type Auth = {
     user: User;
+    permissions: string[];
 };
 
 export type TwoFactorSetupData = {
