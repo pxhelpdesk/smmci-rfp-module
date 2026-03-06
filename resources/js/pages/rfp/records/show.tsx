@@ -217,17 +217,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                 </Link>
                             </Button>
                         )}
-                        {can('rfp-record-cancel') && rfp_record.status !== 'cancelled' && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCancelOpen(true)}
-                                className="text-orange-600 hover:text-orange-600"
-                            >
-                                <Ban className="h-4 w-4 mr-1.5" />
-                                Cancel
-                            </Button>
-                        )}
                         {can('rfp-record-paid') && rfp_record.status === 'draft' && (
                             <Button
                                 variant="outline"
@@ -239,7 +228,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                 Mark as Paid
                             </Button>
                         )}
-
                         {can('rfp-record-revert') && (rfp_record.status === 'paid' || rfp_record.status === 'cancelled') && (
                             <Button
                                 variant="outline"
@@ -249,6 +237,17 @@ export default function Show({ rfp_record, logs }: Props) {
                             >
                                 <RotateCcw className="h-4 w-4 mr-1.5" />
                                 Revert to Draft
+                            </Button>
+                        )}
+                        {can('rfp-record-cancel') && rfp_record.status !== 'cancelled' && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCancelOpen(true)}
+                                className="text-orange-600 hover:text-orange-600"
+                            >
+                                <Ban className="h-4 w-4 mr-1.5" />
+                                Cancel
                             </Button>
                         )}
                         {can('rfp-record-delete') && (
@@ -434,7 +433,7 @@ export default function Show({ rfp_record, logs }: Props) {
                                             <TableRow key={detail.id}>
                                                 <TableCell>
                                                     {detail.usage
-                                                        ? `${detail.usage.code} - ${detail.usage.description}`
+                                                        ? `${detail.usage.description}`
                                                         : 'N/A'}
                                                 </TableCell>
                                                 <TableCell className="text-right font-medium">

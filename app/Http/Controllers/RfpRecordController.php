@@ -8,6 +8,8 @@ use App\Models\RfpCategory;
 use App\Models\RfpUsage;
 use App\Models\RfpSign;
 use App\Models\RfpLog;
+use App\Models\DepartmentHead;
+use App\Models\ScopeOwner;
 use App\Models\User;
 use App\Http\Requests\StoreRfpRecordRequest;
 use App\Http\Requests\UpdateRfpRecordRequest;
@@ -84,11 +86,29 @@ class RfpRecordController extends Controller implements HasMiddleware
             ->get()
             ->map(fn($u) => ['id' => $u->id, 'name' => $u->name, 'department' => $u->department?->department]);
 
+        $scopeOwner = ScopeOwner::where('requestor_user_id', auth()->id())
+            ->with('scopeOwnerUser.department')
+            ->first();
+
+        $departmentHead = DepartmentHead::where('department_id', auth()->user()->department_id)
+            ->with('user.department')
+            ->first();
+
         return Inertia::render('rfp/records/create', [
             'currencies' => RfpCurrency::select('id', 'code', 'name')->where('is_active', true)->get(),
             'categories' => RfpCategory::select('id', 'code', 'name')->where('is_active', true)->get(),
             'defaultCurrencyId' => $phpCurrency?->id ?? null,
             'users' => $users,
+            'scopeOwner' => $scopeOwner ? [
+                'id' => $scopeOwner->scopeOwnerUser->id,
+                'name' => $scopeOwner->scopeOwnerUser->name,
+                'department' => $scopeOwner->scopeOwnerUser->department?->department,
+            ] : null,
+            'departmentHead' => $departmentHead?->user ? [
+                'id' => $departmentHead->user->id,
+                'name' => $departmentHead->user->name,
+                'department' => $departmentHead->user->department?->department,
+            ] : null,
         ]);
     }
 
@@ -177,11 +197,29 @@ class RfpRecordController extends Controller implements HasMiddleware
             ->get()
             ->map(fn($u) => ['id' => $u->id, 'name' => $u->name, 'department' => $u->department?->department]);
 
+        $scopeOwner = ScopeOwner::where('requestor_user_id', auth()->id())
+            ->with('scopeOwnerUser.department')
+            ->first();
+
+        $departmentHead = DepartmentHead::where('department_id', auth()->user()->department_id)
+            ->with('user.department')
+            ->first();
+
         return Inertia::render('rfp/records/edit', [
             'rfp_record' => $record,
             'currencies' => RfpCurrency::select('id', 'code', 'name')->where('is_active', true)->get(),
             'categories' => RfpCategory::select('id', 'code', 'name')->where('is_active', true)->get(),
             'users' => $users,
+            'scopeOwner' => $scopeOwner ? [
+                'id' => $scopeOwner->scopeOwnerUser->id,
+                'name' => $scopeOwner->scopeOwnerUser->name,
+                'department' => $scopeOwner->scopeOwnerUser->department?->department,
+            ] : null,
+            'departmentHead' => $departmentHead?->user ? [
+                'id' => $departmentHead->user->id,
+                'name' => $departmentHead->user->name,
+                'department' => $departmentHead->user->department?->department,
+            ] : null,
         ]);
     }
 
@@ -312,7 +350,7 @@ class RfpRecordController extends Controller implements HasMiddleware
             $changes[] = [
                 'field' => 'Details',
                 'old' => $oldDetails->count() > 0
-                    ? $oldDetails->map(fn($d) => ($d->usage?->description ?? 'N/A') . ' — ' . number_format((float) $d->total_amount, 2))->join(', ')
+                    ? $oldDetails->map(fn($d) => ($d->usage ? "{$d->usage->code} - {$d->usage->description}" : 'N/A') . ' — ' . number_format((float) $d->total_amount, 2))->join(', ')
                     : 'N/A',
                 'new' => $newDetails->count() > 0
                     ? $newDetails->map(function($d) {

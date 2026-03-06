@@ -10,7 +10,7 @@ class Department extends Model
 
     protected $table = 'departments';
 
-    protected $fillable = ['department'];
+    // id, department, can_visit, created_at, updated_at, deleted_at
 
     public function users()
     {
