@@ -54,12 +54,14 @@ function SortableRow({
     selectStyles,
     onUpdate,
     onRemove,
+    allowRemove = false,
 }: {
     entry: Entry;
     userOptions: UserOption[];
     selectStyles: any;
     onUpdate: (opt: UserOption | null) => void;
     onRemove: () => void;
+    allowRemove?: boolean;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: entry.id });
 
@@ -92,7 +94,7 @@ function SortableRow({
                 />
             </div>
 
-            {!entry.isLocked ? (
+            {(!entry.isLocked || allowRemove) ? (
                 <Button
                     type="button"
                     variant="ghost"
@@ -118,6 +120,7 @@ function SortableList({
     onDragEnd,
     onUpdate,
     onRemove,
+    allowRemove = false,
 }: {
     entries: Entry[];
     userOptions: UserOption[];
@@ -125,6 +128,7 @@ function SortableList({
     onDragEnd: (event: DragEndEvent) => void;
     onUpdate: (id: string, opt: UserOption | null) => void;
     onRemove: (id: string) => void;
+    allowRemove?: boolean;
 }) {
     const sensors = useSensors(useSensor(PointerSensor));
 
@@ -143,6 +147,7 @@ function SortableList({
                         selectStyles={selectStyles}
                         onUpdate={(opt) => onUpdate(entry.id, opt)}
                         onRemove={() => onRemove(entry.id)}
+                        allowRemove={allowRemove}
                     />
                 ))}
             </SortableContext>
@@ -407,7 +412,8 @@ export function RfpSignatoriesForm({
                                 selectStyles={selectStyles}
                                 onDragEnd={handleDragEndConcurred}
                                 onUpdate={() => {}}
-                                onRemove={() => {}}
+                                onRemove={(id) => syncConcurred(concurredEntries.filter(e => e.id !== id))}
+                                allowRemove={true}
                             />
                         </div>
 

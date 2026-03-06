@@ -493,7 +493,7 @@ export function RfpPdfDocument({ rfp_record }: Props) {
 
                             {getSignsByRole(rfp_record.signs, 'recommending_approval_by').length > 0 && (
                                 <>
-                                    <Text style={[styles.signatoryLabel, { marginTop: 20 }]}>Recommending Approval By :</Text>
+                                    <Text style={[styles.signatoryLabel, { marginTop: 10 }]}>Recommending Approval By :</Text>
                                     {getSignsByRole(rfp_record.signs, 'recommending_approval_by').map((s, i) => (
                                         <View key={i} style={styles.signatoryEntry}>
                                             <View style={styles.signatoryLine} />
@@ -505,7 +505,7 @@ export function RfpPdfDocument({ rfp_record }: Props) {
 
                             {getSignsByRole(rfp_record.signs, 'concurred_by').length > 0 && (
                                 <>
-                                    <Text style={[styles.signatoryLabel, { marginTop: 20 }]}>Concurred By :</Text>
+                                    <Text style={[styles.signatoryLabel, { marginTop: 10 }]}>Concurred By :</Text>
                                     <View style={styles.signatoryEntry}>
                                         <View style={styles.signatoryLine} />
                                         <Text style={styles.signatoryName}>
@@ -523,7 +523,7 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                                 <>
                                     <Text style={styles.signatoryLabel}>Approved By :</Text>
                                     {getSignsByRole(rfp_record.signs, 'approved_by').map((s, i) => (
-                                        <View key={i} style={styles.signatoryEntry}>
+                                        <View key={i} style={[styles.signatoryEntry, { marginTop: i === 0 ? 14 : 22 }]}>
                                             <View style={styles.signatoryLine} />
                                             <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
                                         </View>
@@ -558,15 +558,23 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                     {/* Row 1 */}
                     <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 3, paddingHorizontal: 4 }}>
                         <Text style={{ fontSize: 6.5, width: 55, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>1 – 500k</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>Resident Manager/Mine Site Head w/ Finance Head concurrence</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3 }}>Highest Manager/Officer of the Department w/ Finance Controller/Comptroller concurrence</Text>
+                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>
+                            {'Resident Manager/Mine Site Head\nw/ Finance Head concurrence'}
+                        </Text>
+                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3 }}>
+                            {'Highest Manager/Officer of the Department\nw/ Finance Controller/Comptroller concurrence'}
+                        </Text>
                     </View>
 
                     {/* Row 2 */}
                     <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 3, paddingHorizontal: 4 }}>
                         <Text style={{ fontSize: 6.5, width: 55, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>{'>'}500k – 1M</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>Supply Chain Head w/ Finance Controller/Comptroller concurrence</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3 }}>Supply Chain Head w/ Finance Controller/Comptroller concurrence</Text>
+                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>
+                            {'Highest Manager/Officer of the Department\nw/ Finance Controller/Comptroller concurrence'}
+                        </Text>
+                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3 }}>
+                            {'Highest Manager/Officer of the Department\nw/ Finance Controller/Comptroller concurrence'}
+                        </Text>
                     </View>
 
                     {/* Row 3 */}
