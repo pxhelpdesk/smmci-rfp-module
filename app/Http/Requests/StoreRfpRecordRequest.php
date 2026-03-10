@@ -31,6 +31,7 @@ class StoreRfpRecordRequest extends FormRequest
             'rfp_currency_id' => 'required|exists:mysql_rfp.rfp_currencies,id',
             'purpose' => 'required|string',
             'status' => 'nullable|in:cancelled,draft,for_approval,approved,paid',
+            'log_remarks' => 'nullable|string|max:500',
             'details' => 'required|array|min:1',
             'details.*.rfp_usage_id' => 'required|exists:mysql_rfp.rfp_usages,id',
             'details.*.total_amount' => 'required|numeric|min:0.01',

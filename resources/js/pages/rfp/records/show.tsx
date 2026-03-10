@@ -38,6 +38,7 @@ import { formatDate, formatDateTime, formatAmount } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
 import { RfpBadge } from '@/components/rfp/rfp-display';
 import { RfpPdfPreviewDialog } from '@/components/rfp/rfp-pdf-preview-dialog';
+import { RfpActionDialogs, type RfpActionType } from '@/components/rfp/rfp-action-dialogs';
 
 type Props = {
     rfp_record: RfpRecord;
@@ -51,36 +52,29 @@ type Props = {
 };
 
 export default function Show({ rfp_record, logs }: Props) {
-    const [deleteOpen, setDeleteOpen] = useState(false);
-    const [cancelOpen, setCancelOpen] = useState(false);
-    const [paidOpen, setPaidOpen] = useState(false);
-    const [revertOpen, setRevertOpen] = useState(false);
+    const [activeAction, setActiveAction] = useState<RfpActionType>(null)
     const [expandedLogIds, setExpandedLogIds] = useState<Set<number>>(new Set());
     const [previewPdf, setPreviewPdf] = useState(false);
 
-    const handleDelete = () => {
+    const handleDelete = (remarks: string) => {
         router.delete(`/rfp/records/${rfp_record.id}`, {
-            onSuccess: () => {
-                router.visit('/rfp/records');
-            },
+            data: { remarks },
+            onSuccess: () => router.visit('/rfp/records'),
         });
     };
-
-    const handleCancel = () => {
-        router.patch(`/rfp/records/${rfp_record.id}/cancel`, {}, {
-            onSuccess: () => setCancelOpen(false),
+    const handleCancel = (remarks: string) => {
+        router.patch(`/rfp/records/${rfp_record.id}/cancel`, { remarks }, {
+            onSuccess: () => setActiveAction(null),
         });
     };
-
-    const handleMarkAsPaid = () => {
-        router.patch(`/rfp/records/${rfp_record.id}/paid`, {}, {
-            onSuccess: () => setPaidOpen(false),
+    const handleMarkAsPaid = (remarks: string) => {
+        router.patch(`/rfp/records/${rfp_record.id}/paid`, { remarks }, {
+            onSuccess: () => setActiveAction(null),
         });
     };
-
-    const handleRevert = () => {
-        router.patch(`/rfp/records/${rfp_record.id}/revert`, {}, {
-            onSuccess: () => setRevertOpen(false),
+    const handleRevert = (remarks: string) => {
+        router.patch(`/rfp/records/${rfp_record.id}/revert`, { remarks }, {
+            onSuccess: () => setActiveAction(null),
         });
     };
 
@@ -221,7 +215,7 @@ export default function Show({ rfp_record, logs }: Props) {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setPaidOpen(true)}
+                                onClick={() => setActiveAction('paid')}
                                 className="text-green-600 hover:text-green-600"
                             >
                                 <HandCoins className="h-4 w-4 mr-1.5" />
@@ -232,7 +226,7 @@ export default function Show({ rfp_record, logs }: Props) {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setRevertOpen(true)}
+                                onClick={() => setActiveAction('revert')}
                                 className="text-yellow-600 hover:text-yellow-600"
                             >
                                 <RotateCcw className="h-4 w-4 mr-1.5" />
@@ -243,7 +237,7 @@ export default function Show({ rfp_record, logs }: Props) {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setCancelOpen(true)}
+                                onClick={() => setActiveAction('cancel')}
                                 className="text-orange-600 hover:text-orange-600"
                             >
                                 <Ban className="h-4 w-4 mr-1.5" />
@@ -254,7 +248,7 @@ export default function Show({ rfp_record, logs }: Props) {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setDeleteOpen(true)}
+                                onClick={() => setActiveAction('delete')}
                                 className="text-destructive hover:text-destructive"
                             >
                                 <Trash2 className="h-4 w-4 mr-1.5" />
@@ -647,87 +641,17 @@ export default function Show({ rfp_record, logs }: Props) {
                 </Card>
             </div>
 
-            {/* Delete Dialog */}
-            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete RFP</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete {rfp_record.rfp_number}? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDelete}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            {/* Cancel Dialog */}
-            <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel RFP</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to cancel {rfp_record.rfp_number}? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Back</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleCancel}
-                            className="bg-orange-600 text-white hover:bg-orange-700"
-                        >
-                            Cancel RFP
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog open={paidOpen} onOpenChange={setPaidOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Mark as Paid</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Mark {rfp_record.rfp_number} as paid? This can be reverted later.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Back</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleMarkAsPaid}
-                            className="bg-green-600 text-white hover:bg-green-700"
-                        >
-                            Mark as Paid
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog open={revertOpen} onOpenChange={setRevertOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Revert to Draft</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Revert {rfp_record.rfp_number} back to draft status?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Back</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleRevert}
-                            className="bg-yellow-600 text-white hover:bg-yellow-700"
-                        >
-                            Revert to Draft
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <RfpActionDialogs
+                rfpNumber={rfp_record.rfp_number}
+                activeAction={activeAction}
+                onClose={() => setActiveAction(null)}
+                onConfirm={(action, remarks) => {
+                    if (action === 'delete') handleDelete(remarks);
+                    else if (action === 'cancel') handleCancel(remarks);
+                    else if (action === 'paid') handleMarkAsPaid(remarks);
+                    else if (action === 'revert') handleRevert(remarks);
+                }}
+            />
 
             <RfpPdfPreviewDialog
                 rfp_record={rfp_record}

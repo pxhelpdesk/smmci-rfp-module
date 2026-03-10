@@ -25,6 +25,16 @@ import {
 } from '@/components/ui/select';
 import type { RfpCategory, RfpUsage, RfpCurrency, UserOption, SapSupplierOption, SharedData } from '@/types';
 import { RfpSignatoriesForm, type SignatoriesState } from '@/components/rfp/rfp-signatories-form';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type DetailFormItem = {
     rfp_category_id: number | null;
@@ -44,13 +54,14 @@ type Props = {
     ceo?: { id: number; name: string; department?: string } | null;
 };
 
-
 const Req = () => <span className="text-destructive ml-0.5">*</span>;
 
 export default function Create({ categories, currencies, defaultCurrencyId, users, scopeOwner, departmentHead, residentManager, cfo, ceo }: Props) {
     const { auth } = usePage<SharedData>().props;
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [createRemarks, setCreateRemarks] = useState('');
 
     // Per-category usage cache to support per-row category+usage selection
     const [usagesByCategory, setUsagesByCategory] = useState<Record<number, RfpUsage[]>>({});
@@ -86,6 +97,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         purpose: string;
         details: DetailFormItem[];
         signs: { user_id: number; details: string }[];
+        log_remarks: string;
     }>({
         ap_no: '',
         due_date: '',
@@ -104,6 +116,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         purpose: '',
         details: [{ rfp_category_id: null, rfp_usage_id: null, total_amount: null }],
         signs: [],
+        log_remarks: '',
     });
 
     const loadSuppliers = async () => {
@@ -146,6 +159,11 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmCreate = () => {
+        setShowConfirmDialog(false);
         transform(d => ({
             ...d,
             signs: [
@@ -155,6 +173,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                 ...signatories.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
             ],
             details: d.details.map(({ rfp_category_id, ...rest }) => rest),
+            log_remarks: createRemarks,
         }));
         post('/rfp/records');
     };
@@ -526,6 +545,38 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                         </div>
                     </CardContent>
                 </Card>
+
+                <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Create RFP</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Review your entry before saving. You may add remarks below.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+
+                        <div className="space-y-1.5 px-0">
+                            <Label htmlFor="create_remarks" className="text-sm">
+                                Remarks <span className="text-muted-foreground">(Optional)</span>
+                            </Label>
+                            <Textarea
+                                id="create_remarks"
+                                value={createRemarks}
+                                onChange={(e) => setCreateRemarks(e.target.value)}
+                                placeholder="Add any notes about this RFP..."
+                                rows={3}
+                                className="resize-none"
+                            />
+                        </div>
+
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Back</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleConfirmCreate} disabled={processing}>
+                                Save RFP
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
 
                 {/* Signatories */}
                 <RfpSignatoriesForm

@@ -1,3 +1,4 @@
+// components/rfp/rfp-pdf-document.tsx
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import type { RfpRecord, RfpSign } from '@/types';
 
