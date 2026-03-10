@@ -24,7 +24,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import type { RfpCategory, RfpUsage, RfpCurrency, UserOption, SapSupplierOption, SharedData } from '@/types';
-import { RfpSignatoriesForm, type SignatoriesState } from '@/components/rfp/rfp-signatories-form';
+import { RfpSignatoriesForm, type SignatoriesState, dedupeSignatories } from '@/components/rfp/rfp-signatories-form';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -66,18 +66,20 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     // Per-category usage cache to support per-row category+usage selection
     const [usagesByCategory, setUsagesByCategory] = useState<Record<number, RfpUsage[]>>({});
 
-    const [signatories, setSignatories] = useState<SignatoriesState>({
-        recommending_approval_by: scopeOwner
-            ? [{ value: scopeOwner.id, label: scopeOwner.name, department: scopeOwner.department }]
-            : [],
-        approved_by: departmentHead
-            ? [{ value: departmentHead.id, label: departmentHead.name, department: departmentHead.department }]
-            : [],
-        concurred_by: users
-            .filter(u => u.id === 4 || u.id === 3)
-            .sort((a, b) => (a.id === 4 ? -1 : 1))
-            .map(u => ({ value: u.id, label: u.name, department: u.department })),
-    });
+    const [signatories, setSignatories] = useState<SignatoriesState>(
+        dedupeSignatories({
+            recommending_approval_by: scopeOwner
+                ? [{ value: scopeOwner.id, label: scopeOwner.name, department: scopeOwner.department }]
+                : [],
+            approved_by: departmentHead
+                ? [{ value: departmentHead.id, label: departmentHead.name, department: departmentHead.department }]
+                : [],
+            concurred_by: users
+                .filter(u => u.id === 4 || u.id === 3)
+                .sort((a, b) => (a.id === 4 ? -1 : 1))
+                .map(u => ({ value: u.id, label: u.name, department: u.department })),
+        })
+    );
 
     const { data, setData, post, processing, errors, transform } = useForm<{
         ap_no: string;
@@ -168,9 +170,9 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
             ...d,
             signs: [
                 { user_id: auth.user.id, details: 'prepared_by' },
-                ...signatories.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
-                ...signatories.approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
-                ...signatories.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
+                ...dedupeSignatories(signatories).recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
+                ...dedupeSignatories(signatories).approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
+                ...dedupeSignatories(signatories).concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
             ],
             details: d.details.map(({ rfp_category_id, ...rest }) => rest),
             log_remarks: createRemarks,

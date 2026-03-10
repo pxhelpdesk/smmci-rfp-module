@@ -47,6 +47,28 @@ type Props = {
     ceo?: { id: number; name: string; department?: string } | null;
 };
 
+// ─── Helper: get all user IDs that appear more than once across roles ─────────
+
+function getDuplicateIds(
+    recommending: Entry[],
+    approved: Entry[],
+    concurred: Entry[]
+): Set<number> {
+    const allIds = [
+        ...recommending.map(e => e.user?.value),
+        ...approved.map(e => e.user?.value),
+        ...concurred.map(e => e.user?.value),
+    ].filter((v): v is number => v !== undefined);
+
+    const seen = new Set<number>();
+    const dupes = new Set<number>();
+    allIds.forEach(id => {
+        if (seen.has(id)) dupes.add(id);
+        else seen.add(id);
+    });
+    return dupes;
+}
+
 // ─── Sortable Row ────────────────────────────────────────────────────────────
 
 function SortableRow({
@@ -56,6 +78,8 @@ function SortableRow({
     onUpdate,
     onRemove,
     allowRemove = false,
+    sublabel,
+    isDuplicate = false,
 }: {
     entry: Entry;
     userOptions: UserOption[];
@@ -63,6 +87,8 @@ function SortableRow({
     onUpdate: (opt: UserOption | null) => void;
     onRemove: () => void;
     allowRemove?: boolean;
+    sublabel?: string;
+    isDuplicate?: boolean;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: entry.id });
 
@@ -72,42 +98,62 @@ function SortableRow({
     };
 
     return (
-        <div ref={setNodeRef} style={style} className="flex gap-1 items-center">
-            <button
-                type="button"
-                {...attributes}
-                {...listeners}
-                className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1 shrink-0"
-            >
-                <GripVertical className="h-4 w-4" />
-            </button>
+        <div ref={setNodeRef} style={style} className="flex flex-col gap-0.5">
+            <div className="flex gap-1 items-center">
+                <button
+                    type="button"
+                    {...attributes}
+                    {...listeners}
+                    className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1 shrink-0"
+                >
+                    <GripVertical className="h-4 w-4" />
+                </button>
 
-            <div className="flex-1">
-                <Select
-                    options={userOptions}
-                    value={entry.user ?? null}
-                    onChange={onUpdate}
-                    placeholder="Select user..."
-                    isClearable={!entry.isLocked}
-                    isDisabled={entry.isLocked}
-                    className="text-sm"
-                    styles={selectStyles}
-                />
+                <div className="flex-1">
+                    <Select
+                        options={userOptions}
+                        value={entry.user ?? null}
+                        onChange={onUpdate}
+                        placeholder="Select user..."
+                        isClearable={!entry.isLocked}
+                        isDisabled={entry.isLocked}
+                        className="text-sm"
+                        styles={{
+                            ...selectStyles,
+                            control: (base: any) => ({
+                                ...selectStyles.control(base),
+                                borderColor: isDuplicate ? 'rgb(234 179 8)' : base.borderColor,
+                            }),
+                        }}
+                    />
+                </div>
+
+                {(!entry.isLocked || allowRemove) ? (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={onRemove}
+                        className="text-destructive hover:text-destructive h-9 w-9 p-0 shrink-0"
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                ) : (
+                    <div className="w-9 shrink-0" />
+                )}
             </div>
 
-            {(!entry.isLocked || allowRemove) ? (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={onRemove}
-                    className="text-destructive hover:text-destructive h-9 w-9 p-0 shrink-0"
-                >
-                    <X className="h-4 w-4" />
-                </Button>
-            ) : (
-                <div className="w-9 shrink-0" />
-            )}
+            {/* Sublabel row */}
+            <div className="pl-7 flex items-center gap-1.5">
+                {sublabel && (
+                    <span className="text-[10px] text-muted-foreground">{sublabel}</span>
+                )}
+                {isDuplicate && (
+                    <span className="text-[10px] text-yellow-600 font-medium">
+                        Duplicate — will be merged on save
+                    </span>
+                )}
+            </div>
         </div>
     );
 }
@@ -122,6 +168,8 @@ function SortableList({
     onUpdate,
     onRemove,
     allowRemove = false,
+    getSublabel,
+    duplicateIds,
 }: {
     entries: Entry[];
     userOptions: UserOption[];
@@ -130,6 +178,8 @@ function SortableList({
     onUpdate: (id: string, opt: UserOption | null) => void;
     onRemove: (id: string) => void;
     allowRemove?: boolean;
+    getSublabel?: (entry: Entry, index: number) => string | undefined;
+    duplicateIds?: Set<number>;
 }) {
     const sensors = useSensors(useSensor(PointerSensor));
 
@@ -140,7 +190,7 @@ function SortableList({
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
-                {entries.map(entry => (
+                {entries.map((entry, index) => (
                     <SortableRow
                         key={entry.id}
                         entry={entry}
@@ -149,6 +199,8 @@ function SortableList({
                         onUpdate={(opt) => onUpdate(entry.id, opt)}
                         onRemove={() => onRemove(entry.id)}
                         allowRemove={allowRemove}
+                        sublabel={getSublabel?.(entry, index)}
+                        isDuplicate={!!(entry.user?.value && duplicateIds?.has(entry.user.value))}
                     />
                 ))}
             </SortableContext>
@@ -158,18 +210,34 @@ function SortableList({
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export function RfpSignatoriesForm({
-    preparedByName,
-    signatories,
-    userOptions,
-    onChange,
-    office,
-    subtotalAmount,
-    residentManager,
-    departmentHead,
-    cfo,
-    ceo,
-}: Props) {
+    export function dedupeSignatories(state: SignatoriesState): SignatoriesState {
+        const seen = new Set<number>();
+        const dedupeList = (list: (UserOption | null)[]) =>
+            list.filter(u => {
+                if (!u) return false;
+                if (seen.has(u.value)) return false;
+                seen.add(u.value);
+                return true;
+            });
+        return {
+            recommending_approval_by: dedupeList(state.recommending_approval_by),
+            approved_by: dedupeList(state.approved_by),
+            concurred_by: dedupeList(state.concurred_by),
+        };
+    }
+
+    export function RfpSignatoriesForm({
+        preparedByName,
+        signatories,
+        userOptions,
+        onChange,
+        office,
+        subtotalAmount,
+        residentManager,
+        departmentHead,
+        cfo,
+        ceo,
+    }: Props) {
 
     // ── Recommending Approval By entries ──────────────────────────
     const [recommendingEntries, setRecommendingEntries] = useState<Entry[]>(() =>
@@ -258,24 +326,28 @@ export function RfpSignatoriesForm({
         const defaults = computeDefaultApproved();
         const newEntries = [...extras, ...defaults];
         setApprovedEntries(newEntries);
-        onChange({ ...signatories, approved_by: newEntries.map(e => e.user) });
+        handleChange({ ...signatories, approved_by: newEntries.map(e => e.user) });
     }, [office, subtotalAmount]);
 
     // ── Sync helpers ──────────────────────────────────────────────
 
+    const handleChange = (newState: SignatoriesState) => {
+        onChange(dedupeSignatories(newState));
+    };
+
     const syncRecommending = (entries: Entry[]) => {
         setRecommendingEntries(entries);
-        onChange({ ...signatories, recommending_approval_by: entries.map(e => e.user) });
+        handleChange({ ...signatories, recommending_approval_by: entries.map(e => e.user) });
     };
 
     const syncApproved = (entries: Entry[]) => {
         setApprovedEntries(entries);
-        onChange({ ...signatories, approved_by: entries.map(e => e.user) });
+        handleChange({ ...signatories, approved_by: entries.map(e => e.user) });
     };
 
     const syncConcurred = (entries: Entry[]) => {
         setConcurredEntries(entries);
-        onChange({ ...signatories, concurred_by: entries.map(e => e.user) });
+        handleChange({ ...signatories, concurred_by: entries.map(e => e.user) });
     };
 
     // ── Add ───────────────────────────────────────────────────────
@@ -335,6 +407,35 @@ export function RfpSignatoriesForm({
         menu: (base: any) => ({ ...base, fontSize: '14px' }),
     };
 
+    const duplicateIds = getDuplicateIds(recommendingEntries, approvedEntries, concurredEntries);
+
+    const getRecommendingSublabel = (_entry: Entry, index: number) =>
+        index === 0 ? 'Scope Owner' : 'Additional';
+
+    const getApprovedSublabel = (entry: Entry, index: number): string => {
+        if (!entry.isLocked) return 'Additional';
+
+        const amount = subtotalAmount;
+        if (entry.user?.value === residentManager?.id) {
+            return 'Resident Manager (1 – 500k)';
+        }
+        if (entry.user?.value === departmentHead?.id) {
+            return amount >= 500000 && amount < 1000000
+                ? 'Department Highest Manager (>500k – 1M)'
+                : 'Department Highest Manager (1 – 1M)';
+        }
+        if (entry.user?.value === cfo?.id) {
+            return 'Treasurer & CFO (>1M – 5M)';
+        }
+        if (entry.user?.value === ceo?.id) {
+            return 'President & CEO (>5M – 50M)';
+        }
+        return '';
+    };
+
+    const getConcurredSublabel = (_entry: Entry, _index: number) =>
+        'Finance Concurrence';
+
     return (
         <Card>
             <CardHeader className="pb-3">
@@ -377,8 +478,9 @@ export function RfpSignatoriesForm({
                     <div className="flex-1 grid grid-cols-4 gap-4">
 
                         {/* Prepared By */}
-                        <div>
+                        <div className="space-y-0.5">
                             <Input value={preparedByName} className="h-9 bg-muted" readOnly />
+                            <p className="text-[10px] text-muted-foreground pl-1">Requestor</p>
                         </div>
 
                         {/* Recommending Approval By */}
@@ -390,6 +492,8 @@ export function RfpSignatoriesForm({
                                 onDragEnd={handleDragEndRecommending}
                                 onUpdate={updateRecommending}
                                 onRemove={removeRecommending}
+                                getSublabel={getRecommendingSublabel}
+                                duplicateIds={duplicateIds}
                             />
                         </div>
 
@@ -402,6 +506,8 @@ export function RfpSignatoriesForm({
                                 onDragEnd={handleDragEndApproved}
                                 onUpdate={updateApproved}
                                 onRemove={removeApproved}
+                                getSublabel={getApprovedSublabel}
+                                duplicateIds={duplicateIds}
                             />
                         </div>
 
@@ -415,6 +521,8 @@ export function RfpSignatoriesForm({
                                 onUpdate={() => {}}
                                 onRemove={(id) => syncConcurred(concurredEntries.filter(e => e.id !== id))}
                                 allowRemove={true}
+                                getSublabel={getConcurredSublabel}
+                                duplicateIds={duplicateIds}
                             />
                         </div>
 

@@ -36,7 +36,7 @@ import {
 import type { RfpRecord, RfpCategory, RfpUsage, RfpCurrency, RfpDetail, UserOption, SapSupplierOption } from '@/types';
 import type { SharedData } from '@/types';
 import { RfpBadge } from '@/components/rfp/rfp-display';
-import { RfpSignatoriesForm, type SignatoriesState } from '@/components/rfp/rfp-signatories-form';
+import { RfpSignatoriesForm, type SignatoriesState, dedupeSignatories } from '@/components/rfp/rfp-signatories-form';
 
 type ChangeLog = {
     field: string;
@@ -81,34 +81,12 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         const toOption = (sign: typeof signs[0]): UserOption | null =>
             sign.user_id ? { value: sign.user_id, label: sign.user?.name ?? '', department: sign.user?.department?.department } : null;
 
-        const existingRecommending = signs.filter(s => s.details === 'recommending_approval_by').map(toOption);
-        const defaultRecommending = existingRecommending.length > 0
-            ? existingRecommending
-            : scopeOwner
-                ? [{ value: scopeOwner.id, label: scopeOwner.name, department: scopeOwner.department }]
-                : [];
-
-        const existingApproved = signs.filter(s => s.details === 'approved_by').map(toOption);
-        const defaultApproved = existingApproved.length > 0
-            ? existingApproved
-            : departmentHead
-                ? [{ value: departmentHead.id, label: departmentHead.name, department: departmentHead.department }]
-                : [];
-
-        const existingConcurred = signs.filter(s => s.details === 'concurred_by').map(toOption);
-        const defaultConcurred = existingConcurred.length > 0
-            ? existingConcurred
-            : users
-                .filter(u => u.id === 4 || u.id === 3)
-                .sort((a, b) => (a.id === 4 ? -1 : 1))
-                .map(u => ({ value: u.id, label: u.name, department: u.department }));
-
-        return {
-            recommending_approval_by: defaultRecommending,
-            approved_by: defaultApproved,
-            concurred_by: defaultConcurred,
-        };
-    });
+        return dedupeSignatories({
+            recommending_approval_by: signs.filter(s => s.details === 'recommending_approval_by').map(toOption).filter(Boolean) as UserOption[],
+            approved_by: signs.filter(s => s.details === 'approved_by').map(toOption).filter(Boolean) as UserOption[],
+            concurred_by: signs.filter(s => s.details === 'concurred_by').map(toOption).filter(Boolean) as UserOption[],
+        });
+    })
 
     // Load usages for a category, using cache to avoid duplicate requests
     const loadUsagesForCategory = async (categoryId: number) => {
@@ -332,12 +310,15 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         setData('details', updated);
     };
 
-    const buildSigns = () => [
-        { user_id: rfp_record.prepared_by?.id ?? auth.user.id, details: 'prepared_by' },
-        ...signatories.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
-        ...signatories.approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
-        ...signatories.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
-    ];
+    const buildSigns = () => {
+        const deduped = dedupeSignatories(signatories);
+        return [
+            { user_id: rfp_record.prepared_by?.id ?? auth.user.id, details: 'prepared_by' },
+            ...deduped.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
+            ...deduped.approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
+            ...deduped.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
+        ];
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
