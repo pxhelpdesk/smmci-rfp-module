@@ -66,7 +66,7 @@ const mainNavItems: NavItem[] = [
             },
             {
                 title: 'Suppliers',
-                href: '/rfp/suppliers',
+                href: '/rfp/sap/suppliers',
                 icon: Users,
                 permission: 'sap-supplier-view',
             },

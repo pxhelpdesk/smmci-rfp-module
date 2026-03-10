@@ -141,18 +141,21 @@ class RfpRecordController extends Controller implements HasMiddleware
     {
         $validated = $request->validated();
 
-        // Calculate details subtotal
         $detailsSubtotal = collect($request->details)->sum('total_amount');
         $validated['subtotal_details_amount'] = $detailsSubtotal;
-
         $validated['prepared_by'] = auth()->id();
+
         $detailsData = $validated['details'] ?? [];
         $signsData = $validated['signs'] ?? [];
+        $logRemarks = $validated['log_remarks'] ?? null;
+
+        unset($validated['details'], $validated['signs'], $validated['log_remarks']);
+
         $rfpRecord = RfpRecord::create($validated);
 
-        if (!empty($validated['details'] ?? [])) {
+        if (!empty($detailsData)) {
             $rfpRecord->details()->createMany(
-                collect($request->details)->map(fn($d) => [
+                collect($detailsData)->map(fn($d) => [
                     'rfp_usage_id' => $d['rfp_usage_id'],
                     'total_amount' => $d['total_amount'],
                 ])->toArray()
@@ -168,6 +171,15 @@ class RfpRecordController extends Controller implements HasMiddleware
                 ])->toArray()
             );
         }
+
+        RfpLog::create([
+            'rfp_record_id' => $rfpRecord->id,
+            'user_id' => auth()->id(),
+            'from' => null,
+            'into' => 'draft',
+            'details' => null,
+            'remarks' => !empty($logRemarks) ? $logRemarks : 'Record created.',
+        ]);
 
         return redirect()->route('rfp.records.index')->with('success', "RFP {$rfpRecord->rfp_number} created successfully.");
     }
@@ -525,6 +537,16 @@ class RfpRecordController extends Controller implements HasMiddleware
     public function destroy(RfpRecord $record)
     {
         $rfpNumber = $record->rfp_number;
+
+        RfpLog::create([
+            'rfp_record_id' => $record->id,
+            'user_id' => auth()->id(),
+            'from' => $record->status,
+            'into' => 'deleted',
+            'details' => null,
+            'remarks' => !empty(request('remarks')) ? request('remarks') : 'Record deleted.',
+        ]);
+
         $record->delete();
 
         return redirect()->route('rfp.records.index')->with('success', "RFP {$rfpNumber} deleted successfully.");
@@ -533,20 +555,16 @@ class RfpRecordController extends Controller implements HasMiddleware
     public function cancel(RfpRecord $record)
     {
         abort_if($record->status === 'cancelled', 422, 'RFP is already cancelled.');
-
         $previousStatus = $record->status;
-
         $record->update(['status' => 'cancelled']);
-
         RfpLog::create([
             'rfp_record_id' => $record->id,
             'user_id' => auth()->id(),
             'from' => $previousStatus,
             'into' => 'cancelled',
             'details' => null,
-            'remarks' => 'Record cancelled.',
+            'remarks' => !empty(request('remarks')) ? request('remarks') : 'Record cancelled.',
         ]);
-
         return redirect()->back()->with('success', "RFP {$record->rfp_number} has been cancelled.");
     }
 
@@ -554,38 +572,32 @@ class RfpRecordController extends Controller implements HasMiddleware
     {
         abort_if($record->status === 'paid', 422, 'RFP is already marked as paid.');
         abort_if($record->status === 'cancelled', 422, 'Cancelled RFP cannot be marked as paid.');
-
         $previousStatus = $record->status;
         $record->update(['status' => 'paid']);
-
         RfpLog::create([
             'rfp_record_id' => $record->id,
             'user_id' => auth()->id(),
             'from' => $previousStatus,
             'into' => 'paid',
             'details' => null,
-            'remarks' => 'Record marked as paid.',
+            'remarks' => !empty(request('remarks')) ? request('remarks') : 'Record marked as paid.',
         ]);
-
         return redirect()->back()->with('success', "RFP {$record->rfp_number} marked as paid.");
     }
 
     public function revert(RfpRecord $record)
     {
         abort_unless(in_array($record->status, ['paid', 'cancelled']), 422, 'Only paid or cancelled RFPs can be reverted to draft.');
-
         $previousStatus = $record->status;
         $record->update(['status' => 'draft']);
-
         RfpLog::create([
             'rfp_record_id' => $record->id,
             'user_id' => auth()->id(),
             'from' => $previousStatus,
             'into' => 'draft',
             'details' => null,
-            'remarks' => 'Record reverted to draft.',
+            'remarks' => !empty(request('remarks')) ? request('remarks') : 'Record reverted to draft.',
         ]);
-
         return redirect()->back()->with('success', "RFP {$record->rfp_number} reverted to draft.");
     }
 

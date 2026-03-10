@@ -1,3 +1,4 @@
+// components/rfp/rfp-pdf-document.tsx
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import type { RfpRecord, RfpSign } from '@/types';
 
@@ -114,8 +115,8 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 11,
         fontWeight: 'bold',
-        marginTop: 2,
-        marginBottom: 8,
+        marginTop: 10,
+        marginBottom: 16,
         textAlign: 'center',
         lineHeight: 1.1,
     },
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     // ── Info Grid ────────────────────────────────────────────────
     infoGrid: {
         flexDirection: 'row',
-        marginBottom: 6,
+        marginBottom: 14,
     },
     infoColLeft: {
         width: 340,
@@ -229,7 +230,8 @@ const styles = StyleSheet.create({
 
     // ── Signatories ───────────────────────────────────────────────
     signatorySection: {
-        marginTop: 6,
+        marginTop: 14,
+        marginBottom: 12,
     },
     signatoryRow: {
         flexDirection: 'row' as const,
@@ -471,7 +473,7 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                 )}
 
                 {/* ── Purpose ────────────────────────────────────────────── */}
-                <View style={{ marginTop: 6 }} wrap={false}>
+                <View style={{ marginTop: 14, marginBottom: 8 }} wrap={false}>
                     <Text style={styles.purposeLabel}>Purpose :</Text>
                     <View style={styles.purposeBox}>
                         <Text style={styles.purposeText}>{rfp_record.purpose ?? 'None'}</Text>
