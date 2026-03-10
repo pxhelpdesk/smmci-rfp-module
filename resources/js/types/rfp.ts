@@ -63,7 +63,7 @@ export type RfpRecord = {
     rfp_currency_id: number;
     currency?: RfpCurrency;
     subtotal_details_amount: number | null;
-    purpose: string | null;
+    purpose: string;
     status: 'cancelled' | 'draft' | 'for_approval' | 'approved' | 'paid';
     details: RfpDetail[];
     signs?: RfpSign[];

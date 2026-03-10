@@ -738,7 +738,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1.5">
-                            <Label htmlFor="purpose" className="text-sm">Purpose</Label>
+                            <Label htmlFor="purpose" className="text-sm">Purpose <Req /></Label>
                             <Textarea
                                 id="purpose"
                                 value={data.purpose}
@@ -746,6 +746,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                 rows={3}
                                 className="resize-none"
                             />
+                            {errors.purpose && <p className="text-xs text-destructive">{errors.purpose}</p>}
                         </div>
                     </CardContent>
                 </Card>

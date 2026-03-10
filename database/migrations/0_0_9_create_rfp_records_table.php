@@ -34,7 +34,7 @@ return new class extends Migration
 
             $table->decimal('subtotal_details_amount', 15, 2)->nullable();
 
-            $table->text('purpose')->nullable();
+            $table->text('purpose');
             $table->enum('status', ['cancelled', 'draft', 'for_approval', 'approved', 'paid'])->default('draft');
 
             $table->timestamps();

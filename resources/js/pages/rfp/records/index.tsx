@@ -196,7 +196,7 @@ export default function Index({ rfp_records, filters }: Props) {
                                 <TableHead>Currency</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Updated</TableHead>
-                                <TableHead className="w-15"></TableHead>
+                                <TableHead className="w-15">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
