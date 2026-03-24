@@ -82,6 +82,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
         $users = User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
             ->with('department:id,department')
+            ->where('is_locked', false)
             ->orderBy('first_name')
             ->get()
             ->map(fn($u) => ['id' => $u->id, 'name' => $u->name, 'department' => $u->department?->department]);
@@ -230,6 +231,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
         $users = User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
             ->with('department:id,department')
+            ->where('is_locked', false)
             ->orderBy('first_name')
             ->get()
             ->map(fn($u) => ['id' => $u->id, 'name' => $u->name, 'department' => $u->department?->department]);
