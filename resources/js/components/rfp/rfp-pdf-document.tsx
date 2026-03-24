@@ -57,8 +57,8 @@ const styles = StyleSheet.create({
 
     // ── Page ────────────────────────────────────────────────────
     page: {
-        paddingTop: 52,
-        paddingBottom: 72,
+        paddingTop: 40,
+        paddingBottom: 64,
         paddingLeft: 36,
         paddingRight: 36,
         fontSize: 9,
@@ -113,18 +113,18 @@ const styles = StyleSheet.create({
 
     // ── Title ────────────────────────────────────────────────────
     title: {
-        fontSize: 11,
+        fontSize: 14,
         fontWeight: 'bold',
-        marginTop: 10,
-        marginBottom: 16,
+        marginTop: 12,
+        marginBottom: 20,
         textAlign: 'center',
-        lineHeight: 1.1,
+        lineHeight: 1.2,
     },
 
     // ── Info Grid ────────────────────────────────────────────────
     infoGrid: {
         flexDirection: 'row',
-        marginBottom: 14,
+        marginBottom: 18,
     },
     infoColLeft: {
         width: 340,
@@ -135,30 +135,30 @@ const styles = StyleSheet.create({
     },
     infoRow: {
         flexDirection: 'row',
-        marginBottom: 2,
+        marginBottom: 4,
     },
     infoLabel: {
-        fontSize: 7.5,
-        width: 60,
-        flexShrink: 0,
-    },
-    infoLabelRight: {
-        fontSize: 7.5,
+        fontSize: 8.5,
         width: 70,
         flexShrink: 0,
     },
+    infoLabelRight: {
+        fontSize: 8.5,
+        width: 80,
+        flexShrink: 0,
+    },
     infoColon: {
-        fontSize: 7.5,
+        fontSize: 8.5,
         width: 8,
         flexShrink: 0,
     },
     infoValue: {
-        fontSize: 7.5,
+        fontSize: 8.5,
         flex: 1,
         fontWeight: 'bold',
     },
     infoValueRight: {
-        fontSize: 7.5,
+        fontSize: 8.5,
         flex: 1,
         fontWeight: 'bold',
         textAlign: 'right',
@@ -177,21 +177,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         borderBottomWidth: 0.5,
         borderBottomColor: '#000000',
-        paddingVertical: 3,
+        paddingVertical: 5,
         paddingHorizontal: 5,
         backgroundColor: '#f0f0f0',
     },
     detailsTableHeaderText: {
-        fontSize: 7.5,
+        fontSize: 8.5,
         fontWeight: 'bold',
     },
     detailsTableRow: {
         flexDirection: 'row',
         borderBottomWidth: 0.5,
         borderBottomColor: '#cccccc',
-        paddingVertical: 5,
+        paddingVertical: 7,
         paddingHorizontal: 5,
-        minHeight: 14,
+        minHeight: 18,
     },
     detailsTableRowLast: {
         borderBottomWidth: 0.75,
@@ -204,61 +204,61 @@ const styles = StyleSheet.create({
         width: 80,
     },
     detailsTableText: {
-        fontSize: 7.5,
+        fontSize: 8.5,
     },
     detailsTableTextRight: {
-        fontSize: 7.5,
+        fontSize: 8.5,
         textAlign: 'right',
     },
 
     // ── Purpose ──────────────────────────────────────────────────
     purposeLabel: {
-        fontSize: 7.5,
+        fontSize: 8.5,
         fontWeight: 'bold',
-        marginBottom: 2,
+        marginBottom: 3,
     },
     purposeBox: {
         borderWidth: 0.75,
         borderColor: '#000000',
-        padding: 5,
-        minHeight: 24,
-        marginBottom: 6,
+        padding: 7,
+        minHeight: 36,
+        marginBottom: 8,
     },
     purposeText: {
-        fontSize: 7.5,
+        fontSize: 8.5,
     },
 
     // ── Signatories ───────────────────────────────────────────────
     signatorySection: {
-        marginTop: 14,
-        marginBottom: 12,
+        marginTop: 20,
+        marginBottom: 16,
     },
     signatoryRow: {
         flexDirection: 'row' as const,
-        marginBottom: 6,
+        marginBottom: 8,
     },
     signatoryCell: {
         flex: 1,
         alignItems: 'center' as const,
     },
     signatoryLabel: {
-        fontSize: 7,
+        fontSize: 8,
         textAlign: 'center' as const,
     },
     signatoryLine: {
         borderBottomWidth: 0.75,
         borderBottomColor: '#000000',
-        marginBottom: 3,
-        width: 150,
+        marginBottom: 4,
+        width: 160,
     },
     signatoryName: {
-        fontSize: 7.5,
+        fontSize: 8.5,
         fontWeight: 'bold' as const,
         textAlign: 'center' as const,
     },
     signatoryEntry: {
         alignItems: 'center' as const,
-        marginTop: 14,
+        marginTop: 20,
     },
 
     // ── Footer ───────────────────────────────────────────────────
@@ -525,7 +525,7 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                                 <>
                                     <Text style={styles.signatoryLabel}>Approved By :</Text>
                                     {getSignsByRole(rfp_record.signs, 'approved_by').map((s, i) => (
-                                        <View key={i} style={[styles.signatoryEntry, { marginTop: i === 0 ? 14 : 22 }]}>
+                                        <View key={i} style={[styles.signatoryEntry, { marginTop: i === 0 ? 20 : 28 }]}>
                                             <View style={styles.signatoryLine} />
                                             <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
                                         </View>
@@ -538,61 +538,57 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                 </View>
 
                 {/* ── Approval Matrix Reference ──────────────────────────── */}
-                <View style={{ marginTop: 8 }} wrap={false}>
-
-                    <Text style={{ fontSize: 7, fontWeight: 'bold', marginBottom: 2 }}>
+                <View style={{ marginTop: 16 }} wrap={false}>
+                    <Text style={{ fontSize: 8, fontWeight: 'bold', marginBottom: 4 }}>
                         Approval Matrix Reference
                     </Text>
 
+                    {/* Header row */}
                     <View style={{
                         flexDirection: 'row',
                         backgroundColor: '#f0f0f0',
                         borderWidth: 0.5,
                         borderColor: '#000000',
-                        paddingVertical: 3,
+                        paddingVertical: 4,
                         paddingHorizontal: 4,
                     }}>
-                        <Text style={{ fontSize: 7, fontWeight: 'bold', width: 55, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>Amount</Text>
-                        <Text style={{ fontSize: 7, fontWeight: 'bold', flex: 1, textAlign: 'center', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>MS (Mine Site)</Text>
-                        <Text style={{ fontSize: 7, fontWeight: 'bold', flex: 1, textAlign: 'center', paddingHorizontal: 3 }}>HO (Head Office)</Text>
+                        <Text style={{ fontSize: 8, fontWeight: 'bold', width: 60, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>Amount</Text>
+                        <Text style={{ fontSize: 8, fontWeight: 'bold', flex: 1, textAlign: 'center', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>MS (Mine Site)</Text>
+                        <Text style={{ fontSize: 8, fontWeight: 'bold', flex: 1, textAlign: 'center', paddingHorizontal: 3 }}>HO (Head Office)</Text>
                     </View>
 
                     {/* Row 1 */}
-                    <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 3, paddingHorizontal: 4 }}>
-                        <Text style={{ fontSize: 6.5, width: 55, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>1 – 500k</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>
+                    <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 5, paddingHorizontal: 4 }}>
+                        <Text style={{ fontSize: 7.5, width: 60, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>1 – 500k</Text>
+                        <Text style={{ fontSize: 7.5, flex: 1, textAlign: 'center', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>
                             {'Resident Manager/Mine Site Head\nw/ Finance Head concurrence'}
                         </Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3 }}>
+                        <Text style={{ fontSize: 7.5, flex: 1, textAlign: 'center', paddingHorizontal: 3 }}>
                             {'Highest Manager/Officer of the Department\nw/ Finance Controller/Comptroller concurrence'}
                         </Text>
                     </View>
-
                     {/* Row 2 */}
-                    <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 3, paddingHorizontal: 4 }}>
-                        <Text style={{ fontSize: 6.5, width: 55, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>{'>'}500k – 1M</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>
+                    <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 5, paddingHorizontal: 4 }}>
+                        <Text style={{ fontSize: 7.5, width: 60, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>{'>'}500k – 1M</Text>
+                        <Text style={{ fontSize: 7.5, flex: 1, textAlign: 'center', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>
                             {'Highest Manager/Officer of the Department\nw/ Finance Controller/Comptroller concurrence'}
                         </Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3 }}>
+                        <Text style={{ fontSize: 7.5, flex: 1, textAlign: 'center', paddingHorizontal: 3 }}>
                             {'Highest Manager/Officer of the Department\nw/ Finance Controller/Comptroller concurrence'}
                         </Text>
                     </View>
-
                     {/* Row 3 */}
-                    <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 3, paddingHorizontal: 4 }}>
-                        <Text style={{ fontSize: 6.5, width: 55, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>{'>'}1M – 5M</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>Treasurer & CFO</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3 }}>Treasurer & CFO</Text>
+                    <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 5, paddingHorizontal: 4 }}>
+                        <Text style={{ fontSize: 7.5, width: 60, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>{'>'}1M – 5M</Text>
+                        <Text style={{ fontSize: 7.5, flex: 1, textAlign: 'center', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>Treasurer & CFO</Text>
+                        <Text style={{ fontSize: 7.5, flex: 1, textAlign: 'center', paddingHorizontal: 3 }}>Treasurer & CFO</Text>
                     </View>
-
                     {/* Row 4 */}
-                    <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 3, paddingHorizontal: 4 }}>
-                        <Text style={{ fontSize: 6.5, width: 55, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>{'>'}5M – 50M</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>President & CEO</Text>
-                        <Text style={{ fontSize: 6.5, flex: 1, textAlign: 'center', color: '#000000', paddingHorizontal: 3 }}>President & CEO</Text>
+                    <View style={{ flexDirection: 'row', borderWidth: 0.5, borderTopWidth: 0, borderColor: '#000000', paddingVertical: 5, paddingHorizontal: 4 }}>
+                        <Text style={{ fontSize: 7.5, width: 60, textAlign: 'center', borderRightWidth: 0.5, borderRightColor: '#000000' }}>{'>'}5M – 50M</Text>
+                        <Text style={{ fontSize: 7.5, flex: 1, textAlign: 'center', paddingHorizontal: 3, borderRightWidth: 0.5, borderRightColor: '#000000' }}>President & CEO</Text>
+                        <Text style={{ fontSize: 7.5, flex: 1, textAlign: 'center', paddingHorizontal: 3 }}>President & CEO</Text>
                     </View>
-
                 </View>
 
                 {/* ── Footer ─────────────────────────────────────────────── */}
