@@ -275,9 +275,16 @@ function SortableList({
 
     const computeDefaultApproved = (): Entry[] => {
         const defaults: Entry[] = [];
+        const addedIds = new Set<number>();
+
+        const pushIfNew = (id: number, entry: Omit<Entry, 'id'> & { id: string }) => {
+            if (addedIds.has(id)) return;
+            addedIds.add(id);
+            defaults.push(entry);
+        };
 
         if (office === 'mine_site' && residentManager) {
-            defaults.push({
+            pushIfNew(residentManager.id, {
                 id: `default-rm-${Date.now()}`,
                 user: { value: residentManager.id, label: residentManager.name, department: residentManager.department },
                 isLocked: true,
@@ -286,7 +293,7 @@ function SortableList({
 
         if (departmentHead) {
             if (office === 'head_office' || (office === 'mine_site' && subtotalAmount >= 500000)) {
-                defaults.push({
+                pushIfNew(departmentHead.id, {
                     id: `default-dh-${Date.now()}`,
                     user: { value: departmentHead.id, label: departmentHead.name, department: departmentHead.department },
                     isLocked: true,
@@ -295,7 +302,7 @@ function SortableList({
         }
 
         if (subtotalAmount >= 1000000 && cfo) {
-            defaults.push({
+            pushIfNew(cfo.id, {
                 id: `default-cfo-${Date.now()}`,
                 user: { value: cfo.id, label: cfo.name, department: cfo.department },
                 isLocked: true,
@@ -303,7 +310,7 @@ function SortableList({
         }
 
         if (subtotalAmount >= 5000000 && ceo) {
-            defaults.push({
+            pushIfNew(ceo.id, {
                 id: `default-ceo-${Date.now()}`,
                 user: { value: ceo.id, label: ceo.name, department: ceo.department },
                 isLocked: true,
@@ -321,9 +328,14 @@ function SortableList({
             return;
         }
 
-        // Preserve extras, recompute locked defaults
-        const extras = approvedEntries.filter(e => !e.isLocked);
         const defaults = computeDefaultApproved();
+        const defaultIds = new Set(defaults.map(e => e.user?.value).filter(Boolean));
+
+        // Keep extras that don't conflict with the new defaults
+        const extras = approvedEntries.filter(
+            e => !e.isLocked && e.user?.value && !defaultIds.has(e.user.value)
+        );
+
         const newEntries = [...extras, ...defaults];
         setApprovedEntries(newEntries);
         handleChange({ ...signatories, approved_by: newEntries.map(e => e.user) });
@@ -364,7 +376,11 @@ function SortableList({
     // ── Remove ────────────────────────────────────────────────────
 
     const removeRecommending = (id: string) => syncRecommending(recommendingEntries.filter(e => e.id !== id));
-    const removeApproved = (id: string) => syncApproved(approvedEntries.filter(e => e.id !== id));
+        const removeApproved = (id: string) => {
+        const entry = approvedEntries.find(e => e.id === id);
+        if (entry?.isLocked) return; // never remove locked defaults
+        syncApproved(approvedEntries.filter(e => e.id !== id));
+    };
 
     // ── Update ────────────────────────────────────────────────────
 
@@ -412,24 +428,25 @@ function SortableList({
     const getRecommendingSublabel = (_entry: Entry, index: number) =>
         index === 0 ? 'Scope Owner' : 'Additional';
 
-    const getApprovedSublabel = (entry: Entry, index: number): string => {
+    const getApprovedSublabel = (entry: Entry, _index: number): string => {
         if (!entry.isLocked) return 'Additional';
 
-        const amount = subtotalAmount;
+        if (entry.user?.value === ceo?.id && subtotalAmount >= 5000000) {
+            return 'President & CEO (>5M – 50M)';
+        }
+        if (entry.user?.value === cfo?.id && subtotalAmount >= 1000000) {
+            return 'Treasurer & CFO (>1M – 5M)';
+        }
+        if (entry.user?.value === departmentHead?.id) {
+            if (office === 'mine_site' && subtotalAmount >= 500000 && subtotalAmount < 1000000) {
+                return 'Department Highest Manager (>500k – 1M)';
+            }
+            return 'Department Highest Manager (1 – 1M)';
+        }
         if (entry.user?.value === residentManager?.id) {
             return 'Resident Manager (1 – 500k)';
         }
-        if (entry.user?.value === departmentHead?.id) {
-            return amount >= 500000 && amount < 1000000
-                ? 'Department Highest Manager (>500k – 1M)'
-                : 'Department Highest Manager (1 – 1M)';
-        }
-        if (entry.user?.value === cfo?.id) {
-            return 'Treasurer & CFO (>1M – 5M)';
-        }
-        if (entry.user?.value === ceo?.id) {
-            return 'President & CEO (>5M – 50M)';
-        }
+
         return '';
     };
 

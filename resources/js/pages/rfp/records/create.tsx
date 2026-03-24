@@ -66,20 +66,32 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     // Per-category usage cache to support per-row category+usage selection
     const [usagesByCategory, setUsagesByCategory] = useState<Record<number, RfpUsage[]>>({});
 
-    const [signatories, setSignatories] = useState<SignatoriesState>(
-        dedupeSignatories({
+    const [signatories, setSignatories] = useState<SignatoriesState>(() => {
+        const approvedDefaults: UserOption[] = [];
+        const addedIds = new Set<number>();
+
+        const pushIfNew = (u: { id: number; name: string; department?: string }) => {
+            if (addedIds.has(u.id)) return;
+            addedIds.add(u.id);
+            approvedDefaults.push({ value: u.id, label: u.name, department: u.department });
+        };
+
+        // Default office is 'mine_site' on create
+        if (residentManager) pushIfNew(residentManager);
+        if (departmentHead) pushIfNew(departmentHead); // only >500k but start with it
+        // cfo/ceo not added initially since amount starts at 0
+
+        return dedupeSignatories({
             recommending_approval_by: scopeOwner
                 ? [{ value: scopeOwner.id, label: scopeOwner.name, department: scopeOwner.department }]
                 : [],
-            approved_by: departmentHead
-                ? [{ value: departmentHead.id, label: departmentHead.name, department: departmentHead.department }]
-                : [],
+            approved_by: approvedDefaults,
             concurred_by: users
                 .filter(u => u.id === 4 || u.id === 3)
                 .sort((a, b) => (a.id === 4 ? -1 : 1))
                 .map(u => ({ value: u.id, label: u.name, department: u.department })),
-        })
-    );
+        });
+    });
 
     const { data, setData, post, processing, errors, transform } = useForm<{
         ap_no: string;
@@ -166,16 +178,17 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
 
     const handleConfirmCreate = () => {
         setShowConfirmDialog(false);
+        const deduped = dedupeSignatories(signatories);
         transform(d => ({
             ...d,
             signs: [
                 { user_id: auth.user.id, details: 'prepared_by' },
-                ...dedupeSignatories(signatories).recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
-                ...dedupeSignatories(signatories).approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
-                ...dedupeSignatories(signatories).concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
+                ...deduped.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
+                ...deduped.approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
+                ...deduped.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
             ],
             details: d.details.map(({ rfp_category_id, ...rest }) => rest),
-            log_remarks: createRemarks,
+            log_remarks: createRemarks, // captured from closure at call time
         }));
         post('/rfp/records');
     };

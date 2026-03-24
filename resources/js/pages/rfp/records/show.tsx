@@ -211,7 +211,7 @@ export default function Show({ rfp_record, logs }: Props) {
                                 </Link>
                             </Button>
                         )}
-                        {can('rfp-record-paid') && rfp_record.status === 'draft' && (
+                        {/* {can('rfp-record-paid') && rfp_record.status === 'draft' && (
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -221,7 +221,7 @@ export default function Show({ rfp_record, logs }: Props) {
                                 <HandCoins className="h-4 w-4 mr-1.5" />
                                 Mark as Paid
                             </Button>
-                        )}
+                        )} */}
                         {can('rfp-record-revert') && (rfp_record.status === 'paid' || rfp_record.status === 'cancelled') && (
                             <Button
                                 variant="outline"
@@ -648,7 +648,7 @@ export default function Show({ rfp_record, logs }: Props) {
                 onConfirm={(action, remarks) => {
                     if (action === 'delete') handleDelete(remarks);
                     else if (action === 'cancel') handleCancel(remarks);
-                    else if (action === 'paid') handleMarkAsPaid(remarks);
+                    // else if (action === 'paid') handleMarkAsPaid(remarks);
                     else if (action === 'revert') handleRevert(remarks);
                 }}
             />

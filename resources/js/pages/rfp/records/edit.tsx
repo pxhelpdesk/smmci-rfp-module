@@ -325,10 +325,10 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         if (detectedChanges.length > 0) {
             setShowLogDialog(true);
         } else {
+            const signs = buildSigns(); // build before transform
             transform(d => ({
                 ...d,
-                signs: buildSigns(),
-                // Strip UI-only rfp_category_id before submitting
+                signs,
                 details: d.details.map(({ rfp_category_id, ...rest }) => rest),
             }));
             put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
@@ -337,11 +337,11 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
     const handleConfirmUpdate = () => {
         setShowLogDialog(false);
+        const signs = buildSigns(); // build before transform
         transform(d => ({
             ...d,
-            signs: buildSigns(),
+            signs,
             log_remarks: logRemarks,
-            // Strip UI-only rfp_category_id before submitting
             details: d.details.map(({ rfp_category_id, ...rest }) => rest),
         }));
         put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
@@ -739,7 +739,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                     userOptions={userOptions}
                     onChange={setSignatories}
                     office={data.office}
-                    subtotalAmount={data.details.reduce((sum, d) => sum + (Number(d.total_amount) ?? 0), 0)}
+                    subtotalAmount={data.details.reduce((sum, d) => sum + (Number(d.total_amount ?? 0)), 0)}
                     residentManager={residentManager}
                     departmentHead={departmentHead}
                     cfo={cfo}

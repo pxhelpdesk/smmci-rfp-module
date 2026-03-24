@@ -13,7 +13,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-export type RfpActionType = 'cancel' | 'revert' | 'paid' | 'delete' | null;
+// 'paid'
+export type RfpActionType = 'cancel' | 'revert' | 'delete' | null;
 
 type DialogConfig = {
     title: string;
@@ -41,14 +42,14 @@ const DIALOG_CONFIGS: Record<Exclude<RfpActionType, null>, DialogConfig> = {
         remarksRequired: true,
         showRemarks: true,
     },
-    paid: {
-        title: 'Mark as Paid',
-        description: 'Mark this RFP as paid? This can be reverted later.',
-        confirmLabel: 'Mark as Paid',
-        confirmClass: 'bg-green-600 text-white hover:bg-green-700',
-        remarksRequired: false,
-        showRemarks: true,
-    },
+    // paid: {
+    //     title: 'Mark as Paid',
+    //     description: 'Mark this RFP as paid? This can be reverted later.',
+    //     confirmLabel: 'Mark as Paid',
+    //     confirmClass: 'bg-green-600 text-white hover:bg-green-700',
+    //     remarksRequired: false,
+    //     showRemarks: true,
+    // },
     delete: {
         title: 'Delete RFP',
         description: 'Are you sure you want to delete this RFP? This action cannot be undone.',
