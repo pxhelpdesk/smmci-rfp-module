@@ -33,14 +33,14 @@ class RfpDashboardController extends Controller
 
         $totalRecords = (clone $baseQuery)->count();
         $totalDraft  = (clone $baseQuery)->where('status', 'draft')->count();
-        $totalPaid = (clone $baseQuery)->where('status', 'paid')->count();
+        // $totalPaid = (clone $baseQuery)->where('status', 'paid')->count();
         $totalCancelled = (clone $baseQuery)->where('status', 'cancelled')->count();
         $totalGrandAmount = (clone $baseQuery)->sum('subtotal_details_amount');
 
-        $overdueCount = (clone $baseQuery)
-            ->where('status', 'draft')
-            ->whereDate('due_date', '<', now())
-            ->count();
+        // $overdueCount = (clone $baseQuery)
+        //     ->where('status', 'draft')
+        //     ->whereDate('due_date', '<', now())
+        //     ->count();
 
         $recentRecords = (clone $baseQuery)
             ->with(['currency', 'preparedBy.department'])
@@ -53,10 +53,10 @@ class RfpDashboardController extends Controller
             'stats' => [
                 'total_records' => $totalRecords,
                 'total_draft' => $totalDraft,
-                'total_paid' => $totalPaid,
+                // 'total_paid' => $totalPaid,
                 'total_cancelled' => $totalCancelled,
                 'total_grand_amount' => (float) $totalGrandAmount,
-                'overdue_count' => $overdueCount,
+                // 'overdue_count' => $overdueCount,
             ],
             'recent_records' => $recentRecords,
         ]);

@@ -54,19 +54,19 @@ export default function Index({ rfp_records }: Props) {
             size: 150,
             cell: ({ row }) => {
                 const rfp = row.original;
-                const isOverdue = rfp.status === 'draft' &&
-                    new Date(rfp.due_date) < new Date(new Date().toDateString());
+                // const isOverdue = rfp.status === 'draft' &&
+                //     new Date(rfp.due_date) < new Date(new Date().toDateString());
                 return (
                     <div className="flex items-center gap-2">
                         <Link href={`/rfp/records/${rfp.id}`} className="hover:underline text-primary font-medium">
                             {rfp.rfp_number}
                         </Link>
-                        {isOverdue && (
+                        {/* {isOverdue && (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
                                 <AlertTriangle className="h-3 w-3" />
                                 Overdue
                             </span>
-                        )}
+                        )} */}
                     </div>
                 );
             },

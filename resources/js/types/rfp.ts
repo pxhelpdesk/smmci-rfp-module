@@ -112,10 +112,10 @@ export type RfpLog = {
 export type RfpDashboardStats = {
     total_records: number;
     total_draft: number;
-    total_paid: number;
+    // total_paid: number;
     total_cancelled: number;
     total_grand_amount: number;
-    overdue_count: number;
+    // overdue_count: number;
 };
 
 // SAP Data Types

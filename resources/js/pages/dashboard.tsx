@@ -29,14 +29,14 @@ export default function Dashboard({ stats, recent_records }: Props) {
             sub: 'All accessible records',
             href: '/rfp/records',
         },
-        {
-            title: 'Overdue',
-            value: stats.overdue_count,
-            icon: AlertTriangle,
-            iconClass: 'text-orange-500',
-            sub: 'Draft past due date',
-            href: '/rfp/records?status=draft&overdue=1',
-        },
+        // {
+        //     title: 'Overdue',
+        //     value: stats.overdue_count,
+        //     icon: AlertTriangle,
+        //     iconClass: 'text-orange-500',
+        //     sub: 'Draft past due date',
+        //     href: '/rfp/records?status=draft&overdue=1',
+        // },
         {
             title: 'Total Value',
             value: `PHP ${formatCurrency(stats.total_grand_amount)}`,
@@ -64,14 +64,14 @@ export default function Dashboard({ stats, recent_records }: Props) {
             sub: 'Record created',
             href: '/rfp/records?status=draft',
         },
-        {
-            title: 'Paid',
-            value: stats.total_paid,
-            icon: HandCoins,
-            iconClass: 'text-green-500',
-            sub: 'Completed payments',
-            href: '/rfp/records?status=paid',
-        },
+        // {
+        //     title: 'Paid',
+        //     value: stats.total_paid,
+        //     icon: HandCoins,
+        //     iconClass: 'text-green-500',
+        //     sub: 'Completed payments',
+        //     href: '/rfp/records?status=paid',
+        // },
     ];
 
     const renderCard = (card: typeof row1[0], key: string) => {
@@ -112,12 +112,12 @@ export default function Dashboard({ stats, recent_records }: Props) {
                 </div>
 
                 {/* Row 1 */}
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className={`grid gap-4 md:grid-cols-${row1.length}`}>
                     {row1.map((card) => renderCard(card, card.title))}
                 </div>
 
                 {/* Row 2 */}
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className={`grid gap-4 md:grid-cols-${row2.length}`}>
                     {row2.map((card) => renderCard(card, card.title))}
                 </div>
 
@@ -135,9 +135,9 @@ export default function Dashboard({ stats, recent_records }: Props) {
                                 </p>
                             ) : (
                                 recent_records.map((rfp) => {
-                                    const isOverdue =
-                                        rfp.status === 'draft' &&
-                                        new Date(rfp.due_date) < new Date(new Date().toDateString());
+                                    // const isOverdue =
+                                    //     rfp.status === 'draft' &&
+                                    //     new Date(rfp.due_date) < new Date(new Date().toDateString());
 
                                     return (
                                         <div
@@ -154,12 +154,12 @@ export default function Dashboard({ stats, recent_records }: Props) {
                                                         >
                                                             {rfp.rfp_number}
                                                         </Link>
-                                                        {isOverdue && (
+                                                        {/* {isOverdue && (
                                                             <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
                                                                 <AlertTriangle className="h-3 w-3" />
                                                                 Overdue
                                                             </span>
-                                                        )}
+                                                        )} */}
                                                     </div>
                                                     <p className="text-xs text-muted-foreground">
                                                         {rfp.prepared_by?.name ?? '—'}
@@ -177,9 +177,9 @@ export default function Dashboard({ stats, recent_records }: Props) {
                                                             ? formatCurrency(Number(rfp.subtotal_details_amount))
                                                             : '—'}
                                                     </p>
-                                                    <p className={`text-xs ${isOverdue ? 'text-orange-500 font-medium' : 'text-muted-foreground'}`}>
+                                                    {/* <p className={`text-xs ${isOverdue ? 'text-orange-500 font-medium' : 'text-muted-foreground'}`}>
                                                         Due {formatDate(rfp.due_date)}
-                                                    </p>
+                                                    </p> */}
                                                 </div>
                                                 <RfpBadge type="status" value={rfp.status} />
                                             </div>

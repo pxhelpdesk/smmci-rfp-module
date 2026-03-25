@@ -67,11 +67,11 @@ export default function Show({ rfp_record, logs }: Props) {
             onSuccess: () => setActiveAction(null),
         });
     };
-    const handleMarkAsPaid = (remarks: string) => {
-        router.patch(`/rfp/records/${rfp_record.id}/paid`, { remarks }, {
-            onSuccess: () => setActiveAction(null),
-        });
-    };
+    // const handleMarkAsPaid = (remarks: string) => {
+    //     router.patch(`/rfp/records/${rfp_record.id}/paid`, { remarks }, {
+    //         onSuccess: () => setActiveAction(null),
+    //     });
+    // };
     const handleRevert = (remarks: string) => {
         router.patch(`/rfp/records/${rfp_record.id}/revert`, { remarks }, {
             onSuccess: () => setActiveAction(null),
@@ -183,13 +183,13 @@ export default function Show({ rfp_record, logs }: Props) {
                         <h1 className="text-2xl font-semibold">View RFP</h1>
                         <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-sm text-muted-foreground">{rfp_record.rfp_number}</p>
-                            {rfp_record.status === 'draft' &&
+                            {/* {rfp_record.status === 'draft' &&
                                 new Date(rfp_record.due_date) < new Date(new Date().toDateString()) && (
                                 <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
                                     <AlertTriangle className="h-3 w-3" />
                                     Overdue
                                 </span>
-                            )}
+                            )} */}
                         </div>
                     </div>
                     <div className="flex gap-2">
