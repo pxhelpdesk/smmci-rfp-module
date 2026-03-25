@@ -215,7 +215,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Records', href: '/rfp/records' },
                 { title: 'Create', href: '/rfp/records/create' },
             ]}

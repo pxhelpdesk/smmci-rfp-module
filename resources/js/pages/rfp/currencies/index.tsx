@@ -4,14 +4,8 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { DataTable } from '@/components/data-table';
+import { ColumnDef } from '@tanstack/react-table';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -26,17 +20,12 @@ import type { RfpCurrency } from '@/types';
 import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
-    currencies: {
-        data: RfpCurrency[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-    };
+    currencies: RfpCurrency[];
 };
 
 export default function Index({ currencies }: Props) {
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const { can } = usePermission();
 
     const handleDelete = () => {
         if (deleteId) {
@@ -46,12 +35,79 @@ export default function Index({ currencies }: Props) {
         }
     };
 
-    const { can } = usePermission();
+    const columns: ColumnDef<RfpCurrency>[] = [
+        {
+            accessorKey: 'code',
+            header: 'Code',
+            size: 120,
+        },
+        {
+            accessorKey: 'name',
+            header: 'Name',
+            size: 180,
+        },
+        {
+            accessorKey: 'description',
+            header: 'Description',
+            cell: ({ row }) => (
+                <span className="text-muted-foreground">
+                    {row.original.description || 'N/A'}
+                </span>
+            ),
+        },
+        {
+            accessorKey: 'is_active',
+            header: 'Status',
+            size: 120,
+            accessorFn: (row) => row.is_active ? 'Active' : 'Inactive',
+            cell: ({ row }) => (
+                <Badge variant={row.original.is_active ? 'default' : 'secondary'}>
+                    {row.original.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+            ),
+        },
+        {
+            id: 'actions',
+            header: 'Actions',
+            enableSorting: false,
+            enableColumnFilter: false,
+            size: 120,
+            cell: ({ row }) => {
+                const currency = row.original;
+                return (
+                    <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/rfp/currencies/${currency.id}`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <Eye className="h-4 w-4" />
+                                <span className="text-[10px] leading-none">View</span>
+                            </Link>
+                        </Button>
+                        {can('rfp-currency-edit') && (
+                            <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/rfp/currencies/${currency.id}/edit`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                    <Edit className="h-4 w-4" />
+                                    <span className="text-[10px] leading-none">Edit</span>
+                                </Link>
+                            </Button>
+                        )}
+                        {can('rfp-currency-delete') && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setDeleteId(currency.id)}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <span className="text-[10px] leading-none">Delete</span>
+                            </Button>
+                        )}
+                    </div>
+                );
+            },
+        },
+    ];
 
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Currencies', href: '/rfp/currencies' },
             ]}
         >
@@ -75,64 +131,12 @@ export default function Index({ currencies }: Props) {
                     )}
                 </div>
 
-                <div className="border rounded-lg bg-card">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {currencies.data.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                                        No currencies found
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                currencies.data.map((currency) => (
-                                    <TableRow key={currency.id}>
-                                        <TableCell className="font-medium">{currency.code}</TableCell>
-                                        <TableCell>{currency.name}</TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            {currency.description || 'N/A'}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={currency.is_active ? "default" : "secondary"}>
-                                                {currency.is_active ? 'Active' : 'Inactive'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="sm" asChild>
-                                                    <Link href={`/rfp/currencies/${currency.id}`}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
-                                                {can('rfp-currency-edit') && (
-                                                    <Button variant="ghost" size="sm" asChild>
-                                                        <Link href={`/rfp/currencies/${currency.id}/edit`}>
-                                                            <Edit className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
-                                                )}
-                                                {can('rfp-currency-delete') && (
-                                                    <Button variant="ghost" size="sm" onClick={() => setDeleteId(currency.id)}>
-                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                <DataTable
+                    columns={columns}
+                    data={currencies}
+                    exportFileName="rfp-currencies"
+                    storageKey="rfp-currencies"
+                />
             </div>
 
             <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

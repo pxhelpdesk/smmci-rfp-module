@@ -21,15 +21,9 @@ class RfpUsageController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index(Request $request)
+    public function index()
     {
-        $query = RfpUsage::with('category:id,code,name');
-
-        if ($request->has('category_id')) {
-            $query->where('rfp_category_id', $request->category_id);
-        }
-
-        $usages = $query->latest()->paginate(15);
+        $usages = RfpUsage::with('category:id,code,name')->latest()->get();
 
         return Inertia::render('rfp/usages/index', [
             'usages' => $usages,

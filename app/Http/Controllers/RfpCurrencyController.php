@@ -22,7 +22,7 @@ class RfpCurrencyController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $currencies = RfpCurrency::latest()->paginate(15);
+        $currencies = RfpCurrency::latest()->get();
 
         return Inertia::render('rfp/currencies/index', [
             'currencies' => $currencies

@@ -29,7 +29,7 @@ export default function Edit({ currency }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Currencies', href: '/rfp/currencies' },
                 { title: currency.code, href: `/rfp/currencies/${currency.id}/edit` },
             ]}

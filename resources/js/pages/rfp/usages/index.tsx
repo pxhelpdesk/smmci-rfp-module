@@ -1,18 +1,11 @@
 import { router, Head, Link } from '@inertiajs/react';
-import { Edit, Plus, Trash2, Eye, Filter } from 'lucide-react';
+import { Edit, Plus, Trash2, Eye } from 'lucide-react';
 import { useState } from 'react';
-import Select from 'react-select';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { DataTable } from '@/components/data-table';
+import { ColumnDef } from '@tanstack/react-table';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -27,19 +20,13 @@ import type { RfpUsage, RfpCategory } from '@/types';
 import { usePermission } from '@/hooks/use-permission';
 
 type Props = {
-    usages: {
-        data: RfpUsage[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-    };
+    usages: RfpUsage[];
     categories: RfpCategory[];
 };
 
-export default function Index({ usages, categories }: Props) {
+export default function Index({ usages }: Props) {
     const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+    const { can } = usePermission();
 
     const handleDelete = () => {
         if (deleteId) {
@@ -49,26 +36,78 @@ export default function Index({ usages, categories }: Props) {
         }
     };
 
-    const handleFilter = (categoryId: number | null) => {
-        setSelectedCategory(categoryId);
-        if (categoryId) {
-            router.get(`/rfp/usages?category_id=${categoryId}`);
-        } else {
-            router.get('/rfp/usages');
-        }
-    };
-
-    const categoryOptions = categories.map(c => ({
-        value: c.id,
-        label: `${c.code} - ${c.name}`,
-    }));
-
-    const { can } = usePermission();
+    const columns: ColumnDef<RfpUsage>[] = [
+        {
+            accessorKey: 'code',
+            header: 'Code',
+            size: 120,
+        },
+        {
+            accessorKey: 'category',
+            header: 'Category',
+            size: 160,
+            accessorFn: (row) => row.category?.name ?? '',
+            cell: ({ row }) => row.original.category ? (
+                <Badge variant="outline">{row.original.category.name}</Badge>
+            ) : 'N/A',
+        },
+        {
+            accessorKey: 'description',
+            header: 'Description',
+        },
+        {
+            accessorKey: 'is_active',
+            header: 'Status',
+            size: 120,
+            accessorFn: (row) => row.is_active ? 'Active' : 'Inactive',
+            cell: ({ row }) => (
+                <Badge variant={row.original.is_active ? 'default' : 'secondary'}>
+                    {row.original.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+            ),
+        },
+        {
+            id: 'actions',
+            header: 'Actions',
+            enableSorting: false,
+            enableColumnFilter: false,
+            size: 120,
+            cell: ({ row }) => {
+                const usage = row.original;
+                return (
+                    <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/rfp/usages/${usage.id}`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <Eye className="h-4 w-4" />
+                                <span className="text-[10px] leading-none">View</span>
+                            </Link>
+                        </Button>
+                        {can('rfp-usage-edit') && (
+                            <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/rfp/usages/${usage.id}/edit`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                    <Edit className="h-4 w-4" />
+                                    <span className="text-[10px] leading-none">Edit</span>
+                                </Link>
+                            </Button>
+                        )}
+                        {can('rfp-usage-delete') && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setDeleteId(usage.id)}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <span className="text-[10px] leading-none">Delete</span>
+                            </Button>
+                        )}
+                    </div>
+                );
+            },
+        },
+    ];
 
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Usages', href: '/rfp/usages' },
             ]}
         >
@@ -92,86 +131,12 @@ export default function Index({ usages, categories }: Props) {
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 bg-card p-3 rounded-lg border">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <div className="relative flex-1 max-w-sm">
-                        <Select
-                            options={categoryOptions}
-                            value={categoryOptions.find(o => o.value === selectedCategory)}
-                            onChange={(opt) => handleFilter(opt?.value || null)}
-                            isClearable
-                            placeholder="Filter by category..."
-                            className="text-sm"
-                            styles={{
-                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                menu: (base) => ({ ...base, fontSize: '14px' }),
-                            }}
-                        />
-                    </div>
-                </div>
-
-                <div className="border rounded-lg bg-card">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {usages.data.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                                        No usages found
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                usages.data.map((usage) => (
-                                    <TableRow key={usage.id}>
-                                        <TableCell className="font-medium">{usage.code}</TableCell>
-                                        <TableCell>
-                                            {usage.category ? (
-                                                <Badge variant="outline">
-                                                    {usage.category.name}
-                                                </Badge>
-                                            ) : 'N/A'}
-                                        </TableCell>
-                                        <TableCell>{usage.description}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={usage.is_active ? "default" : "secondary"}>
-                                                {usage.is_active ? 'Active' : 'Inactive'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="sm" asChild>
-                                                    <Link href={`/rfp/usages/${usage.id}`}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
-                                                {can('rfp-usage-edit') && (
-                                                    <Button variant="ghost" size="sm" asChild>
-                                                        <Link href={`/rfp/usages/${usage.id}/edit`}>
-                                                            <Edit className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
-                                                )}
-                                                {can('rfp-usage-delete') && (
-                                                    <Button variant="ghost" size="sm" onClick={() => setDeleteId(usage.id)}>
-                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                <DataTable
+                    columns={columns}
+                    data={usages}
+                    exportFileName="rfp-usages"
+                    storageKey="rfp-usages"
+                />
             </div>
 
             <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

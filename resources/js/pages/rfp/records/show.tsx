@@ -170,7 +170,7 @@ export default function Show({ rfp_record, logs }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Records', href: '/rfp/records' },
                 { title: rfp_record.rfp_number, href: `/rfp/records/${rfp_record.id}` },
             ]}

@@ -18,7 +18,7 @@ export default function Show({ usage }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Usages', href: '/rfp/usages' },
                 { title: usage.code, href: `/rfp/usages/${usage.id}` },
             ]}

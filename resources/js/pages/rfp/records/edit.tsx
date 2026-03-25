@@ -369,7 +369,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Records', href: '/rfp/records' },
                 { title: rfp_record.rfp_number, href: `/rfp/records/${rfp_record.id}/edit` },
             ]}

@@ -24,7 +24,7 @@ class RfpCategoryController extends Controller implements HasMiddleware
     {
         $categories = RfpCategory::withCount('usages')
             ->latest()
-            ->paginate(15);
+            ->get();
 
         return Inertia::render('rfp/categories/index', [
             'categories' => $categories
