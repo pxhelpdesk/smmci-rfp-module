@@ -72,6 +72,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     const [showLogDialog, setShowLogDialog] = useState(false);
     const [logRemarks, setLogRemarks] = useState('');
     const [detectedChanges, setDetectedChanges] = useState<ChangeLog[]>([]);
+    const [logRemarksError, setLogRemarksError] = useState(false);
 
     // Per-category usage cache to support per-row category+usage selection
     const [usagesByCategory, setUsagesByCategory] = useState<Record<number, RfpUsage[]>>({});
@@ -336,8 +337,13 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     };
 
     const handleConfirmUpdate = () => {
+        if (!logRemarks.trim()) {
+            setLogRemarksError(true);
+            return;
+        }
         setShowLogDialog(false);
-        const signs = buildSigns(); // build before transform
+        setLogRemarksError(false);
+        const signs = buildSigns();
         transform(d => ({
             ...d,
             signs,
@@ -748,7 +754,10 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             </form>
 
             {/* Change Log Confirmation Dialog */}
-            <AlertDialog open={showLogDialog} onOpenChange={setShowLogDialog}>
+            <AlertDialog open={showLogDialog} onOpenChange={(open) => {
+                if (!open) setLogRemarksError(false);
+                setShowLogDialog(open);
+            }}>
                 <AlertDialogContent className="max-w-3xl p-0">
                     <AlertDialogHeader className="px-6 pt-6 pb-3">
                         <AlertDialogTitle>Confirm Update</AlertDialogTitle>
@@ -783,16 +792,22 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
                         <div className="space-y-1.5">
                             <Label htmlFor="log_remarks" className="text-sm">
-                                Remarks <span className="text-muted-foreground">(Optional)</span>
+                                Remarks <span className="text-destructive ml-0.5">*</span>
                             </Label>
                             <Textarea
                                 id="log_remarks"
                                 value={logRemarks}
-                                onChange={(e) => setLogRemarks(e.target.value)}
+                                onChange={(e) => {
+                                    setLogRemarks(e.target.value);
+                                    if (logRemarksError && e.target.value.trim()) setLogRemarksError(false);
+                                }}
                                 placeholder="Add any additional notes about these changes..."
                                 rows={3}
-                                className="resize-none"
+                                className={`resize-none ${logRemarksError ? 'border-destructive' : ''}`}
                             />
+                            {logRemarksError && (
+                                <p className="text-xs text-destructive">Remarks is required.</p>
+                            )}
                         </div>
                     </div>
 

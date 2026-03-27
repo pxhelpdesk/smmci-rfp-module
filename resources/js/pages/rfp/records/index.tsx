@@ -1,48 +1,40 @@
 import { Link, router, Head } from '@inertiajs/react';
-import { FileText, Pencil, Plus, Trash2, Printer, Ban, AlertTriangle, Eye } from 'lucide-react';
+import { FileText, Pencil, Plus, Trash2, Printer, Ban, AlertTriangle, Eye, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/data-table';
 import { ColumnDef } from '@tanstack/react-table';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import type { RfpRecord } from '@/types';
 import { formatDate, formatTime } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
 import { RfpBadge } from '@/components/rfp/rfp-display';
 import { RfpPdfPreviewDialog } from '@/components/rfp/rfp-pdf-preview-dialog';
+import { RfpActionDialogs, type RfpActionType } from '@/components/rfp/rfp-action-dialogs';
 
 type Props = {
     rfp_records: RfpRecord[];
 };
 
 export default function Index({ rfp_records }: Props) {
-    const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [cancelId, setCancelId] = useState<number | null>(null);
+    const [activeAction, setActiveAction] = useState<{ type: RfpActionType; id: number } | null>(null);
     const [previewRfp, setPreviewRfp] = useState<RfpRecord | null>(null);
     const { can } = usePermission();
 
-    const handleDelete = () => {
-        if (deleteId) {
-            router.delete(`/rfp/records/${deleteId}`, {
-                onSuccess: () => setDeleteId(null),
+    const handleAction = (action: Exclude<RfpActionType, null>, remarks: string) => {
+        if (!activeAction) return;
+        if (action === 'delete') {
+            router.delete(`/rfp/records/${activeAction.id}`, {
+                data: { remarks },
+                onSuccess: () => setActiveAction(null),
             });
-        }
-    };
-
-    const handleCancel = () => {
-        if (cancelId) {
-            router.patch(`/rfp/records/${cancelId}/cancel`, {}, {
-                onSuccess: () => setCancelId(null),
+        } else if (action === 'cancel') {
+            router.patch(`/rfp/records/${activeAction.id}/cancel`, { remarks }, {
+                onSuccess: () => setActiveAction(null),
+            });
+        } else if (action === 'revert') {
+            router.patch(`/rfp/records/${activeAction.id}/revert`, { remarks }, {
+                onSuccess: () => setActiveAction(null),
             });
         }
     };
@@ -54,19 +46,11 @@ export default function Index({ rfp_records }: Props) {
             size: 150,
             cell: ({ row }) => {
                 const rfp = row.original;
-                // const isOverdue = rfp.status === 'draft' &&
-                //     new Date(rfp.due_date) < new Date(new Date().toDateString());
                 return (
                     <div className="flex items-center gap-2">
                         <Link href={`/rfp/records/${rfp.id}`} className="hover:underline text-primary font-medium">
                             {rfp.rfp_number}
                         </Link>
-                        {/* {isOverdue && (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
-                                <AlertTriangle className="h-3 w-3" />
-                                Overdue
-                            </span>
-                        )} */}
                     </div>
                 );
             },
@@ -193,15 +177,23 @@ export default function Index({ rfp_records }: Props) {
                         )}
                         {can('rfp-record-cancel') && rfp.status !== 'cancelled' && (
                             <Button variant="ghost" size="sm"
-                                onClick={() => setCancelId(rfp.id)}
+                                onClick={() => setActiveAction({ type: 'cancel', id: rfp.id })}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                 <Ban className="h-4 w-4 text-orange-600" />
                                 <span className="text-[10px] leading-none">Cancel</span>
                             </Button>
                         )}
+                        {can('rfp-record-revert') && (rfp.status === 'paid' || rfp.status === 'cancelled') && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setActiveAction({ type: 'revert', id: rfp.id })}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <RotateCcw className="h-4 w-4 text-yellow-600" />
+                                <span className="text-[10px] leading-none">Revert</span>
+                            </Button>
+                        )}
                         {can('rfp-record-delete') && (
                             <Button variant="ghost" size="sm"
-                                onClick={() => setDeleteId(rfp.id)}
+                                onClick={() => setActiveAction({ type: 'delete', id: rfp.id })}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                 <Trash2 className="h-4 w-4 text-destructive" />
                                 <span className="text-[10px] leading-none">Delete</span>
@@ -248,39 +240,12 @@ export default function Index({ rfp_records }: Props) {
                 />
             </div>
 
-            <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete RFP</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the RFP record and all associated details.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog open={!!cancelId} onOpenChange={() => setCancelId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel RFP</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to cancel this RFP? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Back</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCancel} className="bg-orange-600 text-white hover:bg-orange-700">
-                            Cancel RFP
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <RfpActionDialogs
+                rfpNumber={rfp_records.find(r => r.id === activeAction?.id)?.rfp_number ?? ''}
+                activeAction={activeAction?.type ?? null}
+                onClose={() => setActiveAction(null)}
+                onConfirm={handleAction}
+            />
 
             <RfpPdfPreviewDialog
                 rfp_record={previewRfp}

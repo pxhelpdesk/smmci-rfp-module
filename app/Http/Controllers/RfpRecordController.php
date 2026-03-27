@@ -209,7 +209,7 @@ class RfpRecordController extends Controller implements HasMiddleware
         $logs = RfpLog::where('rfp_record_id', $record->id)
             ->with('user.department')
             ->latest()
-            ->paginate(10, ['*'], 'logs_page');
+            ->get();
 
         return Inertia::render('rfp/records/show', [
             'rfp_record' => $record,
