@@ -1,115 +1,214 @@
-// pages/rfp/records/index.tsx
 import { Link, router, Head } from '@inertiajs/react';
-import { FileText, MoreVertical, Pencil, Plus, Search, Trash2, Printer, Ban, AlertTriangle } from 'lucide-react';
+import { FileText, Pencil, Plus, Trash2, Printer, Ban, AlertTriangle, Eye, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
+import { DataTable } from '@/components/data-table';
+import { ColumnDef } from '@tanstack/react-table';
 import type { RfpRecord } from '@/types';
 import { formatDate, formatTime } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
 import { RfpBadge } from '@/components/rfp/rfp-display';
 import { RfpPdfPreviewDialog } from '@/components/rfp/rfp-pdf-preview-dialog';
+import { RfpActionDialogs, type RfpActionType } from '@/components/rfp/rfp-action-dialogs';
 
 type Props = {
-    rfp_records: {
-        data: RfpRecord[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-    };
-    filters: {
-        status?: string;
-        overdue?: string;
-    };
+    rfp_records: RfpRecord[];
 };
 
-export default function Index({ rfp_records, filters }: Props) {
-    const [search, setSearch] = useState('');
-    const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [cancelId, setCancelId] = useState<number | null>(null);
-
+export default function Index({ rfp_records }: Props) {
+    const [activeAction, setActiveAction] = useState<{ type: RfpActionType; id: number } | null>(null);
     const [previewRfp, setPreviewRfp] = useState<RfpRecord | null>(null);
-
-    const handleDelete = () => {
-        if (deleteId) {
-            router.delete(`/rfp/records/${deleteId}`, {
-                onSuccess: () => {
-                    setDeleteId(null);
-                },
-                onError: () => {
-                    toast.error('Failed to delete RFP');
-                },
-            });
-        }
-    };
-
-    const handleCancel = () => {
-        if (cancelId) {
-            router.patch(`/rfp/records/${cancelId}/cancel`, {}, {
-                onSuccess: () => setCancelId(null),
-                onError: () => toast.error('Failed to cancel RFP'),
-            });
-        }
-    };
-
-    const handlePrint = (rfp_record: RfpRecord) => {
-        setPreviewRfp(rfp_record);
-    };
-
-    const handleClosePdf = () => {
-        setPreviewRfp(null);
-    };
-
-    const filteredRfps = rfp_records.data.filter(
-        (rfp_record) =>
-            rfp_record.rfp_number.toLowerCase().includes(search.toLowerCase()) ||
-            rfp_record.supplier_name?.toLowerCase().includes(search.toLowerCase()) ||
-            rfp_record.employee_name?.toLowerCase().includes(search.toLowerCase())
-    );
-
     const { can } = usePermission();
+
+    const handleAction = (action: Exclude<RfpActionType, null>, remarks: string) => {
+        if (!activeAction) return;
+        if (action === 'delete') {
+            router.delete(`/rfp/records/${activeAction.id}`, {
+                data: { remarks },
+                onSuccess: () => setActiveAction(null),
+            });
+        } else if (action === 'cancel') {
+            router.patch(`/rfp/records/${activeAction.id}/cancel`, { remarks }, {
+                onSuccess: () => setActiveAction(null),
+            });
+        } else if (action === 'revert') {
+            router.patch(`/rfp/records/${activeAction.id}/revert`, { remarks }, {
+                onSuccess: () => setActiveAction(null),
+            });
+        }
+    };
+
+    const columns: ColumnDef<RfpRecord>[] = [
+        {
+            accessorKey: 'rfp_number',
+            header: 'RFP No.',
+            size: 150,
+            cell: ({ row }) => {
+                const rfp = row.original;
+                return (
+                    <div className="flex items-center gap-2">
+                        <Link href={`/rfp/records/${rfp.id}`} className="hover:underline text-primary font-medium">
+                            {rfp.rfp_number}
+                        </Link>
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: 'office',
+            header: 'Office',
+            size: 120,
+            accessorFn: (row) => row.office === 'head_office' ? 'Head Office' : 'Mine Site',
+            cell: ({ row }) => <RfpBadge type="office" value={row.original.office} />,
+        },
+        {
+            accessorKey: 'prepared_by',
+            header: 'Requestor',
+            size: 160,
+            accessorFn: (row) => row.prepared_by?.name ?? '',
+            cell: ({ row }) => (
+                <div>
+                    <p className="text-sm">{row.original.prepared_by?.name ?? 'N/A'}</p>
+                    <p className="text-xs text-muted-foreground">
+                        {row.original.prepared_by?.department?.department ?? ''}
+                    </p>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'payee_type',
+            header: 'Payee',
+            size: 140,
+            cell: ({ row }) => {
+                const rfp = row.original;
+                return (
+                    <div>
+                        <RfpBadge type="payee" value={rfp.payee_type} />
+                        <p className="text-xs text-muted-foreground">
+                            {rfp.payee_type === 'supplier' ? rfp.supplier_code : rfp.employee_code}
+                        </p>
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: 'created_at',
+            header: 'Prepared',
+            size: 130,
+            accessorFn: (row) => formatDate(row.created_at),
+            cell: ({ row }) => (
+                <div className="text-sm text-muted-foreground">
+                    <div>{formatDate(row.original.created_at)}</div>
+                    <div className="text-xs">{formatTime(row.original.created_at)}</div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'due_date',
+            header: 'Due Date',
+            size: 120,
+            accessorFn: (row) => formatDate(row.due_date),
+            cell: ({ row }) => (
+                <span className="text-sm text-muted-foreground">
+                    {formatDate(row.original.due_date)}
+                </span>
+            ),
+        },
+        {
+            accessorKey: 'currency',
+            header: 'Currency',
+            size: 100,
+            accessorFn: (row) => row.currency?.code ?? 'PHP',
+            cell: ({ row }) => (
+                <span className="text-sm font-medium">
+                    {row.original.currency?.code ?? 'PHP'}
+                </span>
+            ),
+        },
+        {
+            accessorKey: 'status',
+            header: 'Status',
+            size: 120,
+            accessorFn: (row) => row.status,
+            cell: ({ row }) => <RfpBadge type="status" value={row.original.status} />,
+        },
+        {
+            accessorKey: 'updated_at',
+            header: 'Updated',
+            size: 130,
+            accessorFn: (row) => formatDate(row.updated_at),
+            cell: ({ row }) => (
+                <div className="text-sm text-muted-foreground">
+                    <div>{formatDate(row.original.updated_at)}</div>
+                    <div className="text-xs">{formatTime(row.original.updated_at)}</div>
+                </div>
+            ),
+        },
+        {
+            id: 'actions',
+            header: 'Actions',
+            enableSorting: false,
+            enableColumnFilter: false,
+            size: 160,
+            cell: ({ row }) => {
+                const rfp = row.original;
+                return (
+                    <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/rfp/records/${rfp.id}`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <Eye className="h-4 w-4" />
+                                <span className="text-[10px] leading-none">View</span>
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" size="sm"
+                            onClick={() => setPreviewRfp(rfp)}
+                            className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                            <Printer className="h-4 w-4" />
+                            <span className="text-[10px] leading-none">Print</span>
+                        </Button>
+                        {can('rfp-record-edit') && rfp.status !== 'cancelled' && (
+                            <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/rfp/records/${rfp.id}/edit`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="text-[10px] leading-none">Edit</span>
+                                </Link>
+                            </Button>
+                        )}
+                        {can('rfp-record-cancel') && rfp.status !== 'cancelled' && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setActiveAction({ type: 'cancel', id: rfp.id })}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <Ban className="h-4 w-4 text-orange-600" />
+                                <span className="text-[10px] leading-none">Cancel</span>
+                            </Button>
+                        )}
+                        {can('rfp-record-revert') && (rfp.status === 'paid' || rfp.status === 'cancelled') && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setActiveAction({ type: 'revert', id: rfp.id })}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <RotateCcw className="h-4 w-4 text-yellow-600" />
+                                <span className="text-[10px] leading-none">Revert</span>
+                            </Button>
+                        )}
+                        {can('rfp-record-delete') && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setActiveAction({ type: 'delete', id: rfp.id })}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <span className="text-[10px] leading-none">Delete</span>
+                            </Button>
+                        )}
+                    </div>
+                );
+            },
+        },
+    ];
 
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Records', href: '/rfp/records' },
             ]}
         >
@@ -132,299 +231,26 @@ export default function Index({ rfp_records, filters }: Props) {
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 bg-card p-3 rounded-lg border">
-                    <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search by RFP number, usage, or payee..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="pl-8 h-9"
-                        />
-                    </div>
-                </div>
-
-                {/* Status filter tabs */}
-                <div className="flex items-center gap-2 flex-wrap">
-                    {[
-                        { label: 'All', value: null },
-                        { label: 'Draft', value: 'draft' },
-                        { label: 'Paid', value: 'paid' },
-                        { label: 'Cancelled', value: 'cancelled' },
-                    ].map((tab) => {
-                        const isActive = (tab.value === null && !filters.status) || filters.status === tab.value;
-                        const href = tab.value
-                            ? `/rfp/records?status=${tab.value}${filters.overdue === '1' ? '&overdue=1' : ''}`
-                            : '/rfp/records';
-                        return (
-                            <Link
-                                key={tab.label}
-                                href={href}
-                                className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
-                                    isActive
-                                        ? 'bg-primary text-primary-foreground border-primary'
-                                        : 'bg-card text-muted-foreground border-border hover:bg-muted'
-                                }`}
-                            >
-                                {tab.label}
-                            </Link>
-                        );
-                    })}
-
-                    {filters.overdue === '1' && (
-                        <span className="inline-flex items-center gap-1 text-xs bg-orange-50 text-orange-700 border border-orange-200 rounded px-2 py-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            Overdue only
-                            <Link
-                                href={`/rfp/records${filters.status ? `?status=${filters.status}` : ''}`}
-                                className="ml-1 hover:text-destructive"
-                            >✕</Link>
-                        </span>
-                    )}
-                </div>
-
-                <div className="border rounded-lg bg-card">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-32.5">RFP No.</TableHead>
-                                <TableHead>Office</TableHead>
-                                <TableHead>Requestor</TableHead>
-                                <TableHead>Payee</TableHead>
-                                <TableHead>Prepared</TableHead>
-                                <TableHead>Due Date</TableHead>
-                                <TableHead>Currency</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Updated</TableHead>
-                                <TableHead className="w-15">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredRfps.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                                        <FileText className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                                        <p className="text-sm">No Records found</p>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredRfps.map((rfp_record) => (
-                                    <TableRow key={rfp_record.id}>
-                                        <TableCell className="font-medium">
-                                            <div className="flex items-center gap-2">
-                                                <Link
-                                                    href={`/rfp/records/${rfp_record.id}`}
-                                                    className="hover:underline text-primary"
-                                                >
-                                                    {rfp_record.rfp_number}
-                                                </Link>
-                                                {rfp_record.status === 'draft' &&
-                                                    new Date(rfp_record.due_date) < new Date(new Date().toDateString()) && (
-                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
-                                                        <AlertTriangle className="h-3 w-3" />
-                                                        Overdue
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <RfpBadge type="office" value={rfp_record.office} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <p className="text-sm">{rfp_record.prepared_by?.name ?? 'N/A'}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {rfp_record.prepared_by?.department?.department ?? ''}
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <RfpBadge type="payee" value={rfp_record.payee_type} />
-
-                                                <p className="text-xs text-muted-foreground">
-                                                    {rfp_record.payee_type === 'supplier'
-                                                    ? rfp_record.supplier_code
-                                                    : rfp_record.employee_code}
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm text-muted-foreground">
-                                                <div>{formatDate(rfp_record.created_at)}</div>
-                                                <div className="text-xs">
-                                                    {formatTime(rfp_record.created_at)}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm text-muted-foreground">
-                                                {formatDate(rfp_record.due_date)}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="text-sm font-medium">
-                                                {rfp_record.currency?.code || 'PHP'}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <RfpBadge type="status" value={rfp_record.status} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-sm text-muted-foreground">
-                                                <div>{formatDate(rfp_record.updated_at)}</div>
-                                                <div className="text-xs">
-                                                    {formatTime(rfp_record.updated_at)}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-8 w-8 p-0"
-                                                    >
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem asChild>
-                                                        <Link href={`/rfp/records/${rfp_record.id}`}>
-                                                            <FileText className="h-4 w-4 mr-2" />
-                                                            View
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handlePrint(rfp_record)}>
-                                                        <Printer className="h-4 w-4 mr-2" />
-                                                        Print
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-
-                {rfp_records.last_page > 1 && (
-                    <div className="flex items-center justify-between text-sm text-muted-foreground px-2">
-                        <p>
-                            Showing {(rfp_records.current_page - 1) * rfp_records.per_page + 1} to{' '}
-                            {Math.min(rfp_records.current_page * rfp_records.per_page, rfp_records.total)} of{' '}
-                            {rfp_records.total} results
-                        </p>
-                        <Pagination className="w-auto mx-0">
-                            <PaginationContent>
-                                <PaginationItem>
-                                    <PaginationPrevious
-                                        href={rfp_records.current_page > 1 ? `/rfp/records?page=${rfp_records.current_page - 1}` : '#'}
-                                        className={rfp_records.current_page === 1 ? 'pointer-events-none opacity-50' : ''}
-                                    />
-                                </PaginationItem>
-
-                                {/* First page */}
-                                <PaginationItem>
-                                    <PaginationLink
-                                        href="/rfp/records?page=1"
-                                        isActive={rfp_records.current_page === 1}
-                                    >
-                                        1
-                                    </PaginationLink>
-                                </PaginationItem>
-
-                                {rfp_records.current_page > 3 && <PaginationEllipsis />}
-
-                                {Array.from({ length: rfp_records.last_page }, (_, i) => i + 1)
-                                    .filter(page =>
-                                        page !== 1 &&
-                                        page !== rfp_records.last_page &&
-                                        page >= rfp_records.current_page - 1 &&
-                                        page <= rfp_records.current_page + 1
-                                    )
-                                    .map(page => (
-                                        <PaginationItem key={page}>
-                                            <PaginationLink
-                                                href={`/rfp/records?page=${page}`}
-                                                isActive={rfp_records.current_page === page}
-                                            >
-                                                {page}
-                                            </PaginationLink>
-                                        </PaginationItem>
-                                    ))
-                                }
-
-                                {rfp_records.current_page < rfp_records.last_page - 2 && <PaginationEllipsis />}
-
-                                {/* Last page */}
-                                {rfp_records.last_page > 1 && (
-                                    <PaginationItem>
-                                        <PaginationLink
-                                            href={`/rfp/records?page=${rfp_records.last_page}`}
-                                            isActive={rfp_records.current_page === rfp_records.last_page}
-                                        >
-                                            {rfp_records.last_page}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                )}
-
-                                <PaginationItem>
-                                    <PaginationNext
-                                        href={rfp_records.current_page < rfp_records.last_page ? `/rfp/records?page=${rfp_records.current_page + 1}` : '#'}
-                                        className={rfp_records.current_page === rfp_records.last_page ? 'pointer-events-none opacity-50' : ''}
-                                    />
-                                </PaginationItem>
-                            </PaginationContent>
-                        </Pagination>
-                    </div>
-                )}
+                <DataTable
+                    columns={columns}
+                    data={rfp_records}
+                    exportFileName="rfp-records"
+                    storageKey="rfp-records"
+                    initialColumnVisibility={{ updated_at: false }}
+                />
             </div>
 
-            <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete RFP</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the RFP
-                            record and all associated details.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog open={!!cancelId} onOpenChange={() => setCancelId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel RFP</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to cancel this RFP? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Back</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleCancel}
-                            className="bg-orange-600 text-white hover:bg-orange-700"
-                        >
-                            Cancel RFP
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <RfpActionDialogs
+                rfpNumber={rfp_records.find(r => r.id === activeAction?.id)?.rfp_number ?? ''}
+                activeAction={activeAction?.type ?? null}
+                onClose={() => setActiveAction(null)}
+                onConfirm={handleAction}
+            />
 
             <RfpPdfPreviewDialog
                 rfp_record={previewRfp}
                 open={!!previewRfp}
-                onClose={handleClosePdf}
+                onClose={() => setPreviewRfp(null)}
             />
         </AppLayout>
     );

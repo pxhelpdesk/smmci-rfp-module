@@ -19,7 +19,7 @@ export default function Show({ category }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Categories', href: '/rfp/categories' },
                 { title: category.name, href: `/rfp/categories/${category.id}` },
             ]}

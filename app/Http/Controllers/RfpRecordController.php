@@ -39,40 +39,34 @@ class RfpRecordController extends Controller implements HasMiddleware
         $userId = $user->id;
         $departmentId = $user->department_id;
 
-        $sameDeptUserIds = User::where('department_id', $departmentId)
-            ->pluck('id')
-            ->toArray();
-
-        $signedRfpIds = RfpSign::where('user_id', $userId)
-            ->pluck('rfp_record_id')
-            ->toArray();
-
         $query = RfpRecord::with([
             'currency',
             'details.usage.category',
             'signs.user.department',
             'preparedBy.department',
             'supplier',
-        ])
-        ->where(function ($q) use ($userId, $sameDeptUserIds, $signedRfpIds) {
-            $q->where('prepared_by', $userId)
-                ->orWhereIn('prepared_by', $sameDeptUserIds)
-                ->orWhereIn('id', $signedRfpIds);
-        });
+        ]);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if (!$user->hasPermissionTo('rfp-record-all')) {
+            $sameDeptUserIds = User::where('department_id', $departmentId)
+                ->pluck('id')
+                ->toArray();
+
+            $signedRfpIds = RfpSign::where('user_id', $userId)
+                ->pluck('rfp_record_id')
+                ->toArray();
+
+            $query->where(function ($q) use ($userId, $sameDeptUserIds, $signedRfpIds) {
+                $q->where('prepared_by', $userId)
+                    ->orWhereIn('prepared_by', $sameDeptUserIds)
+                    ->orWhereIn('id', $signedRfpIds);
+            });
         }
 
-        if ($request->boolean('overdue')) {
-            $query->whereDate('due_date', '<', now());
-        }
-
-        $rfp_records = $query->latest()->paginate(15)->withQueryString();
+        $rfp_records = $query->latest()->get();
 
         return Inertia::render('rfp/records/index', [
             'rfp_records' => $rfp_records,
-            'filters' => $request->only(['status', 'overdue']),
         ]);
     }
 
@@ -82,6 +76,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
         $users = User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
             ->with('department:id,department')
+            ->where('is_locked', false)
             ->orderBy('first_name')
             ->get()
             ->map(fn($u) => ['id' => $u->id, 'name' => $u->name, 'department' => $u->department?->department]);
@@ -214,7 +209,7 @@ class RfpRecordController extends Controller implements HasMiddleware
         $logs = RfpLog::where('rfp_record_id', $record->id)
             ->with('user.department')
             ->latest()
-            ->paginate(10, ['*'], 'logs_page');
+            ->get();
 
         return Inertia::render('rfp/records/show', [
             'rfp_record' => $record,
@@ -230,6 +225,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
         $users = User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
             ->with('department:id,department')
+            ->where('is_locked', false)
             ->orderBy('first_name')
             ->get()
             ->map(fn($u) => ['id' => $u->id, 'name' => $u->name, 'department' => $u->department?->department]);

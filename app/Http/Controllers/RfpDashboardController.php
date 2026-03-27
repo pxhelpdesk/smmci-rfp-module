@@ -13,30 +13,36 @@ class RfpDashboardController extends Controller
         $userId = $user->id;
         $departmentId = $user->department_id;
 
-        $sameDeptUserIds = \App\Models\User::where('department_id', $departmentId)
-            ->pluck('id')
-            ->toArray();
+        $baseQuery = RfpRecord::query();
 
-        $signedRfpIds = \App\Models\RfpSign::where('user_id', $userId)
-            ->pluck('rfp_record_id')
-            ->toArray();
+        if (!$user->hasPermissionTo('rfp-record-all')) {
+            $sameDeptUserIds = \App\Models\User::where('department_id', $departmentId)
+                ->pluck('id')
+                ->toArray();
 
-        $baseQuery = RfpRecord::where(function ($q) use ($userId, $sameDeptUserIds, $signedRfpIds) {
-            $q->where('prepared_by', $userId)
-                ->orWhereIn('prepared_by', $sameDeptUserIds)
-                ->orWhereIn('id', $signedRfpIds);
-        });
+            $signedRfpIds = \App\Models\RfpSign::where('user_id', $userId)
+                ->pluck('rfp_record_id')
+                ->toArray();
+
+            $baseQuery->where(function ($q) use ($userId, $sameDeptUserIds, $signedRfpIds) {
+                $q->where('prepared_by', $userId)
+                    ->orWhereIn('prepared_by', $sameDeptUserIds)
+                    ->orWhereIn('id', $signedRfpIds);
+            });
+        }
 
         $totalRecords = (clone $baseQuery)->count();
-        $totalDraft = (clone $baseQuery)->where('status', 'draft')->count();
-        $totalPaid = (clone $baseQuery)->where('status', 'paid')->count();
+        $totalDraft  = (clone $baseQuery)->where('status', 'draft')->count();
+        // $totalPaid = (clone $baseQuery)->where('status', 'paid')->count();
         $totalCancelled = (clone $baseQuery)->where('status', 'cancelled')->count();
-        $totalGrandAmount = (clone $baseQuery)->sum('subtotal_details_amount'); // grand_total_amount
+        $totalGrandAmount = (clone $baseQuery)
+            ->where('status', '!=', 'cancelled')
+            ->sum('subtotal_details_amount');
 
-        $overdueCount = (clone $baseQuery)
-            ->where('status', 'draft')
-            ->whereDate('due_date', '<', now())
-            ->count();
+        // $overdueCount = (clone $baseQuery)
+        //     ->where('status', 'draft')
+        //     ->whereDate('due_date', '<', now())
+        //     ->count();
 
         $recentRecords = (clone $baseQuery)
             ->with(['currency', 'preparedBy.department'])
@@ -47,12 +53,12 @@ class RfpDashboardController extends Controller
 
         return Inertia::render('dashboard', [
             'stats' => [
-                'total_records'     => $totalRecords,
-                'total_draft'       => $totalDraft,
-                'total_paid'        => $totalPaid,
-                'total_cancelled'   => $totalCancelled,
-                'total_grand_amount'=> (float) $totalGrandAmount,
-                'overdue_count'     => $overdueCount,
+                'total_records' => $totalRecords,
+                'total_draft' => $totalDraft,
+                // 'total_paid' => $totalPaid,
+                'total_cancelled' => $totalCancelled,
+                'total_grand_amount' => (float) $totalGrandAmount,
+                // 'overdue_count' => $overdueCount,
             ],
             'recent_records' => $recentRecords,
         ]);

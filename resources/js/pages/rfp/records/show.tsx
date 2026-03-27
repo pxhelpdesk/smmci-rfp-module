@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight, Ban, AlertTriangle, HandCoins, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight, Ban, RotateCcw } from 'lucide-react';
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -14,45 +14,48 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
 import type { RfpRecord, RfpLog } from '@/types';
 import { formatDate, formatDateTime, formatAmount } from '@/lib/formatters';
 import { usePermission } from '@/hooks/use-permission';
 import { RfpBadge } from '@/components/rfp/rfp-display';
 import { RfpPdfPreviewDialog } from '@/components/rfp/rfp-pdf-preview-dialog';
 import { RfpActionDialogs, type RfpActionType } from '@/components/rfp/rfp-action-dialogs';
+import {
+    ColumnDef,
+    ColumnFiltersState,
+    SortingState,
+    VisibilityState,
+    flexRender,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable,
+} from '@tanstack/react-table';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { ArrowUpDown, ArrowUp, ArrowDown, RotateCcw as ResetIcon, Download, Columns } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import * as XLSX from 'xlsx';
 
 type Props = {
     rfp_record: RfpRecord;
-    logs: {
-        data: RfpLog[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-    };
+    logs: RfpLog[];
 };
 
 export default function Show({ rfp_record, logs }: Props) {
-    const [activeAction, setActiveAction] = useState<RfpActionType>(null)
+    const [activeAction, setActiveAction] = useState<RfpActionType>(null);
     const [expandedLogIds, setExpandedLogIds] = useState<Set<number>>(new Set());
     const [previewPdf, setPreviewPdf] = useState(false);
 
@@ -67,102 +70,115 @@ export default function Show({ rfp_record, logs }: Props) {
             onSuccess: () => setActiveAction(null),
         });
     };
-    const handleMarkAsPaid = (remarks: string) => {
-        router.patch(`/rfp/records/${rfp_record.id}/paid`, { remarks }, {
-            onSuccess: () => setActiveAction(null),
-        });
-    };
     const handleRevert = (remarks: string) => {
         router.patch(`/rfp/records/${rfp_record.id}/revert`, { remarks }, {
             onSuccess: () => setActiveAction(null),
         });
     };
 
-    const handlePrint = () => {
-        setPreviewPdf(true);
-    };
-
-    const handleClosePdf = () => {
-        setPreviewPdf(false);
-    };
+    const handlePrint = () => setPreviewPdf(true);
+    const handleClosePdf = () => setPreviewPdf(false);
 
     const toggleLogExpand = (logId: number) => {
         setExpandedLogIds(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(logId)) {
-                newSet.delete(logId);
-            } else {
-                newSet.add(logId);
-            }
+            if (newSet.has(logId)) newSet.delete(logId);
+            else newSet.add(logId);
             return newSet;
         });
     };
 
     const parseLogDetails = (details: string | null) => {
         if (!details) return null;
-        try {
-            return JSON.parse(details);
-        } catch {
-            return null;
-        }
+        try { return JSON.parse(details); } catch { return null; }
     };
 
-    const renderLogsPaginationItems = () => {
-        const items = [];
-        const currentPage = logs.current_page;
-        const lastPage = logs.last_page;
+    // ── Log DataTable (inline, with sub-row support) ──────────────────────
+    const [sorting, setSorting] = useState<SortingState>([]);
+    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+    const [globalFilter, setGlobalFilter] = useState('');
+    const [pageSize, setPageSize] = useState(10);
+    const [pageIndex, setPageIndex] = useState(0);
 
-        // Always show first page
-        items.push(
-            <PaginationItem key={1}>
-                <PaginationLink
-                    href={`/rfp/records/${rfp_record.id}?logs_page=1#logs`}
-                    isActive={currentPage === 1}
-                >
-                    1
-                </PaginationLink>
-            </PaginationItem>
+    const logColumns: ColumnDef<RfpLog>[] = [
+        {
+            id: 'expand',
+            header: '',
+            size: 40,
+            enableSorting: false,
+            enableColumnFilter: false,
+            cell: () => null, // rendered manually below
+        },
+        {
+            accessorKey: 'user',
+            header: 'User',
+            size: 160,
+            accessorFn: (row) => row.user?.name ?? 'System',
+        },
+        {
+            accessorKey: 'from',
+            header: 'From',
+            size: 120,
+            accessorFn: (row) => row.from ?? '',
+        },
+        {
+            accessorKey: 'into',
+            header: 'To',
+            size: 120,
+            accessorFn: (row) => row.into ?? '',
+        },
+        {
+            accessorKey: 'created_at',
+            header: 'Date',
+            size: 160,
+            accessorFn: (row) => formatDateTime(row.created_at),
+        },
+        {
+            accessorKey: 'remarks',
+            header: 'Remarks',
+            accessorFn: (row) => row.remarks ?? '',
+        },
+    ];
+
+    const logTable = useReactTable({
+        data: logs,
+        columns: logColumns,
+        state: {
+            sorting,
+            columnFilters,
+            columnVisibility,
+            globalFilter,
+            pagination: { pageIndex, pageSize },
+        },
+        onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
+        onColumnVisibilityChange: setColumnVisibility,
+        onGlobalFilterChange: setGlobalFilter,
+        onPaginationChange: (updater) => {
+            const next = typeof updater === 'function' ? updater({ pageIndex, pageSize }) : updater;
+            setPageIndex(next.pageIndex);
+            setPageSize(next.pageSize);
+        },
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+    });
+
+    const handleLogExport = () => {
+        const rows = logTable.getFilteredRowModel().rows.map((row) =>
+            row.getVisibleCells()
+                .filter((cell) => cell.column.id !== 'expand')
+                .reduce((acc, cell) => {
+                    acc[String(cell.column.columnDef.header ?? cell.column.id)] = cell.getValue();
+                    return acc;
+                }, {} as Record<string, unknown>)
         );
-
-        // Show ellipsis if needed
-        if (currentPage > 3) {
-            items.push(<PaginationEllipsis key="ellipsis-start" />);
-        }
-
-        // Show pages around current page
-        for (let i = Math.max(2, currentPage - 1); i <= Math.min(lastPage - 1, currentPage + 1); i++) {
-            items.push(
-                <PaginationItem key={i}>
-                    <PaginationLink
-                        href={`/rfp/records/${rfp_record.id}?logs_page=${i}#logs`}
-                        isActive={currentPage === i}
-                    >
-                        {i}
-                    </PaginationLink>
-                </PaginationItem>
-            );
-        }
-
-        // Show ellipsis if needed
-        if (currentPage < lastPage - 2) {
-            items.push(<PaginationEllipsis key="ellipsis-end" />);
-        }
-
-        // Always show last page if there's more than 1 page
-        if (lastPage > 1) {
-            items.push(
-                <PaginationItem key={lastPage}>
-                    <PaginationLink
-                        href={`/rfp/records/${rfp_record.id}?logs_page=${lastPage}#logs`}
-                        isActive={currentPage === lastPage}
-                    >
-                        {lastPage}
-                    </PaginationLink>
-                </PaginationItem>
-            );
-        }
-
-        return items;
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Logs');
+        XLSX.writeFile(wb, `rfp-activity-logs.xlsx`);
     };
 
     const { can } = usePermission();
@@ -170,7 +186,7 @@ export default function Show({ rfp_record, logs }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Records', href: '/rfp/records' },
                 { title: rfp_record.rfp_number, href: `/rfp/records/${rfp_record.id}` },
             ]}
@@ -183,13 +199,6 @@ export default function Show({ rfp_record, logs }: Props) {
                         <h1 className="text-2xl font-semibold">View RFP</h1>
                         <div className="flex items-center gap-2 mt-0.5">
                             <p className="text-sm text-muted-foreground">{rfp_record.rfp_number}</p>
-                            {rfp_record.status === 'draft' &&
-                                new Date(rfp_record.due_date) < new Date(new Date().toDateString()) && (
-                                <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
-                                    <AlertTriangle className="h-3 w-3" />
-                                    Overdue
-                                </span>
-                            )}
                         </div>
                     </div>
                     <div className="flex gap-2">
@@ -209,17 +218,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                     <Edit className="h-4 w-4 mr-1.5" />
                                     Edit
                                 </Link>
-                            </Button>
-                        )}
-                        {can('rfp-record-paid') && rfp_record.status === 'draft' && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setActiveAction('paid')}
-                                className="text-green-600 hover:text-green-600"
-                            >
-                                <HandCoins className="h-4 w-4 mr-1.5" />
-                                Mark as Paid
                             </Button>
                         )}
                         {can('rfp-record-revert') && (rfp_record.status === 'paid' || rfp_record.status === 'cancelled') && (
@@ -426,9 +424,7 @@ export default function Show({ rfp_record, logs }: Props) {
                                         rfp_record.details.map((detail) => (
                                             <TableRow key={detail.id}>
                                                 <TableCell>
-                                                    {detail.usage
-                                                        ? `${detail.usage.description}`
-                                                        : 'N/A'}
+                                                    {detail.usage ? `${detail.usage.description}` : 'N/A'}
                                                 </TableCell>
                                                 <TableCell className="text-right font-medium">
                                                     {formatAmount(Number(detail.total_amount))}
@@ -502,40 +498,124 @@ export default function Show({ rfp_record, logs }: Props) {
                     </CardContent>
                 </Card>
 
+                {/* Activity History */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Activity History</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="border rounded-lg">
+                    <CardContent className="space-y-3">
+                        {/* Toolbar */}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Input
+                                    placeholder="Search all columns..."
+                                    value={globalFilter}
+                                    onChange={(e) => setGlobalFilter(e.target.value)}
+                                    className="h-8 w-64"
+                                />
+                                <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPageIndex(0); }}>
+                                    <SelectTrigger className="h-8 w-24">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {[10, 25, 50, 100].map((n) => (
+                                            <SelectItem key={n} value={String(n)}>{n} rows</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="h-8">
+                                            <Columns className="mr-2 h-4 w-4" />Columns
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {logTable.getAllLeafColumns()
+                                            .filter((col) => col.id !== 'expand')
+                                            .map((col) => (
+                                                <DropdownMenuCheckboxItem
+                                                    key={col.id}
+                                                    checked={col.getIsVisible()}
+                                                    onCheckedChange={(val) => col.toggleVisibility(val)}
+                                                    className="capitalize"
+                                                >
+                                                    {String(col.columnDef.header ?? col.id)}
+                                                </DropdownMenuCheckboxItem>
+                                            ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button variant="outline" size="sm" className="h-8" onClick={handleLogExport}>
+                                    <Download className="mr-2 h-4 w-4" />Export
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-8" onClick={() => {
+                                    setSorting([]);
+                                    setColumnFilters([]);
+                                    setColumnVisibility({});
+                                    setGlobalFilter('');
+                                    setPageSize(10);
+                                    setPageIndex(0);
+                                }}>
+                                    <ResetIcon className="mr-2 h-4 w-4" />Reset
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Table */}
+                        <div className="rounded-md border overflow-x-auto">
                             <Table>
                                 <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-12.5"></TableHead>
-                                        <TableHead>User</TableHead>
-                                        <TableHead>From</TableHead>
-                                        <TableHead>To</TableHead>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Remarks</TableHead>
-                                    </TableRow>
+                                    {logTable.getHeaderGroups().map((hg) => (
+                                        <TableRow key={hg.id}>
+                                            {hg.headers.map((header) => (
+                                                <TableHead
+                                                    key={header.id}
+                                                    className={`whitespace-nowrap bg-background ${header.column.getCanSort() ? 'cursor-pointer select-none' : ''}`}
+                                                    onClick={header.column.getToggleSortingHandler()}
+                                                    style={{ minWidth: header.column.columnDef.size, width: header.column.columnDef.size }}
+                                                >
+                                                    <div className="flex items-center gap-1">
+                                                        {flexRender(header.column.columnDef.header, header.getContext())}
+                                                        {header.column.getCanSort() && (
+                                                            header.column.getIsSorted() === 'asc' ? <ArrowUp className="h-3 w-3" /> :
+                                                            header.column.getIsSorted() === 'desc' ? <ArrowDown className="h-3 w-3" /> :
+                                                            <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                                                        )}
+                                                    </div>
+                                                    {header.column.getCanFilter() && (
+                                                        <Input
+                                                            placeholder="Filter..."
+                                                            value={(header.column.getFilterValue() as string) ?? ''}
+                                                            onChange={(e) => header.column.setFilterValue(e.target.value)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="mt-1 h-7 text-xs font-normal"
+                                                        />
+                                                    )}
+                                                </TableHead>
+                                            ))}
+                                        </TableRow>
+                                    ))}
                                 </TableHeader>
                                 <TableBody>
-                                    {!logs.data || logs.data.length === 0 ? (
+                                    {logTable.getRowModel().rows.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                                                No logs found
+                                            <TableCell colSpan={logColumns.length} className="py-8 text-center text-sm text-muted-foreground">
+                                                No logs found.
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        logs.data.map((log) => {
+                                        logTable.getRowModel().rows.map((row) => {
+                                            const log = row.original;
                                             const parsedDetails = parseLogDetails(log.details);
                                             const isExpanded = expandedLogIds.has(log.id);
                                             const hasDetails = parsedDetails && Array.isArray(parsedDetails) && parsedDetails.length > 0;
 
                                             return (
-                                                <React.Fragment key={log.id}>
+                                                <React.Fragment key={row.id}>
                                                     <TableRow>
-                                                        <TableCell>
+                                                        {/* Expand toggle cell */}
+                                                        <TableCell style={{ width: 40, minWidth: 40 }}>
                                                             {hasDetails && (
                                                                 <Button
                                                                     variant="ghost"
@@ -551,33 +631,38 @@ export default function Show({ rfp_record, logs }: Props) {
                                                                 </Button>
                                                             )}
                                                         </TableCell>
-                                                        <TableCell className="font-medium">
-                                                            {log.user?.name || 'System'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {log.from ? (
-                                                                <Badge variant="outline">{log.from}</Badge>
-                                                            ) : 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {log.into ? (
-                                                                <Badge variant="outline">{log.into}</Badge>
-                                                            ) : 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {formatDateTime(log.created_at)}
-                                                        </TableCell>
-                                                        <TableCell className="text-muted-foreground">
-                                                            {log.remarks || 'N/A'}
-                                                        </TableCell>
+                                                        {/* All other visible cells except the expand column */}
+                                                        {row.getVisibleCells().filter(c => c.column.id !== 'expand').map((cell) => {
+                                                            const val = cell.getValue() as string;
+                                                            if (cell.column.id === 'from' || cell.column.id === 'into') {
+                                                                return (
+                                                                    <TableCell key={cell.id}>
+                                                                        {val ? <Badge variant="outline">{val}</Badge> : 'N/A'}
+                                                                    </TableCell>
+                                                                );
+                                                            }
+                                                            if (cell.column.id === 'user') {
+                                                                return (
+                                                                    <TableCell key={cell.id} className="font-medium">{val}</TableCell>
+                                                                );
+                                                            }
+                                                            if (cell.column.id === 'remarks') {
+                                                                return (
+                                                                    <TableCell key={cell.id} className="text-muted-foreground">{val || 'N/A'}</TableCell>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <TableCell key={cell.id}>{val || 'N/A'}</TableCell>
+                                                            );
+                                                        })}
                                                     </TableRow>
+
+                                                    {/* Expandable sub-row for changes */}
                                                     {isExpanded && hasDetails && (
                                                         <TableRow>
-                                                            <TableCell colSpan={6} className="bg-muted/50 p-0">
+                                                            <TableCell colSpan={logColumns.filter(c => logTable.getColumn((c as any).accessorKey ?? (c as any).id)?.getIsVisible() !== false).length + 1} className="bg-muted/50 p-0">
                                                                 <div className="px-12 py-3">
-                                                                    <p className="text-xs font-medium text-muted-foreground mb-2">
-                                                                        Changes:
-                                                                    </p>
+                                                                    <p className="text-xs font-medium text-muted-foreground mb-2">Changes:</p>
                                                                     <div className="border rounded-md bg-background">
                                                                         <table className="w-full text-xs">
                                                                             <thead className="bg-muted/50">
@@ -590,15 +675,9 @@ export default function Show({ rfp_record, logs }: Props) {
                                                                             <tbody>
                                                                                 {parsedDetails.map((change: any, idx: number) => (
                                                                                     <tr key={idx} className="border-t">
-                                                                                        <td className="px-3 py-2 font-medium">
-                                                                                            {change.field}
-                                                                                        </td>
-                                                                                        <td className="px-3 py-2 text-muted-foreground wrap-break-word">
-                                                                                            {change.old}
-                                                                                        </td>
-                                                                                        <td className="px-3 py-2 text-primary wrap-break-word">
-                                                                                            {change.new}
-                                                                                        </td>
+                                                                                        <td className="px-3 py-2 font-medium">{change.field}</td>
+                                                                                        <td className="px-3 py-2 text-muted-foreground break-words">{change.old}</td>
+                                                                                        <td className="px-3 py-2 text-primary break-words">{change.new}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                             </tbody>
@@ -616,27 +695,18 @@ export default function Show({ rfp_record, logs }: Props) {
                             </Table>
                         </div>
 
-                        {logs.last_page > 1 && (
-                            <Pagination>
-                                <PaginationContent>
-                                    <PaginationItem>
-                                        <PaginationPrevious
-                                            href={logs.current_page > 1 ? `/rfp/records/${rfp_record.id}?logs_page=${logs.current_page - 1}#logs` : '#'}
-                                            className={logs.current_page === 1 ? 'pointer-events-none opacity-50' : ''}
-                                        />
-                                    </PaginationItem>
-
-                                    {renderLogsPaginationItems()}
-
-                                    <PaginationItem>
-                                        <PaginationNext
-                                            href={logs.current_page < logs.last_page ? `/rfp/records/${rfp_record.id}?logs_page=${logs.current_page + 1}#logs` : '#'}
-                                            className={logs.current_page === logs.last_page ? 'pointer-events-none opacity-50' : ''}
-                                        />
-                                    </PaginationItem>
-                                </PaginationContent>
-                            </Pagination>
-                        )}
+                        {/* Pagination */}
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <p>
+                                Showing {logTable.getRowModel().rows.length === 0 ? 0 : pageIndex * pageSize + 1}–
+                                {Math.min((pageIndex + 1) * pageSize, logTable.getFilteredRowModel().rows.length)} of {logTable.getFilteredRowModel().rows.length} records
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={() => logTable.previousPage()} disabled={!logTable.getCanPreviousPage()}>Previous</Button>
+                                <span>Page {pageIndex + 1} of {logTable.getPageCount()}</span>
+                                <Button variant="outline" size="sm" onClick={() => logTable.nextPage()} disabled={!logTable.getCanNextPage()}>Next</Button>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -648,7 +718,6 @@ export default function Show({ rfp_record, logs }: Props) {
                 onConfirm={(action, remarks) => {
                     if (action === 'delete') handleDelete(remarks);
                     else if (action === 'cancel') handleCancel(remarks);
-                    else if (action === 'paid') handleMarkAsPaid(remarks);
                     else if (action === 'revert') handleRevert(remarks);
                 }}
             />

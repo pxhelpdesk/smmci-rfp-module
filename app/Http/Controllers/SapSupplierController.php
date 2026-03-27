@@ -19,8 +19,7 @@ class SapSupplierController extends Controller implements HasMiddleware
 
     public function index(): Response
     {
-        $suppliers = SapSupplier::orderBy('card_name')
-            ->paginate(15);
+        $suppliers = SapSupplier::orderBy('card_name')->get();
 
         return Inertia::render('sap/suppliers/index', [
             'suppliers' => $suppliers,

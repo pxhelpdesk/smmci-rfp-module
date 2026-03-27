@@ -42,7 +42,6 @@ export type UserOption = {
     department?: string;
 };
 
-
 export type RfpRecord = {
     id: number;
     prepared_by?: RfpUser;
@@ -96,7 +95,6 @@ export type RfpSign = {
     updated_at: string;
 };
 
-
 export type RfpLog = {
     id: number;
     rfp_record_id: number;
@@ -114,12 +112,11 @@ export type RfpLog = {
 export type RfpDashboardStats = {
     total_records: number;
     total_draft: number;
-    total_paid: number;
+    // total_paid: number;
     total_cancelled: number;
     total_grand_amount: number;
-    overdue_count: number;
+    // overdue_count: number;
 };
-
 
 // SAP Data Types
 export type SapAccountOption = {

@@ -24,7 +24,7 @@ export default function Create() {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Categories', href: '/rfp/categories' },
                 { title: 'Create', href: '/rfp/categories/create' },
             ]}

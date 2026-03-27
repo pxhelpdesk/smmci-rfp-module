@@ -72,6 +72,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     const [showLogDialog, setShowLogDialog] = useState(false);
     const [logRemarks, setLogRemarks] = useState('');
     const [detectedChanges, setDetectedChanges] = useState<ChangeLog[]>([]);
+    const [logRemarksError, setLogRemarksError] = useState(false);
 
     // Per-category usage cache to support per-row category+usage selection
     const [usagesByCategory, setUsagesByCategory] = useState<Record<number, RfpUsage[]>>({});
@@ -325,10 +326,10 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         if (detectedChanges.length > 0) {
             setShowLogDialog(true);
         } else {
+            const signs = buildSigns(); // build before transform
             transform(d => ({
                 ...d,
-                signs: buildSigns(),
-                // Strip UI-only rfp_category_id before submitting
+                signs,
                 details: d.details.map(({ rfp_category_id, ...rest }) => rest),
             }));
             put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
@@ -336,12 +337,17 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     };
 
     const handleConfirmUpdate = () => {
+        if (!logRemarks.trim()) {
+            setLogRemarksError(true);
+            return;
+        }
         setShowLogDialog(false);
+        setLogRemarksError(false);
+        const signs = buildSigns();
         transform(d => ({
             ...d,
-            signs: buildSigns(),
+            signs,
             log_remarks: logRemarks,
-            // Strip UI-only rfp_category_id before submitting
             details: d.details.map(({ rfp_category_id, ...rest }) => rest),
         }));
         put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
@@ -369,7 +375,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Dashboard', href: '/rfp/dashboard' },
                 { title: 'Records', href: '/rfp/records' },
                 { title: rfp_record.rfp_number, href: `/rfp/records/${rfp_record.id}/edit` },
             ]}
@@ -739,7 +745,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                     userOptions={userOptions}
                     onChange={setSignatories}
                     office={data.office}
-                    subtotalAmount={data.details.reduce((sum, d) => sum + (Number(d.total_amount) ?? 0), 0)}
+                    subtotalAmount={data.details.reduce((sum, d) => sum + (Number(d.total_amount ?? 0)), 0)}
                     residentManager={residentManager}
                     departmentHead={departmentHead}
                     cfo={cfo}
@@ -748,7 +754,10 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             </form>
 
             {/* Change Log Confirmation Dialog */}
-            <AlertDialog open={showLogDialog} onOpenChange={setShowLogDialog}>
+            <AlertDialog open={showLogDialog} onOpenChange={(open) => {
+                if (!open) setLogRemarksError(false);
+                setShowLogDialog(open);
+            }}>
                 <AlertDialogContent className="max-w-3xl p-0">
                     <AlertDialogHeader className="px-6 pt-6 pb-3">
                         <AlertDialogTitle>Confirm Update</AlertDialogTitle>
@@ -783,16 +792,22 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
                         <div className="space-y-1.5">
                             <Label htmlFor="log_remarks" className="text-sm">
-                                Remarks <span className="text-muted-foreground">(Optional)</span>
+                                Remarks <span className="text-destructive ml-0.5">*</span>
                             </Label>
                             <Textarea
                                 id="log_remarks"
                                 value={logRemarks}
-                                onChange={(e) => setLogRemarks(e.target.value)}
+                                onChange={(e) => {
+                                    setLogRemarks(e.target.value);
+                                    if (logRemarksError && e.target.value.trim()) setLogRemarksError(false);
+                                }}
                                 placeholder="Add any additional notes about these changes..."
                                 rows={3}
-                                className="resize-none"
+                                className={`resize-none ${logRemarksError ? 'border-destructive' : ''}`}
                             />
+                            {logRemarksError && (
+                                <p className="text-xs text-destructive">Remarks is required.</p>
+                            )}
                         </div>
                     </div>
 
