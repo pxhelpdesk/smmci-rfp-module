@@ -62,7 +62,7 @@ export function RfpPdfPreviewDialog({ rfp_record, open, onClose }: Props) {
         if (!urlRef.current || !rfp_record) return;
         const link = document.createElement('a');
         link.href = urlRef.current;
-        link.download = `SWP-RFP_${rfp_record.rfp_number}_generated-pdf.pdf`;
+        link.download = `SWP-RFP_${rfp_record.rfp_number}_generated.pdf`;
         link.click();
     };
 
