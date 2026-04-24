@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight, Ban, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight, Ban, RotateCcw, FileText } from 'lucide-react';
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,10 @@ export default function Show({ rfp_record, logs }: Props) {
     const [expandedLogIds, setExpandedLogIds] = useState<Set<number>>(new Set());
     const [previewPdf, setPreviewPdf] = useState(false);
 
+    const isPosted = rfp_record.status === 'posted';
+    const isCancelled = rfp_record.status === 'cancelled';
+    const isDraft = rfp_record.status === 'draft';
+
     const handleDelete = (remarks: string) => {
         router.delete(`/rfp/records/${rfp_record.id}`, {
             data: { remarks },
@@ -67,6 +71,11 @@ export default function Show({ rfp_record, logs }: Props) {
     };
     const handleCancel = (remarks: string) => {
         router.patch(`/rfp/records/${rfp_record.id}/cancel`, { remarks }, {
+            onSuccess: () => setActiveAction(null),
+        });
+    };
+    const handlePost = (remarks: string) => {
+        router.patch(`/rfp/records/${rfp_record.id}/post`, { remarks }, {
             onSuccess: () => setActiveAction(null),
         });
     };
@@ -93,7 +102,6 @@ export default function Show({ rfp_record, logs }: Props) {
         try { return JSON.parse(details); } catch { return null; }
     };
 
-    // ── Log DataTable (inline, with sub-row support) ──────────────────────
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -108,7 +116,7 @@ export default function Show({ rfp_record, logs }: Props) {
             size: 40,
             enableSorting: false,
             enableColumnFilter: false,
-            cell: () => null, // rendered manually below
+            cell: () => null,
         },
         {
             accessorKey: 'user',
@@ -208,11 +216,17 @@ export default function Show({ rfp_record, logs }: Props) {
                                 Back
                             </Link>
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handlePrint}>
-                            <Printer className="h-4 w-4 mr-1.5" />
-                            Print
-                        </Button>
-                        {can('rfp-record-edit') && rfp_record.status !== 'cancelled' && (
+
+                        {/* Print — only when posted */}
+                        {isPosted && (
+                            <Button variant="outline" size="sm" onClick={handlePrint}>
+                                <Printer className="h-4 w-4 mr-1.5" />
+                                Print
+                            </Button>
+                        )}
+
+                        {/* Edit — hidden when posted or cancelled */}
+                        {can('rfp-record-edit') && !isPosted && !isCancelled && (
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={`/rfp/records/${rfp_record.id}/edit`}>
                                     <Edit className="h-4 w-4 mr-1.5" />
@@ -220,7 +234,22 @@ export default function Show({ rfp_record, logs }: Props) {
                                 </Link>
                             </Button>
                         )}
-                        {can('rfp-record-revert') && (rfp_record.status === 'paid' || rfp_record.status === 'cancelled') && (
+
+                        {/* Post — only on draft */}
+                        {can('rfp-record-post') && isDraft && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setActiveAction('post')}
+                                className="text-green-600 hover:text-green-600"
+                            >
+                                <FileText className="h-4 w-4 mr-1.5" />
+                                Post
+                            </Button>
+                        )}
+
+                        {/* Revert — only when posted or cancelled */}
+                        {can('rfp-record-revert') && (isPosted || isCancelled) && (
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -231,7 +260,9 @@ export default function Show({ rfp_record, logs }: Props) {
                                 Revert to Draft
                             </Button>
                         )}
-                        {can('rfp-record-cancel') && rfp_record.status !== 'cancelled' && (
+
+                        {/* Cancel — hidden when posted or cancelled */}
+                        {can('rfp-record-cancel') && !isPosted && !isCancelled && (
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -242,7 +273,9 @@ export default function Show({ rfp_record, logs }: Props) {
                                 Cancel
                             </Button>
                         )}
-                        {can('rfp-record-delete') && (
+
+                        {/* Delete — hidden when posted */}
+                        {can('rfp-record-delete') && !isPosted && (
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -379,7 +412,7 @@ export default function Show({ rfp_record, logs }: Props) {
                         <CardTitle className="text-base">Document Information</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                             <div>
                                 <p className="text-xs text-muted-foreground">Prepared Date</p>
                                 <p className="text-sm font-medium">{formatDate(rfp_record.created_at)}</p>
@@ -395,6 +428,14 @@ export default function Show({ rfp_record, logs }: Props) {
                             <div>
                                 <p className="text-xs text-muted-foreground">PO No.</p>
                                 <p className="text-sm font-medium">{rfp_record.po_no || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">SWP PR No.</p>
+                                <p className="text-sm font-medium">{rfp_record.swp_pr_no || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">SWP RCW No.</p>
+                                <p className="text-sm font-medium">{rfp_record.swp_rcw_no || 'N/A'}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -504,7 +545,6 @@ export default function Show({ rfp_record, logs }: Props) {
                         <CardTitle className="text-base">Activity History</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        {/* Toolbar */}
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-2">
                                 <Input
@@ -562,7 +602,6 @@ export default function Show({ rfp_record, logs }: Props) {
                             </div>
                         </div>
 
-                        {/* Table */}
                         <div className="rounded-md border overflow-x-auto">
                             <Table>
                                 <TableHeader>
@@ -614,7 +653,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                             return (
                                                 <React.Fragment key={row.id}>
                                                     <TableRow>
-                                                        {/* Expand toggle cell */}
                                                         <TableCell style={{ width: 40, minWidth: 40 }}>
                                                             {hasDetails && (
                                                                 <Button
@@ -631,7 +669,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                                                 </Button>
                                                             )}
                                                         </TableCell>
-                                                        {/* All other visible cells except the expand column */}
                                                         {row.getVisibleCells().filter(c => c.column.id !== 'expand').map((cell) => {
                                                             const val = cell.getValue() as string;
                                                             if (cell.column.id === 'from' || cell.column.id === 'into') {
@@ -657,7 +694,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                                         })}
                                                     </TableRow>
 
-                                                    {/* Expandable sub-row for changes */}
                                                     {isExpanded && hasDetails && (
                                                         <TableRow>
                                                             <TableCell colSpan={logColumns.filter(c => logTable.getColumn((c as any).accessorKey ?? (c as any).id)?.getIsVisible() !== false).length + 1} className="bg-muted/50 p-0">
@@ -676,8 +712,8 @@ export default function Show({ rfp_record, logs }: Props) {
                                                                                 {parsedDetails.map((change: any, idx: number) => (
                                                                                     <tr key={idx} className="border-t">
                                                                                         <td className="px-3 py-2 font-medium">{change.field}</td>
-                                                                                        <td className="px-3 py-2 text-muted-foreground break-words">{change.old}</td>
-                                                                                        <td className="px-3 py-2 text-primary break-words">{change.new}</td>
+                                                                                        <td className="px-3 py-2 text-muted-foreground wrap-break-word">{change.old}</td>
+                                                                                        <td className="px-3 py-2 text-primary wrap-break-word">{change.new}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                             </tbody>
@@ -695,7 +731,6 @@ export default function Show({ rfp_record, logs }: Props) {
                             </Table>
                         </div>
 
-                        {/* Pagination */}
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
                             <p>
                                 Showing {logTable.getRowModel().rows.length === 0 ? 0 : pageIndex * pageSize + 1}–
@@ -718,6 +753,7 @@ export default function Show({ rfp_record, logs }: Props) {
                 onConfirm={(action, remarks) => {
                     if (action === 'delete') handleDelete(remarks);
                     else if (action === 'cancel') handleCancel(remarks);
+                    else if (action === 'post') handlePost(remarks);
                     else if (action === 'revert') handleRevert(remarks);
                 }}
             />

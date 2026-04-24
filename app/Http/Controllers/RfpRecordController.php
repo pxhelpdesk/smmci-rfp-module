@@ -28,7 +28,7 @@ class RfpRecordController extends Controller implements HasMiddleware
             new Middleware('permission:rfp-record-edit', only: ['edit', 'update']),
             new Middleware('permission:rfp-record-delete', only: ['destroy']),
             new Middleware('permission:rfp-record-cancel', only: ['cancel']),
-            new Middleware('permission:rfp-record-paid', only: ['markAsPaid']),
+            new Middleware('permission:rfp-record-post', only: ['markAsPosted']),
             new Middleware('permission:rfp-record-revert', only: ['revert']),
         ];
     }
@@ -173,7 +173,7 @@ class RfpRecordController extends Controller implements HasMiddleware
             'from' => null,
             'into' => 'draft',
             'details' => null,
-            'remarks' => !empty($logRemarks) ? $logRemarks : 'Record created.',
+            'remarks' => !empty($logRemarks) ? $logRemarks : 'N/A',
         ]);
 
         return redirect()->route('rfp.records.index')->with('success', "RFP {$rfpRecord->rfp_number} created successfully.");
@@ -287,23 +287,18 @@ class RfpRecordController extends Controller implements HasMiddleware
 
         $validated = $updateRequest->validated();
 
-        // Calculate details subtotal
         $detailsSubtotal = collect($updateRequest->details)->sum('total_amount');
         $validated['subtotal_details_amount'] = $detailsSubtotal;
 
-        // Track changes for logging
         $changes = $this->detectChanges($record, $validated);
 
-        // Extract details, log_remarks, and signs before updating
         $details = $validated['details'] ?? [];
         $logRemarks = $validated['log_remarks'] ?? null;
         $signs = $validated['signs'] ?? null;
         unset($validated['details'], $validated['log_remarks'], $validated['signs']);
 
-        // Update RFP
         $record->update($validated);
 
-        // Update details
         if (!empty($details)) {
             $record->details()->delete();
             $record->details()->createMany(
@@ -314,7 +309,6 @@ class RfpRecordController extends Controller implements HasMiddleware
             );
         }
 
-        // Update signs  ← remove the duplicate $signs = $validated['signs'] ?? null; line
         if ($signs !== null) {
             $record->signs()->delete();
             $signsToCreate = collect($signs)->map(fn($s) => [
@@ -325,7 +319,6 @@ class RfpRecordController extends Controller implements HasMiddleware
             $record->signs()->createMany($signsToCreate);
         }
 
-        // Create log entry if there are changes
         if (!empty($changes)) {
             RfpLog::create([
                 'rfp_record_id' => $record->id,
@@ -340,32 +333,27 @@ class RfpRecordController extends Controller implements HasMiddleware
         return redirect()->route('rfp.records.show', $record->id)->with('success', "RFP {$record->rfp_number} updated successfully.");
     }
 
-    /**
-     * Detect changes between original and new values
-     */
     private function detectChanges(RfpRecord $original, array $newData): array
     {
         $changes = [];
 
         $fieldsToTrack = [
-            'ap_no' => 'AP No.',
-            'due_date' => 'Due Date',
-            'rr_no' => 'RR No.',
-            'po_no' => 'PO No.',
-            'requisition_no' => 'Requisition No.',
-            'contract_no' => 'Contract No.',
-            'office' => 'Office',
-            'payee_type' => 'Payee Type',
-            'employee_code' => 'Employee Code',
-            'employee_name' => 'Employee Name',
-            'supplier_code' => 'Supplier Code',
-            'supplier_name' => 'Supplier Name',
-            'vendor_ref' => 'Vendor Ref',
-            'rfp_currency_id' => 'Currency',
+            'ap_no'                   => 'AP No.',
+            'due_date'                => 'Due Date',
+            'rr_no'                   => 'RR No.',
+            'po_no'                   => 'PO No.',
+            'swp_pr_no'               => 'SWP PR No.',
+            'swp_rcw_no'              => 'SWP RCW No.',
+            'office'                  => 'Office',
+            'payee_type'              => 'Payee Type',
+            'employee_code'           => 'Employee Code',
+            'employee_name'           => 'Employee Name',
+            'supplier_code'           => 'Supplier',
+            'supplier_name'           => 'Supplier Name',
+            'vendor_ref'              => 'Vendor Ref',
+            'rfp_currency_id'         => 'Currency',
             'subtotal_details_amount' => 'Details Subtotal',
-            'wtax_amount' => 'Withholding Tax',
-            'grand_total_amount' => 'Grand Total',
-            'purpose' => 'Purpose',
+            'purpose'                 => 'Purpose',
         ];
 
         foreach ($fieldsToTrack as $field => $label) {
@@ -378,40 +366,26 @@ class RfpRecordController extends Controller implements HasMiddleware
             if ($oldNormalized !== $newNormalized) {
                 $changes[] = [
                     'field' => $label,
-                    'old' => $this->formatValue($field, $oldValue, $original),
-                    'new' => $this->formatValue($field, $newValue, $original),
+                    'old'   => $this->formatValue($field, $oldValue, $original),
+                    'new'   => $this->formatValue($field, $newValue, $original),
                 ];
             }
         }
 
-        // Detect details changes
-        $oldDetails = $original->details()
-            ->with('usage')
-            ->whereNull('deleted_at')
-            ->get();
-
+        $oldDetails = $original->details()->with('usage')->whereNull('deleted_at')->get();
         $newDetails = collect($newData['details'] ?? [])->filter(fn($d) => !empty($d['rfp_usage_id']) || !empty($d['total_amount']));
 
-        $oldDetailsStr = $oldDetails
-            ->map(fn($d) => $d->rfp_usage_id . '|' . number_format((float) $d->total_amount, 2, '.', ''))
-            ->sort()
-            ->values()
-            ->join(';');
-
-        $newDetailsStr = $newDetails
-            ->map(fn($d) => ($d['rfp_usage_id'] ?? '') . '|' . number_format((float) ($d['total_amount'] ?? 0), 2, '.', ''))
-            ->sort()
-            ->values()
-            ->join(';');
+        $oldDetailsStr = $oldDetails->map(fn($d) => $d->rfp_usage_id . '|' . number_format((float) $d->total_amount, 2, '.', ''))->sort()->values()->join(';');
+        $newDetailsStr = $newDetails->map(fn($d) => ($d['rfp_usage_id'] ?? '') . '|' . number_format((float) ($d['total_amount'] ?? 0), 2, '.', ''))->sort()->values()->join(';');
 
         if ($oldDetailsStr !== $newDetailsStr) {
             $changes[] = [
                 'field' => 'Details',
-                'old' => $oldDetails->count() > 0
+                'old'   => $oldDetails->count() > 0
                     ? $oldDetails->map(fn($d) => ($d->usage ? "{$d->usage->code} - {$d->usage->description}" : 'N/A') . ' — ' . number_format((float) $d->total_amount, 2))->join(', ')
                     : 'N/A',
-                'new' => $newDetails->count() > 0
-                    ? $newDetails->map(function($d) {
+                'new'   => $newDetails->count() > 0
+                    ? $newDetails->map(function ($d) {
                         $usage = RfpUsage::find($d['rfp_usage_id'] ?? null);
                         return ($usage ? "{$usage->code} - {$usage->description}" : 'N/A') . ' — ' . number_format((float) ($d['total_amount'] ?? 0), 2);
                     })->join(', ')
@@ -419,132 +393,77 @@ class RfpRecordController extends Controller implements HasMiddleware
             ];
         }
 
-        // Detect signatories changes (exclude prepared_by)
-        $oldSigns = $original->signs()
-            ->whereNull('deleted_at')
-            ->where('details', '!=', 'prepared_by')
-            ->get();
+        $oldSigns = $original->signs()->whereNull('deleted_at')->where('details', '!=', 'prepared_by')->get();
+        $newSigns = collect($newData['signs'] ?? [])->filter(fn($s) => ($s['details'] ?? '') !== 'prepared_by');
 
-        $newSigns = collect($newData['signs'] ?? [])
-            ->filter(fn($s) => ($s['details'] ?? '') !== 'prepared_by');
-
-        $oldSignsStr = $oldSigns
-            ->map(fn($s) => ($s->details ?? '') . ':' . ($s->user_id ?? ''))
-            ->sort()
-            ->values()
-            ->join(';');
-
-        $newSignsStr = $newSigns
-            ->map(fn($s) => ($s['details'] ?? '') . ':' . ($s['user_id'] ?? ''))
-            ->sort()
-            ->values()
-            ->join(';');
+        $oldSignsStr = $oldSigns->map(fn($s) => ($s->details ?? '') . ':' . ($s->user_id ?? ''))->sort()->values()->join(';');
+        $newSignsStr = $newSigns->map(fn($s) => ($s['details'] ?? '') . ':' . ($s['user_id'] ?? ''))->sort()->values()->join(';');
 
         if ($oldSignsStr !== $newSignsStr) {
             $roleLabels = [
                 'recommending_approval_by' => 'Recommending Approval By',
-                'approved_by' => 'Approved By',
-                'concurred_by' => 'Concurred By',
+                'approved_by'              => 'Approved By',
+                'concurred_by'             => 'Concurred By',
             ];
 
             $formatSigns = fn($signs) => $signs->count() > 0
                 ? $signs->map(fn($s) => ($roleLabels[$s['details'] ?? $s->details ?? ''] ?? 'N/A') . ': ' . ($s['name'] ?? $s->user?->name ?? 'N/A'))->join(', ')
                 : 'N/A';
 
-            // Load user names for old signs
-            $oldSignsMapped = $oldSigns->map(fn($s) => [
-                'details' => $s->details,
-                'name' => $s->user?->name ?? 'N/A',
-            ]);
-
-            // Load user names for new signs
+            $oldSignsMapped = $oldSigns->map(fn($s) => ['details' => $s->details, 'name' => $s->user?->name ?? 'N/A']);
             $newUserIds = $newSigns->pluck('user_id')->filter()->unique()->toArray();
-            $newUsers = User::whereIn('id', $newUserIds)
-                ->get()
-                ->keyBy('id');
-
+            $newUsers = User::whereIn('id', $newUserIds)->get()->keyBy('id');
             $newSignsMapped = $newSigns->map(fn($s) => [
                 'details' => $s['details'] ?? '',
-                'name' => isset($s['user_id']) && isset($newUsers[$s['user_id']])
-                    ? $newUsers[$s['user_id']]->name
-                    : 'N/A',
+                'name' => isset($s['user_id']) && isset($newUsers[$s['user_id']]) ? $newUsers[$s['user_id']]->name : 'N/A',
             ]);
 
             $changes[] = [
                 'field' => 'Signatories',
-                'old' => $formatSigns(collect($oldSignsMapped)),
-                'new' => $formatSigns(collect($newSignsMapped)),
+                'old'   => $formatSigns(collect($oldSignsMapped)),
+                'new'   => $formatSigns(collect($newSignsMapped)),
             ];
         }
 
         return $changes;
     }
 
-    /**
-     * Normalize value for accurate comparison
-     */
     private function normalizeValue(string $field, $value)
     {
-        if ($value === null || $value === '') {
-            return '';
-        }
-
-        // Normalize numeric fields
-        if (in_array($field, ['subtotal_details_amount'])) {
-            return number_format((float) $value, 2, '.', '');
-        }
-
-        // Normalize dates
-        if ($field === 'due_date' && $value) {
-            return date('Y-m-d', strtotime($value));
-        }
-
+        if ($value === null || $value === '') return '';
+        if (in_array($field, ['subtotal_details_amount'])) return number_format((float) $value, 2, '.', '');
+        if ($field === 'due_date' && $value) return date('Y-m-d', strtotime($value));
         return trim((string) $value);
     }
 
-    /**
-     * Format value for logging
-     */
     private function formatValue(string $field, $value, RfpRecord $original)
     {
-        if ($value === null || $value === '') {
-            return 'N/A';
-        }
-
-        // Format currency fields
-        if (in_array($field, ['subtotal_details_amount'])) {
-            return number_format((float) $value, 2);
-        }
-
-        // Format currency ID to show code
+        if ($value === null || $value === '') return 'N/A';
+        if (in_array($field, ['subtotal_details_amount'])) return number_format((float) $value, 2);
         if ($field === 'rfp_currency_id') {
             $currency = RfpCurrency::find($value);
-            return $currency ? $currency->code : $value;
+            return $currency ? "{$currency->code} - {$currency->name}" : (string) $value;
         }
-
-        // Format date
-        if ($field === 'due_date' && $value) {
-            return date('m/d/Y', strtotime($value));
+        if ($field === 'supplier_code') {
+            $name = $original->supplier_name ?? '';
+            return $name ? "{$value} - {$name}" : (string) $value;
         }
-
+        if ($field === 'due_date' && $value) return date('m/d/Y', strtotime($value));
         return $value;
     }
 
     public function destroy(RfpRecord $record)
     {
         $rfpNumber = $record->rfp_number;
-
         RfpLog::create([
             'rfp_record_id' => $record->id,
-            'user_id' => auth()->id(),
-            'from' => $record->status,
-            'into' => 'deleted',
-            'details' => null,
-            'remarks' => !empty(request('remarks')) ? request('remarks') : 'Record deleted.',
+            'user_id'       => auth()->id(),
+            'from'          => $record->status,
+            'into'          => 'deleted',
+            'details'       => null,
+            'remarks'       => !empty(request('remarks')) ? request('remarks') : 'Record deleted.',
         ]);
-
         $record->delete();
-
         return redirect()->route('rfp.records.index')->with('success', "RFP {$rfpNumber} deleted successfully.");
     }
 
@@ -555,44 +474,46 @@ class RfpRecordController extends Controller implements HasMiddleware
         $record->update(['status' => 'cancelled']);
         RfpLog::create([
             'rfp_record_id' => $record->id,
-            'user_id' => auth()->id(),
-            'from' => $previousStatus,
-            'into' => 'cancelled',
-            'details' => null,
-            'remarks' => !empty(request('remarks')) ? request('remarks') : 'Record cancelled.',
+            'user_id'       => auth()->id(),
+            'from'          => $previousStatus,
+            'into'          => 'cancelled',
+            'details'       => null,
+            'remarks'       => !empty(request('remarks')) ? request('remarks') : 'Record cancelled.',
         ]);
         return redirect()->back()->with('success', "RFP {$record->rfp_number} has been cancelled.");
     }
 
-    public function markAsPaid(RfpRecord $record)
+    // Renamed from markAsPaid — marks record as posted
+    public function markAsPosted(RfpRecord $record)
     {
-        abort_if($record->status === 'paid', 422, 'RFP is already marked as paid.');
-        abort_if($record->status === 'cancelled', 422, 'Cancelled RFP cannot be marked as paid.');
+        abort_if($record->status === 'posted', 422, 'RFP is already posted.');
+        abort_if($record->status === 'cancelled', 422, 'Cancelled RFP cannot be posted.');
         $previousStatus = $record->status;
-        $record->update(['status' => 'paid']);
+        $record->update(['status' => 'posted']);
         RfpLog::create([
             'rfp_record_id' => $record->id,
-            'user_id' => auth()->id(),
-            'from' => $previousStatus,
-            'into' => 'paid',
-            'details' => null,
-            'remarks' => !empty(request('remarks')) ? request('remarks') : 'Record marked as paid.',
+            'user_id'       => auth()->id(),
+            'from'          => $previousStatus,
+            'into'          => 'posted',
+            'details'       => null,
+            'remarks'       => !empty(request('remarks')) ? request('remarks') : 'Record marked as posted.',
         ]);
-        return redirect()->back()->with('success', "RFP {$record->rfp_number} marked as paid.");
+        return redirect()->back()->with('success', "RFP {$record->rfp_number} marked as posted.");
     }
 
+    // Revert: cancelled → draft, posted → draft
     public function revert(RfpRecord $record)
     {
-        abort_unless(in_array($record->status, ['paid', 'cancelled']), 422, 'Only paid or cancelled RFPs can be reverted to draft.');
+        abort_unless(in_array($record->status, ['posted', 'cancelled']), 422, 'Only posted or cancelled RFPs can be reverted to draft.');
         $previousStatus = $record->status;
         $record->update(['status' => 'draft']);
         RfpLog::create([
             'rfp_record_id' => $record->id,
-            'user_id' => auth()->id(),
-            'from' => $previousStatus,
-            'into' => 'draft',
-            'details' => null,
-            'remarks' => !empty(request('remarks')) ? request('remarks') : 'Record reverted to draft.',
+            'user_id'       => auth()->id(),
+            'from'          => $previousStatus,
+            'into'          => 'draft',
+            'details'       => null,
+            'remarks'       => !empty(request('remarks')) ? request('remarks') : 'Record reverted to draft.',
         ]);
         return redirect()->back()->with('success', "RFP {$record->rfp_number} reverted to draft.");
     }
@@ -603,7 +524,6 @@ class RfpRecordController extends Controller implements HasMiddleware
             ->where('is_active', true)
             ->select('id', 'code', 'description')
             ->get();
-
         return response()->json($usages);
     }
 }

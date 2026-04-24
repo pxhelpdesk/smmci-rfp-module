@@ -49,8 +49,8 @@ export type RfpRecord = {
     due_date: string;
     rr_no: string | null;
     po_no: string | null;
-    requisition_no: string | null;
-    contract_no: string | null;
+    swp_pr_no: string | null;
+    swp_rcw_no: string | null;
     rfp_number: string;
     office: 'head_office' | 'mine_site';
     payee_type: 'employee' | 'supplier';
@@ -63,7 +63,7 @@ export type RfpRecord = {
     currency?: RfpCurrency;
     subtotal_details_amount: number | null;
     purpose: string;
-    status: 'cancelled' | 'draft' | 'for_approval' | 'approved' | 'paid';
+    status: 'cancelled' | 'draft' | 'posted';
     details: RfpDetail[];
     signs?: RfpSign[];
     logs?: RfpLog[];
@@ -112,10 +112,8 @@ export type RfpLog = {
 export type RfpDashboardStats = {
     total_records: number;
     total_draft: number;
-    // total_paid: number;
     total_cancelled: number;
     total_grand_amount: number;
-    // overdue_count: number;
 };
 
 // SAP Data Types

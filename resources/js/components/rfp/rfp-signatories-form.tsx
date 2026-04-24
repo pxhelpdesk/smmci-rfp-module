@@ -47,26 +47,40 @@ type Props = {
     ceo?: { id: number; name: string; department?: string } | null;
 };
 
-// ─── Helper: get all user IDs that appear more than once across roles ─────────
+// ─── Priority: concurred (highest) > approved > recommending (lowest) ─────────
+// Each list is only flagged if it duplicates a HIGHER priority list.
+// On save, the lower-priority entry is dropped, higher-priority is retained.
 
-function getDuplicateIds(
+function getRecommendingDuplicateIds(
     recommending: Entry[],
     approved: Entry[],
-    concurred: Entry[]
+    concurred: Entry[],
+    preparedByUserId?: number,
 ): Set<number> {
-    const allIds = [
-        ...recommending.map(e => e.user?.value),
-        ...approved.map(e => e.user?.value),
-        ...concurred.map(e => e.user?.value),
-    ].filter((v): v is number => v !== undefined);
-
-    const seen = new Set<number>();
-    const dupes = new Set<number>();
-    allIds.forEach(id => {
-        if (seen.has(id)) dupes.add(id);
-        else seen.add(id);
+    const higherIds = new Set<number>([
+        ...(preparedByUserId ? [preparedByUserId] : []),
+        ...approved.map(e => e.user?.value).filter((v): v is number => v !== undefined),
+        ...concurred.map(e => e.user?.value).filter((v): v is number => v !== undefined),
+    ]);
+    const flagged = new Set<number>();
+    recommending.forEach(e => {
+        if (e.user?.value && higherIds.has(e.user.value)) flagged.add(e.user.value);
     });
-    return dupes;
+    return flagged;
+}
+
+function getApprovedDuplicateIds(
+    approved: Entry[],
+    concurred: Entry[],
+): Set<number> {
+    const higherIds = new Set<number>(
+        concurred.map(e => e.user?.value).filter((v): v is number => v !== undefined)
+    );
+    const flagged = new Set<number>();
+    approved.forEach(e => {
+        if (e.user?.value && higherIds.has(e.user.value)) flagged.add(e.user.value);
+    });
+    return flagged;
 }
 
 // ─── Sortable Row ────────────────────────────────────────────────────────────
@@ -150,7 +164,7 @@ function SortableRow({
                 )}
                 {isDuplicate && (
                     <span className="text-[10px] text-yellow-600 font-medium">
-                        Duplicate — will be merged on save
+                        Duplicate — will be removed on save
                     </span>
                 )}
             </div>
@@ -208,36 +222,49 @@ function SortableList({
     );
 }
 
+// ─── Dedupe with priority on save ────────────────────────────────────────────
+// concurred (highest) > approved > recommending (lowest)
+// Lower priority entries are dropped if they appear in a higher priority list.
+
+export function dedupeSignatories(state: SignatoriesState): SignatoriesState {
+    // Concurred: keep all — highest priority, nothing drops it
+    const deduped_concurred = state.concurred_by.filter(Boolean) as UserOption[];
+    const concurredIds = new Set(deduped_concurred.map(u => u.value));
+
+    // Approved: drop anyone already in concurred
+    const deduped_approved = state.approved_by.filter(u => {
+        if (!u) return false;
+        return !concurredIds.has(u.value);
+    }) as UserOption[];
+    const approvedIds = new Set(deduped_approved.map(u => u.value));
+
+    // Recommending: drop anyone already in approved or concurred
+    const deduped_recommending = state.recommending_approval_by.filter(u => {
+        if (!u) return false;
+        return !approvedIds.has(u.value) && !concurredIds.has(u.value);
+    }) as UserOption[];
+
+    return {
+        recommending_approval_by: deduped_recommending,
+        approved_by: deduped_approved,
+        concurred_by: deduped_concurred,
+    };
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-    export function dedupeSignatories(state: SignatoriesState): SignatoriesState {
-        const seen = new Set<number>();
-        const dedupeList = (list: (UserOption | null)[]) =>
-            list.filter(u => {
-                if (!u) return false;
-                if (seen.has(u.value)) return false;
-                seen.add(u.value);
-                return true;
-            });
-        return {
-            recommending_approval_by: dedupeList(state.recommending_approval_by),
-            approved_by: dedupeList(state.approved_by),
-            concurred_by: dedupeList(state.concurred_by),
-        };
-    }
-
-    export function RfpSignatoriesForm({
-        preparedByName,
-        signatories,
-        userOptions,
-        onChange,
-        office,
-        subtotalAmount,
-        residentManager,
-        departmentHead,
-        cfo,
-        ceo,
-    }: Props) {
+export function RfpSignatoriesForm({
+    preparedByName,
+    signatories,
+    userOptions,
+    onChange,
+    office,
+    subtotalAmount,
+    residentManager,
+    departmentHead,
+    cfo,
+    ceo,
+}: Props) {
 
     // ── Recommending Approval By entries ──────────────────────────
     const [recommendingEntries, setRecommendingEntries] = useState<Entry[]>(() =>
@@ -375,10 +402,12 @@ function SortableList({
 
     // ── Remove ────────────────────────────────────────────────────
 
-    const removeRecommending = (id: string) => syncRecommending(recommendingEntries.filter(e => e.id !== id));
-        const removeApproved = (id: string) => {
+    const removeRecommending = (id: string) =>
+        syncRecommending(recommendingEntries.filter(e => e.id !== id));
+
+    const removeApproved = (id: string) => {
         const entry = approvedEntries.find(e => e.id === id);
-        if (entry?.isLocked) return; // never remove locked defaults
+        if (entry?.isLocked) return;
         syncApproved(approvedEntries.filter(e => e.id !== id));
     };
 
@@ -423,7 +452,18 @@ function SortableList({
         menu: (base: any) => ({ ...base, fontSize: '14px' }),
     };
 
-    const duplicateIds = getDuplicateIds(recommendingEntries, approvedEntries, concurredEntries);
+    // Resolve preparedBy user ID for duplicate detection
+    const preparedByUserId = userOptions.find(u => u.label === preparedByName)?.value;
+
+    // Per-list duplicate IDs — each list only flags against higher-priority lists
+    const recommendingDuplicateIds = getRecommendingDuplicateIds(
+        recommendingEntries,
+        approvedEntries,
+        concurredEntries,
+        preparedByUserId,
+    );
+    const approvedDuplicateIds = getApprovedDuplicateIds(approvedEntries, concurredEntries);
+    // concurred is highest priority — never receives duplicate flags
 
     const getRecommendingSublabel = (_entry: Entry, index: number) =>
         index === 0 ? 'Scope Owner' : 'Additional';
@@ -482,10 +522,6 @@ function SortableList({
 
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-medium text-muted-foreground">Concurred By</p>
-                            {/* <Button type="button" variant="outline" size="sm" className="h-5 text-xs px-1"
-                                onClick={addConcurred}>
-                                + Add
-                            </Button> */}
                         </div>
                     </div>
                 </div>
@@ -500,7 +536,7 @@ function SortableList({
                             <p className="text-[10px] text-muted-foreground pl-1">Requestor</p>
                         </div>
 
-                        {/* Recommending Approval By */}
+                        {/* Recommending — flagged if duplicate of approved, concurred, or preparedBy */}
                         <div className="space-y-1.5">
                             <SortableList
                                 entries={recommendingEntries}
@@ -510,11 +546,11 @@ function SortableList({
                                 onUpdate={updateRecommending}
                                 onRemove={removeRecommending}
                                 getSublabel={getRecommendingSublabel}
-                                duplicateIds={duplicateIds}
+                                duplicateIds={recommendingDuplicateIds}
                             />
                         </div>
 
-                        {/* Approved By */}
+                        {/* Approved — flagged only if duplicate of concurred */}
                         <div className="space-y-1.5">
                             <SortableList
                                 entries={approvedEntries}
@@ -524,11 +560,11 @@ function SortableList({
                                 onUpdate={updateApproved}
                                 onRemove={removeApproved}
                                 getSublabel={getApprovedSublabel}
-                                duplicateIds={duplicateIds}
+                                duplicateIds={approvedDuplicateIds}
                             />
                         </div>
 
-                        {/* Concurred By */}
+                        {/* Concurred — highest priority, never flagged */}
                         <div className="space-y-1.5">
                             <SortableList
                                 entries={concurredEntries}
@@ -539,7 +575,7 @@ function SortableList({
                                 onRemove={(id) => syncConcurred(concurredEntries.filter(e => e.id !== id))}
                                 allowRemove={true}
                                 getSublabel={getConcurredSublabel}
-                                duplicateIds={duplicateIds}
+                                duplicateIds={new Set()}
                             />
                         </div>
 

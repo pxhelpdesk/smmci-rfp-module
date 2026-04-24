@@ -37,6 +37,7 @@ import type { RfpRecord, RfpCategory, RfpUsage, RfpCurrency, RfpDetail, UserOpti
 import type { SharedData } from '@/types';
 import { RfpBadge } from '@/components/rfp/rfp-display';
 import { RfpSignatoriesForm, type SignatoriesState, dedupeSignatories } from '@/components/rfp/rfp-signatories-form';
+import { toast } from 'sonner';
 
 type ChangeLog = {
     field: string;
@@ -82,12 +83,13 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         const toOption = (sign: typeof signs[0]): UserOption | null =>
             sign.user_id ? { value: sign.user_id, label: sign.user?.name ?? '', department: sign.user?.department?.department } : null;
 
-        return dedupeSignatories({
+        // Return raw from DB — do NOT dedupe here so the form can show duplicate warnings visually
+        return {
             recommending_approval_by: signs.filter(s => s.details === 'recommending_approval_by').map(toOption).filter(Boolean) as UserOption[],
             approved_by: signs.filter(s => s.details === 'approved_by').map(toOption).filter(Boolean) as UserOption[],
             concurred_by: signs.filter(s => s.details === 'concurred_by').map(toOption).filter(Boolean) as UserOption[],
-        });
-    })
+        };
+    });
 
     // Load usages for a category, using cache to avoid duplicate requests
     const loadUsagesForCategory = async (categoryId: number) => {
@@ -133,8 +135,8 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         due_date: string;
         rr_no: string;
         po_no: string;
-        requisition_no: string;
-        contract_no: string;
+        swp_pr_no: string;
+        swp_rcw_no: string;
         office: 'head_office' | 'mine_site';
         payee_type: 'employee' | 'supplier';
         employee_code: string;
@@ -152,8 +154,8 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         due_date: rfp_record.due_date || '',
         rr_no: rfp_record.rr_no || '',
         po_no: rfp_record.po_no || '',
-        requisition_no: rfp_record.requisition_no || '',
-        contract_no: rfp_record.contract_no || '',
+        swp_pr_no: rfp_record.swp_pr_no || '',
+        swp_rcw_no: rfp_record.swp_rcw_no || '',
         office: rfp_record.office,
         payee_type: rfp_record.payee_type,
         employee_code: rfp_record.employee_code || '',
@@ -163,7 +165,6 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         vendor_ref: rfp_record.vendor_ref || '',
         rfp_currency_id: rfp_record.rfp_currency_id,
         purpose: rfp_record.purpose || '',
-        // Map existing details, keeping rfp_category_id for UI filtering
         details: rfp_record.details?.length > 0
             ? rfp_record.details.map(item => ({
                 id: item.id,
@@ -176,17 +177,33 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         log_remarks: '',
     });
 
+    // ── Helpers for human-readable change log values ──────────────
+    const getCurrencyLabel = (id: number | null | undefined): string => {
+        if (!id) return 'N/A';
+        const currency = currencies.find(c => c.id === id);
+        return currency ? `${currency.code} - ${currency.name}` : String(id);
+    };
+
+    const getSupplierLabel = (code: string | null | undefined, name: string | null | undefined): string => {
+        if (!code) return 'N/A';
+        // Try to find label from loaded suppliers first (most complete)
+        const found = suppliers.find(s => s.value === code);
+        if (found) return found.label;
+        // Fallback: compose from code + name props
+        return name ? `${code} - ${name}` : code;
+    };
+
     // Detect field-level changes for the change log dialog
     useEffect(() => {
         const changes: ChangeLog[] = [];
 
         const formatDisplayValue = (field: string, value: any) => {
-            if (!value) return 'N/A';
+            if (value === null || value === undefined || value === '') return 'N/A';
             if (field === 'due_date') return value.split('T')[0];
             return value;
         };
 
-        const checkField = (field: string, label: string, oldVal: any, newVal: any) => {
+        const checkField = (field: string, label: string, oldVal: any, newVal: any, oldDisplay?: string, newDisplay?: string) => {
             let oldStr = oldVal?.toString() || '';
             let newStr = newVal?.toString() || '';
             if (field === 'due_date') {
@@ -196,8 +213,8 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             if (oldStr !== newStr) {
                 changes.push({
                     field: label,
-                    old: formatDisplayValue(field, oldVal),
-                    new: formatDisplayValue(field, newVal),
+                    old: oldDisplay ?? formatDisplayValue(field, oldVal),
+                    new: newDisplay ?? formatDisplayValue(field, newVal),
                 });
             }
         };
@@ -206,17 +223,32 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         checkField('due_date', 'Due Date', rfp_record.due_date, data.due_date);
         checkField('rr_no', 'RR No.', rfp_record.rr_no, data.rr_no);
         checkField('po_no', 'PO No.', rfp_record.po_no, data.po_no);
-        checkField('requisition_no', 'Requisition No.', rfp_record.requisition_no, data.requisition_no);
-        checkField('contract_no', 'Contract No.', rfp_record.contract_no, data.contract_no);
+        checkField('swp_pr_no', 'Requisition No.', rfp_record.swp_pr_no, data.swp_pr_no);
+        checkField('swp_rcw_no', 'Contract No.', rfp_record.swp_rcw_no, data.swp_rcw_no);
         checkField('office', 'Office', rfp_record.office, data.office);
         checkField('employee_code', 'Employee Code', rfp_record.employee_code, data.employee_code);
         checkField('employee_name', 'Employee Name', rfp_record.employee_name, data.employee_name);
-        checkField('supplier_code', 'Supplier Code', rfp_record.supplier_code, data.supplier_code);
         checkField('vendor_ref', 'Vendor Ref', rfp_record.vendor_ref, data.vendor_ref);
-        checkField('rfp_currency_id', 'Currency', rfp_record.rfp_currency_id, data.rfp_currency_id);
+
+        // Supplier — show human-readable name instead of raw code
+        checkField(
+            'supplier_code', 'Supplier',
+            rfp_record.supplier_code, data.supplier_code,
+            getSupplierLabel(rfp_record.supplier_code, rfp_record.supplier_name),
+            getSupplierLabel(data.supplier_code, data.supplier_name),
+        );
+
+        // Currency — show code + name instead of raw ID
+        checkField(
+            'rfp_currency_id', 'Currency',
+            rfp_record.rfp_currency_id, data.rfp_currency_id,
+            getCurrencyLabel(rfp_record.rfp_currency_id),
+            getCurrencyLabel(data.rfp_currency_id),
+        );
+
         checkField('purpose', 'Purpose', rfp_record.purpose, data.purpose);
 
-        // Compare details by usage and amount
+        // Compare details by usage and amount — label changed to "Category - Usage"
         const oldDetails = rfp_record.details ?? [];
         const newDetails = data.details ?? [];
 
@@ -229,7 +261,6 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             .join(';');
 
         if (oldDetailsStr !== newDetailsStr) {
-            // Format old details using loaded usage data
             const oldFormatted = oldDetails.length > 0
                 ? oldDetails.map(d => {
                     const label = d.usage
@@ -239,7 +270,6 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                 }).join(', ')
                 : 'N/A';
 
-            // Format new details using cached usages
             const newFiltered = newDetails.filter(d => d.rfp_usage_id || d.total_amount);
             const newFormatted = newFiltered.length > 0
                 ? newFiltered.map(d => {
@@ -256,6 +286,8 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         }
 
         // Compare signatories excluding prepared_by
+        // Use deduped values so change log reflects what will actually be saved
+        const dedupedSignatories = dedupeSignatories(signatories);
         const oldSigns = rfp_record.signs ?? [];
         const roleLabels: Record<string, string> = {
             prepared_by: 'Prepared By',
@@ -270,9 +302,9 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             .sort().join(';');
 
         const newSignsStr = [
-            ...signatories.recommending_approval_by.filter(Boolean).map(u => `recommending_approval_by:${u!.value}`),
-            ...signatories.approved_by.filter(Boolean).map(u => `approved_by:${u!.value}`),
-            ...signatories.concurred_by.filter(Boolean).map(u => `concurred_by:${u!.value}`),
+            ...dedupedSignatories.recommending_approval_by.filter(Boolean).map(u => `recommending_approval_by:${u!.value}`),
+            ...dedupedSignatories.approved_by.filter(Boolean).map(u => `approved_by:${u!.value}`),
+            ...dedupedSignatories.concurred_by.filter(Boolean).map(u => `concurred_by:${u!.value}`),
         ].sort().join(';');
 
         if (oldSignsStr !== newSignsStr) {
@@ -286,16 +318,16 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                 .map(s => ({ role: s.details ?? '', name: s.user?.name ?? 'N/A' }));
 
             const newFormatted = [
-                ...signatories.recommending_approval_by.filter(Boolean).map(u => ({ role: 'recommending_approval_by', name: u!.label })),
-                ...signatories.approved_by.filter(Boolean).map(u => ({ role: 'approved_by', name: u!.label })),
-                ...signatories.concurred_by.filter(Boolean).map(u => ({ role: 'concurred_by', name: u!.label })),
+                ...dedupedSignatories.recommending_approval_by.filter(Boolean).map(u => ({ role: 'recommending_approval_by', name: u!.label })),
+                ...dedupedSignatories.approved_by.filter(Boolean).map(u => ({ role: 'approved_by', name: u!.label })),
+                ...dedupedSignatories.concurred_by.filter(Boolean).map(u => ({ role: 'concurred_by', name: u!.label })),
             ];
 
             changes.push({ field: 'Signatories', old: formatSigns(oldFormatted), new: formatSigns(newFormatted) });
         }
 
         setDetectedChanges(changes);
-    }, [data, signatories]);
+    }, [data, signatories, suppliers]);
 
     const addDetail = () => {
         setData('details', [...data.details, { rfp_category_id: null, rfp_usage_id: null, total_amount: null }]);
@@ -312,6 +344,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     };
 
     const buildSigns = () => {
+        // Dedupe only on save — priority: concurred > approved > recommending
         const deduped = dedupeSignatories(signatories);
         return [
             { user_id: rfp_record.prepared_by?.id ?? auth.user.id, details: 'prepared_by' },
@@ -326,7 +359,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         if (detectedChanges.length > 0) {
             setShowLogDialog(true);
         } else {
-            const signs = buildSigns(); // build before transform
+            const signs = buildSigns();
             transform(d => ({
                 ...d,
                 signs,
@@ -339,6 +372,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     const handleConfirmUpdate = () => {
         if (!logRemarks.trim()) {
             setLogRemarksError(true);
+            toast.error('Remarks is required before confirming the update.');
             return;
         }
         setShowLogDialog(false);
@@ -347,7 +381,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         transform(d => ({
             ...d,
             signs,
-            log_remarks: logRemarks,
+            log_remarks: logRemarks.trim().toUpperCase(),
             details: d.details.map(({ rfp_category_id, ...rest }) => rest),
         }));
         put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
@@ -435,7 +469,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                     </CardContent>
                 </Card>
 
-                {/* Basic Information — only Office, category/usage moved to per-detail rows */}
+                {/* Basic Information */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Basic Information</CardTitle>
@@ -592,26 +626,31 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Currency <Req /></Label>
-                                <Select
-                                    options={currencyOptions}
-                                    value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
-                                    onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
-                                    placeholder="Select currency..."
-                                    className="text-sm"
-                                    styles={{
-                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                        menu: (base) => ({ ...base, fontSize: '14px' }),
-                                    }}
-                                />
-                                {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR No.</Label>
+                                    <Input
+                                        id="swp_pr_no"
+                                        value={data.swp_pr_no}
+                                        onChange={(e) => setData('swp_pr_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="swp_rcw_no" className="text-sm">SWP RCW No.</Label>
+                                    <Input
+                                        id="swp_rcw_no"
+                                        value={data.swp_rcw_no}
+                                        onChange={(e) => setData('swp_rcw_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Main Information — per-row category + usage + amount */}
+                {/* Main Information */}
                 <Card>
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
@@ -624,9 +663,10 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                     <CardContent className="space-y-2">
                         {data.details.length > 0 && (
                             <div className="hidden md:flex gap-2 px-3 pb-2">
-                                <div className="flex-1 grid grid-cols-3 gap-2">
+                                <div className="flex-1 grid grid-cols-4 gap-2">
                                     <p className="text-xs font-medium text-muted-foreground">Category</p>
                                     <p className="text-xs font-medium text-muted-foreground">Usage</p>
+                                    <p className="text-xs font-medium text-muted-foreground">Currency</p>
                                     <p className="text-xs font-medium text-muted-foreground">Amount</p>
                                 </div>
                                 {data.details.length > 1 && <div className="w-9"></div>}
@@ -635,8 +675,8 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
                         {data.details.map((detail, index) => (
                             <div key={index} className="flex gap-2 items-start px-3">
-                                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
-                                    {/* Category select — UI filter only */}
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
+                                    {/* Category */}
                                     <div className="space-y-1">
                                         <Select
                                             options={categoryOptions}
@@ -648,7 +688,6 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                                     rfp_category_id: opt?.value || null,
                                                     rfp_usage_id: null,
                                                 };
-
                                                 setData('details', updated);
                                                 if (opt?.value) loadUsagesForCategory(opt.value);
                                             }}
@@ -661,7 +700,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                             }}
                                         />
                                     </div>
-                                    {/* Usage select filtered by this row's category */}
+                                    {/* Usage */}
                                     <div className="space-y-1">
                                         <Select
                                             options={(usagesByCategory[detail.rfp_category_id ?? 0] ?? []).map(u => ({
@@ -685,6 +724,31 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                         />
                                         {errors[`details.${index}.rfp_usage_id`] && (
                                             <p className="text-xs text-destructive">{errors[`details.${index}.rfp_usage_id`]}</p>
+                                        )}
+                                    </div>
+                                    {/* Currency */}
+                                    <div className="space-y-1">
+                                        <Select
+                                            options={currencyOptions}
+                                            value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
+                                            onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
+                                            placeholder="Select currency..."
+                                            isDisabled={index !== 0}
+                                            className="text-sm"
+                                            styles={{
+                                                control: (base) => ({
+                                                    ...base,
+                                                    minHeight: '36px',
+                                                    fontSize: '14px',
+                                                    // visually distinguish readonly rows from truly disabled
+                                                    opacity: index !== 0 ? 0.6 : 1,
+                                                    cursor: index !== 0 ? 'not-allowed' : 'default',
+                                                }),
+                                                menu: (base) => ({ ...base, fontSize: '14px' }),
+                                            }}
+                                        />
+                                        {index === 0 && errors.rfp_currency_id && (
+                                            <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>
                                         )}
                                     </div>
                                     {/* Amount */}
@@ -725,14 +789,22 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1.5">
-                            <Label htmlFor="purpose" className="text-sm">Purpose <Req /></Label>
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="purpose" className="text-sm">Purpose <Req /></Label>
+                                <span className={`text-xs ${data.purpose.length > 1000 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                    {data.purpose.length} / 1000
+                                </span>
+                            </div>
                             <Textarea
                                 id="purpose"
                                 value={data.purpose}
                                 onChange={(e) => setData('purpose', e.target.value)}
                                 rows={3}
-                                className="resize-none"
+                                className={`resize-none ${data.purpose.length > 1000 ? 'border-destructive' : ''}`}
                             />
+                            {data.purpose.length > 1000 && (
+                                <p className="text-xs text-destructive">Purpose must not exceed 1000 characters.</p>
+                            )}
                             {errors.purpose && <p className="text-xs text-destructive">{errors.purpose}</p>}
                         </div>
                     </CardContent>
@@ -758,8 +830,11 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                 if (!open) setLogRemarksError(false);
                 setShowLogDialog(open);
             }}>
-                <AlertDialogContent className="max-w-3xl p-0">
-                    <AlertDialogHeader className="px-6 pt-6 pb-3">
+                <AlertDialogContent
+                    className="p-0 flex flex-col"
+                    style={{ width: '72rem', maxWidth: '95vw', maxHeight: '90vh' }}
+                >
+                    <AlertDialogHeader className="px-6 pt-6 pb-3 shrink-0">
                         <AlertDialogTitle>Confirm Update</AlertDialogTitle>
                         <AlertDialogDescription asChild>
                             <div className="space-y-3 pt-2">
@@ -768,8 +843,8 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
-                    <div className="px-6 space-y-3">
-                        <div className="border rounded-lg max-h-60 overflow-y-auto">
+                    <div className="px-6 space-y-3 overflow-y-auto flex-1">
+                        <div className="border rounded-lg overflow-y-auto" style={{ maxHeight: '35vh' }}>
                             <table className="w-full text-sm table-fixed">
                                 <thead className="bg-muted sticky top-0">
                                     <tr>
@@ -790,7 +865,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                             </table>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 pb-4">
                             <Label htmlFor="log_remarks" className="text-sm">
                                 Remarks <span className="text-destructive ml-0.5">*</span>
                             </Label>
@@ -803,7 +878,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                 }}
                                 placeholder="Add any additional notes about these changes..."
                                 rows={3}
-                                className={`resize-none ${logRemarksError ? 'border-destructive' : ''}`}
+                                className={`resize-none uppercase ${logRemarksError ? 'border-destructive' : ''}`}
                             />
                             {logRemarksError && (
                                 <p className="text-xs text-destructive">Remarks is required.</p>
@@ -811,7 +886,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                         </div>
                     </div>
 
-                    <AlertDialogFooter className="px-6 pb-6 pt-4">
+                    <AlertDialogFooter className="px-6 py-4 bg-background border-t rounded-b-lg shrink-0">
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleConfirmUpdate} disabled={processing}>
                             Confirm Update

@@ -29,13 +29,13 @@ return new class extends Migration
             $table->date('due_date');
             $table->string('rr_no')->nullable();
             $table->string('po_no')->nullable();
-            $table->string('requisition_no')->nullable();
-            $table->string('contract_no')->nullable();
+            $table->string('swp_pr_no')->nullable();
+            $table->string('swp_rcw_no')->nullable();
 
             $table->decimal('subtotal_details_amount', 15, 2)->nullable();
 
             $table->text('purpose');
-            $table->enum('status', ['cancelled', 'draft', 'for_approval', 'approved', 'paid'])->default('draft');
+            $table->enum('status', ['cancelled', 'draft', 'posted'])->default('draft');
 
             $table->timestamps();
             $table->softDeletes();
