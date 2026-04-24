@@ -14,10 +14,8 @@ class UpdateRfpRecordRequest extends FormRequest
 
     public function rules(): array
     {
-        // get the bound RfpRecord model from route
         $rfpRecord = $this->route('record');
 
-        // normalize both dates to Y-m-d for comparison
         $existingDueDate = $rfpRecord?->due_date
             ? \Carbon\Carbon::parse($rfpRecord->due_date)->format('Y-m-d')
             : null;
@@ -25,7 +23,6 @@ class UpdateRfpRecordRequest extends FormRequest
             ? \Carbon\Carbon::parse($this->due_date)->format('Y-m-d')
             : null;
 
-        // only enforce after:today if due date was changed
         $dueDateRule = $incomingDueDate && $incomingDueDate !== $existingDueDate
             ? 'required|date|after_or_equal:today'
             : 'required|date';
@@ -35,8 +32,8 @@ class UpdateRfpRecordRequest extends FormRequest
             'due_date' => $dueDateRule,
             'rr_no' => 'nullable|string',
             'po_no' => 'nullable|string',
-            'requisition_no' => 'nullable|string',
-            'contract_no' => 'nullable|string',
+            'swp_pr_no' => 'nullable|string',
+            'swp_rcw_no' => 'nullable|string',
             'office' => 'required|in:head_office,mine_site',
             'payee_type' => 'required|in:employee,supplier',
             'employee_code' => 'required_if:payee_type,employee|nullable|string',
@@ -46,7 +43,7 @@ class UpdateRfpRecordRequest extends FormRequest
             'vendor_ref' => 'nullable|string',
             'rfp_currency_id' => 'required|exists:mysql_rfp.rfp_currencies,id',
             'purpose' => 'required|string',
-            'status' => 'nullable|in:cancelled,draft,for_approval,approved,paid',
+            'status' => 'nullable|in:cancelled,draft,posted',
             'log_remarks' => 'nullable|string|max:500',
             'details' => 'required|array|min:1',
             'details.*.id' => 'sometimes|exists:mysql_rfp.rfp_details,id',
@@ -90,7 +87,6 @@ class UpdateRfpRecordRequest extends FormRequest
 
     protected function prepareForValidation()
     {
-        // Remove completely empty details (all fields null/empty)
         if ($this->has('details')) {
             $this->merge([
                 'details' => collect($this->details)

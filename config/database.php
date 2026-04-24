@@ -129,8 +129,8 @@ return [
             'charset' => env('SQLSRV_SAP_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('SQLSRV_SAP_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('SQLSRV_SAP_TRUST_SERVER_CERTIFICATE', 'false'),
+            'encrypt' => env('SQLSRV_SAP_ENCRYPT', 'yes'),
+            'trust_server_certificate' => env('SQLSRV_SAP_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
     ],

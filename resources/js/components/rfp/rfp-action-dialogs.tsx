@@ -13,8 +13,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-// 'paid'
-export type RfpActionType = 'cancel' | 'revert' | 'delete' | null;
+export type RfpActionType = 'cancel' | 'post' | 'revert' | 'delete' | null;
 
 type DialogConfig = {
     title: string;
@@ -34,6 +33,14 @@ const DIALOG_CONFIGS: Record<Exclude<RfpActionType, null>, DialogConfig> = {
         remarksRequired: true,
         showRemarks: true,
     },
+    post: {
+        title: 'Post RFP',
+        description: 'Are you sure you want to mark this RFP as posted? Edit, cancel, and delete will be disabled after posting.',
+        confirmLabel: 'Post RFP',
+        confirmClass: 'bg-green-600 text-white hover:bg-green-700',
+        remarksRequired: false,
+        showRemarks: true,
+    },
     revert: {
         title: 'Revert to Draft',
         description: 'Are you sure you want to revert this RFP back to draft status?',
@@ -42,14 +49,6 @@ const DIALOG_CONFIGS: Record<Exclude<RfpActionType, null>, DialogConfig> = {
         remarksRequired: true,
         showRemarks: true,
     },
-    // paid: {
-    //     title: 'Mark as Paid',
-    //     description: 'Mark this RFP as paid? This can be reverted later.',
-    //     confirmLabel: 'Mark as Paid',
-    //     confirmClass: 'bg-green-600 text-white hover:bg-green-700',
-    //     remarksRequired: false,
-    //     showRemarks: true,
-    // },
     delete: {
         title: 'Delete RFP',
         description: 'Are you sure you want to delete this RFP? This action cannot be undone.',
@@ -124,7 +123,7 @@ export function RfpActionDialogs({ rfpNumber, activeAction, onClose, onConfirm }
                                 onChange={(e) => handleRemarksChange(e.target.value)}
                                 placeholder="Add remarks..."
                                 rows={3}
-                                className={`resize-none ${remarksError ? 'border-destructive' : ''}`}
+                                className={`resize-none uppercase ${remarksError ? 'border-destructive' : ''}`}
                             />
                             {remarksError && (
                                 <p className="text-xs text-destructive">Remarks is required.</p>

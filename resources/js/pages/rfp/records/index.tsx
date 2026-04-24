@@ -32,6 +32,10 @@ export default function Index({ rfp_records }: Props) {
             router.patch(`/rfp/records/${activeAction.id}/cancel`, { remarks }, {
                 onSuccess: () => setActiveAction(null),
             });
+        } else if (action === 'post') {
+            router.patch(`/rfp/records/${activeAction.id}/post`, { remarks }, {
+                onSuccess: () => setActiveAction(null),
+            });
         } else if (action === 'revert') {
             router.patch(`/rfp/records/${activeAction.id}/revert`, { remarks }, {
                 onSuccess: () => setActiveAction(null),
@@ -150,24 +154,35 @@ export default function Index({ rfp_records }: Props) {
             header: 'Actions',
             enableSorting: false,
             enableColumnFilter: false,
-            size: 160,
+            size: 200,
             cell: ({ row }) => {
                 const rfp = row.original;
+                const isPosted = rfp.status === 'posted';
+                const isCancelled = rfp.status === 'cancelled';
+                const isDraft = rfp.status === 'draft';
+
                 return (
                     <div className="flex justify-end gap-1">
+                        {/* View — always visible */}
                         <Button variant="ghost" size="sm" asChild>
                             <Link href={`/rfp/records/${rfp.id}`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                 <Eye className="h-4 w-4" />
                                 <span className="text-[10px] leading-none">View</span>
                             </Link>
                         </Button>
-                        <Button variant="ghost" size="sm"
-                            onClick={() => setPreviewRfp(rfp)}
-                            className="flex flex-col items-center gap-1 h-auto py-1 w-14">
-                            <Printer className="h-4 w-4" />
-                            <span className="text-[10px] leading-none">Print</span>
-                        </Button>
-                        {can('rfp-record-edit') && rfp.status !== 'cancelled' && (
+
+                        {/* Print — only when posted */}
+                        {isPosted && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setPreviewRfp(rfp)}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <Printer className="h-4 w-4" />
+                                <span className="text-[10px] leading-none">Print</span>
+                            </Button>
+                        )}
+
+                        {/* Edit — hidden when posted or cancelled */}
+                        {can('rfp-record-edit') && !isPosted && !isCancelled && (
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={`/rfp/records/${rfp.id}/edit`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                     <Pencil className="h-4 w-4" />
@@ -175,7 +190,19 @@ export default function Index({ rfp_records }: Props) {
                                 </Link>
                             </Button>
                         )}
-                        {can('rfp-record-cancel') && rfp.status !== 'cancelled' && (
+
+                        {/* Post — only on draft */}
+                        {can('rfp-record-post') && isDraft && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setActiveAction({ type: 'post', id: rfp.id })}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <FileText className="h-4 w-4 text-green-600" />
+                                <span className="text-[10px] leading-none">Post</span>
+                            </Button>
+                        )}
+
+                        {/* Cancel — hidden when posted or cancelled */}
+                        {can('rfp-record-cancel') && !isPosted && !isCancelled && (
                             <Button variant="ghost" size="sm"
                                 onClick={() => setActiveAction({ type: 'cancel', id: rfp.id })}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
@@ -183,7 +210,9 @@ export default function Index({ rfp_records }: Props) {
                                 <span className="text-[10px] leading-none">Cancel</span>
                             </Button>
                         )}
-                        {can('rfp-record-revert') && (rfp.status === 'paid' || rfp.status === 'cancelled') && (
+
+                        {/* Revert — only when posted or cancelled */}
+                        {can('rfp-record-revert') && (isPosted || isCancelled) && (
                             <Button variant="ghost" size="sm"
                                 onClick={() => setActiveAction({ type: 'revert', id: rfp.id })}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
@@ -191,7 +220,9 @@ export default function Index({ rfp_records }: Props) {
                                 <span className="text-[10px] leading-none">Revert</span>
                             </Button>
                         )}
-                        {can('rfp-record-delete') && (
+
+                        {/* Delete — hidden when posted */}
+                        {can('rfp-record-delete') && !isPosted && (
                             <Button variant="ghost" size="sm"
                                 onClick={() => setActiveAction({ type: 'delete', id: rfp.id })}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
@@ -209,7 +240,7 @@ export default function Index({ rfp_records }: Props) {
         <AppLayout
             breadcrumbs={[
                 { title: 'Dashboard', href: '/rfp/dashboard' },
-                { title: 'Records', href: '/rfp/records' },
+                { title: 'RFP Records', href: '/rfp/records' },
             ]}
         >
             <Head title="RFP Records" />

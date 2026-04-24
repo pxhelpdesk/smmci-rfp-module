@@ -78,10 +78,11 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
 
         // Default office is 'mine_site' on create
         if (residentManager) pushIfNew(residentManager);
-        if (departmentHead) pushIfNew(departmentHead); // only >500k but start with it
+        if (departmentHead) pushIfNew(departmentHead);
         // cfo/ceo not added initially since amount starts at 0
 
-        return dedupeSignatories({
+        // Return raw — do NOT dedupe here so the form can show duplicate warnings visually
+        return {
             recommending_approval_by: scopeOwner
                 ? [{ value: scopeOwner.id, label: scopeOwner.name, department: scopeOwner.department }]
                 : [],
@@ -90,7 +91,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                 .filter(u => u.id === 4 || u.id === 3)
                 .sort((a, b) => (a.id === 4 ? -1 : 1))
                 .map(u => ({ value: u.id, label: u.name, department: u.department })),
-        });
+        };
     });
 
     const { data, setData, post, processing, errors, transform } = useForm<{
@@ -98,8 +99,8 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         due_date: string;
         rr_no: string;
         po_no: string;
-        requisition_no: string;
-        contract_no: string;
+        swp_pr_no: string;
+        swp_rcw_no: string;
         office: 'head_office' | 'mine_site';
         payee_type: 'employee' | 'supplier';
         employee_code: string;
@@ -117,8 +118,8 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         due_date: '',
         rr_no: '',
         po_no: '',
-        requisition_no: '',
-        contract_no: '',
+        swp_pr_no: '',
+        swp_rcw_no: '',
         office: 'mine_site',
         payee_type: 'supplier',
         employee_code: '',
@@ -178,6 +179,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
 
     const handleConfirmCreate = () => {
         setShowConfirmDialog(false);
+        // Dedupe only on save — priority: concurred > approved > recommending
         const deduped = dedupeSignatories(signatories);
         transform(d => ({
             ...d,
@@ -188,7 +190,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                 ...deduped.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
             ],
             details: d.details.map(({ rfp_category_id, ...rest }) => rest),
-            log_remarks: createRemarks, // captured from closure at call time
+            log_remarks: createRemarks,
         }));
         post('/rfp/records');
     };
@@ -265,7 +267,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                     </CardContent>
                 </Card>
 
-                {/* Basic Information — only Office, category/usage moved to per-detail rows */}
+                {/* Basic Information */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">Basic Information</CardTitle>
@@ -415,26 +417,31 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-sm">Currency <Req /></Label>
-                                <Select
-                                    options={currencyOptions}
-                                    value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
-                                    onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
-                                    placeholder="Select currency..."
-                                    className="text-sm"
-                                    styles={{
-                                        control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                        menu: (base) => ({ ...base, fontSize: '14px' }),
-                                    }}
-                                />
-                                {errors.rfp_currency_id && <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR No.</Label>
+                                    <Input
+                                        id="swp_pr_no"
+                                        value={data.swp_pr_no}
+                                        onChange={(e) => setData('swp_pr_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="swp_rcw_no" className="text-sm">SWP RCW No.</Label>
+                                    <Input
+                                        id="swp_rcw_no"
+                                        value={data.swp_rcw_no}
+                                        onChange={(e) => setData('swp_rcw_no', e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Main Information — per-row category + usage + amount */}
+                {/* Main Information */}
                 <Card>
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
@@ -447,9 +454,10 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                     <CardContent className="space-y-2">
                         {data.details.length > 0 && (
                             <div className="hidden md:flex gap-2 px-3 pb-2">
-                                <div className="flex-1 grid grid-cols-3 gap-2">
+                                <div className="flex-1 grid grid-cols-4 gap-2">
                                     <p className="text-xs font-medium text-muted-foreground">Category</p>
                                     <p className="text-xs font-medium text-muted-foreground">Usage</p>
+                                    <p className="text-xs font-medium text-muted-foreground">Currency</p>
                                     <p className="text-xs font-medium text-muted-foreground">Amount</p>
                                 </div>
                                 {data.details.length > 1 && <div className="w-9"></div>}
@@ -458,8 +466,8 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
 
                         {data.details.map((detail, index) => (
                             <div key={index} className="flex gap-2 items-start px-3">
-                                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
-                                    {/* Category select — UI filter only */}
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
+                                    {/* Category */}
                                     <div className="space-y-1">
                                         <Select
                                             options={categoryOptions}
@@ -471,7 +479,6 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                                     rfp_category_id: opt?.value || null,
                                                     rfp_usage_id: null,
                                                 };
-
                                                 setData('details', updated);
                                                 if (opt?.value) loadUsagesForCategory(opt.value);
                                             }}
@@ -484,7 +491,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                             }}
                                         />
                                     </div>
-                                    {/* Usage select filtered by this row's category */}
+                                    {/* Usage */}
                                     <div className="space-y-1">
                                         <Select
                                             options={(usagesByCategory[detail.rfp_category_id ?? 0] ?? []).map(u => ({
@@ -508,6 +515,31 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                         />
                                         {errors[`details.${index}.rfp_usage_id`] && (
                                             <p className="text-xs text-destructive">{errors[`details.${index}.rfp_usage_id`]}</p>
+                                        )}
+                                    </div>
+                                    {/* Currency */}
+                                    <div className="space-y-1">
+                                        <Select
+                                            options={currencyOptions}
+                                            value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
+                                            onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
+                                            placeholder="Select currency..."
+                                            isDisabled={index !== 0}
+                                            className="text-sm"
+                                            styles={{
+                                                control: (base) => ({
+                                                    ...base,
+                                                    minHeight: '36px',
+                                                    fontSize: '14px',
+                                                    // visually distinguish readonly rows from truly disabled
+                                                    opacity: index !== 0 ? 0.6 : 1,
+                                                    cursor: index !== 0 ? 'not-allowed' : 'default',
+                                                }),
+                                                menu: (base) => ({ ...base, fontSize: '14px' }),
+                                            }}
+                                        />
+                                        {index === 0 && errors.rfp_currency_id && (
+                                            <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>
                                         )}
                                     </div>
                                     {/* Amount */}
@@ -548,14 +580,22 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1.5">
-                            <Label htmlFor="purpose" className="text-sm">Purpose <Req /></Label>
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="purpose" className="text-sm">Purpose <Req /></Label>
+                                <span className={`text-xs ${data.purpose.length > 1000 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                    {data.purpose.length} / 1000
+                                </span>
+                            </div>
                             <Textarea
                                 id="purpose"
                                 value={data.purpose}
                                 onChange={(e) => setData('purpose', e.target.value)}
                                 rows={3}
-                                className="resize-none"
+                                className={`resize-none ${data.purpose.length > 1000 ? 'border-destructive' : ''}`}
                             />
+                            {data.purpose.length > 1000 && (
+                                <p className="text-xs text-destructive">Purpose must not exceed 1000 characters.</p>
+                            )}
                             {errors.purpose && <p className="text-xs text-destructive">{errors.purpose}</p>}
                         </div>
                     </CardContent>

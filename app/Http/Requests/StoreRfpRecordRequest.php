@@ -19,8 +19,8 @@ class StoreRfpRecordRequest extends FormRequest
             'due_date' => 'required|date|after_or_equal:today',
             'rr_no' => 'nullable|string',
             'po_no' => 'nullable|string',
-            'requisition_no' => 'nullable|string',
-            'contract_no' => 'nullable|string',
+            'swp_pr_no' => 'nullable|string',
+            'swp_rcw_no' => 'nullable|string',
             'office' => 'required|in:head_office,mine_site',
             'payee_type' => 'required|in:employee,supplier',
             'employee_code' => 'required_if:payee_type,employee|nullable|string',
@@ -30,7 +30,7 @@ class StoreRfpRecordRequest extends FormRequest
             'vendor_ref' => 'nullable|string',
             'rfp_currency_id' => 'required|exists:mysql_rfp.rfp_currencies,id',
             'purpose' => 'required|string',
-            'status' => 'nullable|in:cancelled,draft,for_approval,approved,paid',
+            'status' => 'nullable|in:cancelled,draft,posted',
             'log_remarks' => 'nullable|string|max:500',
             'details' => 'required|array|min:1',
             'details.*.rfp_usage_id' => 'required|exists:mysql_rfp.rfp_usages,id',
@@ -73,7 +73,6 @@ class StoreRfpRecordRequest extends FormRequest
 
     protected function prepareForValidation()
     {
-        // Remove completely empty details (all fields null/empty)
         if ($this->has('details')) {
             $this->merge([
                 'details' => collect($this->details)
