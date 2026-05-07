@@ -171,6 +171,16 @@ export default function Index({ rfp_records }: Props) {
                             </Link>
                         </Button>
 
+                        {/* Post — only on draft */}
+                        {can('rfp-record-post') && isDraft && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setActiveAction({ type: 'post', id: rfp.id })}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <FileText className="h-4 w-4 text-green-600" />
+                                <span className="text-[10px] leading-none">Post</span>
+                            </Button>
+                        )}
+
                         {/* Print — only when posted */}
                         {isPosted && (
                             <Button variant="ghost" size="sm"
@@ -188,16 +198,6 @@ export default function Index({ rfp_records }: Props) {
                                     <Pencil className="h-4 w-4" />
                                     <span className="text-[10px] leading-none">Edit</span>
                                 </Link>
-                            </Button>
-                        )}
-
-                        {/* Post — only on draft */}
-                        {can('rfp-record-post') && isDraft && (
-                            <Button variant="ghost" size="sm"
-                                onClick={() => setActiveAction({ type: 'post', id: rfp.id })}
-                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
-                                <FileText className="h-4 w-4 text-green-600" />
-                                <span className="text-[10px] leading-none">Post</span>
                             </Button>
                         )}
 
