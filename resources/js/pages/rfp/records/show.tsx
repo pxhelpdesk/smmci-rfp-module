@@ -217,6 +217,19 @@ export default function Show({ rfp_record, logs }: Props) {
                             </Link>
                         </Button>
 
+                        {/* Post — only on draft */}
+                        {can('rfp-record-post') && isDraft && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setActiveAction('post')}
+                                className="text-green-600 hover:text-green-600"
+                            >
+                                <FileText className="h-4 w-4 mr-1.5" />
+                                Post
+                            </Button>
+                        )}
+
                         {/* Print — only when posted */}
                         {isPosted && (
                             <Button variant="outline" size="sm" onClick={handlePrint}>
@@ -232,19 +245,6 @@ export default function Show({ rfp_record, logs }: Props) {
                                     <Edit className="h-4 w-4 mr-1.5" />
                                     Edit
                                 </Link>
-                            </Button>
-                        )}
-
-                        {/* Post — only on draft */}
-                        {can('rfp-record-post') && isDraft && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setActiveAction('post')}
-                                className="text-green-600 hover:text-green-600"
-                            >
-                                <FileText className="h-4 w-4 mr-1.5" />
-                                Post
                             </Button>
                         )}
 

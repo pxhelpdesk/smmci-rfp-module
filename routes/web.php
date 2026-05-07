@@ -19,13 +19,13 @@ use App\Http\Controllers\RfpDashboardController;
 //     ]);
 // })->name('home');
 
-Route::get('/', function () { return redirect()->away('http://172.17.2.25:8001'); })->name('home');
-Route::get('/login', function () { return redirect()->away('http://172.17.2.25:8001/login'); })->name('login');
+Route::get('/', function () { return redirect()->away('http://172.17.2.69:8001'); })->name('home');
+Route::get('/login', function () { return redirect()->away('http://172.17.2.69:8001/login'); })->name('login');
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return Inertia::location('http://172.17.2.25:8001/login');
+    return Inertia::location('http://172.17.2.69:8001/login');
 })->name('logout');
 
 Route::prefix('rfp')->middleware(['auth'])->group(function () {
@@ -35,7 +35,7 @@ Route::prefix('rfp')->middleware(['auth'])->group(function () {
         // Records
         Route::resource('records', RfpRecordController::class);
         Route::patch('records/{record}/cancel', [RfpRecordController::class, 'cancel'])->name('records.cancel');
-        Route::patch('records/{record}/paid', [RfpRecordController::class, 'markAsPaid'])->name('records.paid');
+        Route::patch('records/{record}/post', [RfpRecordController::class, 'markAsPosted'])->name('records.post');
         Route::patch('records/{record}/revert', [RfpRecordController::class, 'revert'])->name('records.revert');
 
         Route::get('approval-matrix', [RfpApprovalMatrixController::class, 'index'])

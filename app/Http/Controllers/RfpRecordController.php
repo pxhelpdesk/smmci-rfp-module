@@ -219,7 +219,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function edit(RfpRecord $record)
     {
-        abort_if($record->status === 'cancelled', 403, 'Cancelled RFP cannot be edited.');
+        abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
 
         $record->load(['details.usage.category', 'signs.user.department']);
 
@@ -283,7 +283,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function update(UpdateRfpRecordRequest $updateRequest, RfpRecord $record)
     {
-        abort_if($record->status === 'cancelled', 403, 'Cancelled RFP cannot be edited.');
+        abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
 
         $validated = $updateRequest->validated();
 
@@ -483,7 +483,6 @@ class RfpRecordController extends Controller implements HasMiddleware
         return redirect()->back()->with('success', "RFP {$record->rfp_number} has been cancelled.");
     }
 
-    // Renamed from markAsPaid — marks record as posted
     public function markAsPosted(RfpRecord $record)
     {
         abort_if($record->status === 'posted', 422, 'RFP is already posted.');
@@ -496,7 +495,7 @@ class RfpRecordController extends Controller implements HasMiddleware
             'from'          => $previousStatus,
             'into'          => 'posted',
             'details'       => null,
-            'remarks'       => !empty(request('remarks')) ? request('remarks') : 'Record marked as posted.',
+            'remarks'       => !empty(request('remarks')) ? request('remarks') : 'N/A',
         ]);
         return redirect()->back()->with('success', "RFP {$record->rfp_number} marked as posted.");
     }
