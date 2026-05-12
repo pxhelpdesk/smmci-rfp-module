@@ -20,6 +20,9 @@ class RfpUsageSeeder extends Seeder
             ['rfp_category_id' => 2, 'code' => 'SERV-002', 'description' => 'Medical Care Services Payment for Executive Check Up / Industrial Accident Cases'],
             ['rfp_category_id' => 2, 'code' => 'SERV-003', 'description' => 'Managers Medical Assistance Payment'],
             ['rfp_category_id' => 2, 'code' => 'SERV-004', 'description' => 'Canteen / Catering Services Payments'],
+            ['rfp_category_id' => 2, 'code' => 'SERV-005', 'description' => 'Freight Forwarding Services'],
+            ['rfp_category_id' => 2, 'code' => 'SERV-006', 'description' => 'Airfare'],
+            ['rfp_category_id' => 2, 'code' => 'SERV-007', 'description' => 'Hotel Accomodation'],
 
             // Government Agencies and Payroll (GOVT)
             ['rfp_category_id' => 3, 'code' => 'GOVT-001', 'description' => 'Government Taxes / Permits Payment'],

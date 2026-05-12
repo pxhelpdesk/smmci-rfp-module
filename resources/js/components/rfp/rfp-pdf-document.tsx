@@ -489,7 +489,7 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                             {getSignsByRole(rfp_record.signs, 'prepared_by').map((s, i) => (
                                 <View key={i} style={styles.signatoryEntry}>
                                     <View style={styles.signatoryLine} />
-                                    <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                    <Text style={styles.signatoryName}>{s.user?.name ?? s.philex_user_name ?? ''}</Text>
                                 </View>
                             ))}
 
@@ -499,7 +499,7 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                                     {getSignsByRole(rfp_record.signs, 'recommending_approval_by').map((s, i) => (
                                         <View key={i} style={styles.signatoryEntry}>
                                             <View style={styles.signatoryLine} />
-                                            <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                            <Text style={styles.signatoryName}>{s.user?.name ?? s.philex_user_name ?? ''}</Text>
                                         </View>
                                     ))}
                                 </>
@@ -527,7 +527,7 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                                     {getSignsByRole(rfp_record.signs, 'approved_by').map((s, i) => (
                                         <View key={i} style={[styles.signatoryEntry, { marginTop: i === 0 ? 20 : 28 }]}>
                                             <View style={styles.signatoryLine} />
-                                            <Text style={styles.signatoryName}>{s.user?.name ?? ''}</Text>
+                                            <Text style={styles.signatoryName}>{s.user?.name ?? s.philex_user_name ?? ''}</Text>
                                         </View>
                                     ))}
                                 </>

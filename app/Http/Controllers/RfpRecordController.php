@@ -144,7 +144,7 @@ class RfpRecordController extends Controller implements HasMiddleware
         $signsData = $validated['signs'] ?? [];
         $logRemarks = $validated['log_remarks'] ?? null;
 
-        unset($validated['details'], $validated['signs'], $validated['log_remarks']);
+        unset($validated['details'], $validated['signs'], $validated['log_remarks'], $validated['_raw_category_ids']);
 
         $rfpRecord = RfpRecord::create($validated);
 
@@ -160,9 +160,10 @@ class RfpRecordController extends Controller implements HasMiddleware
         if (!empty($signsData)) {
             $rfpRecord->signs()->createMany(
                 collect($signsData)->map(fn($s) => [
-                    'user_id' => $s['user_id'],
-                    'details' => $s['details'],
-                    'is_signed' => null,
+                    'user_id'           => $s['user_id'] ?? null,
+                    'philex_user_name'  => $s['philex_user_name'] ?? null,
+                    'details'           => $s['details'],
+                    'is_signed'         => null,
                 ])->toArray()
             );
         }
@@ -219,7 +220,10 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function edit(RfpRecord $record)
     {
-        abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
+        // Allow admin to edit even posted/cancelled records
+        if (!auth()->user()->hasPermissionTo('rfp-record-all')) {
+            abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
+        }
 
         $record->load(['details.usage.category', 'signs.user.department']);
 
@@ -283,7 +287,10 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function update(UpdateRfpRecordRequest $updateRequest, RfpRecord $record)
     {
-        abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
+        // Allow admin to update even posted/cancelled records
+        if (!auth()->user()->hasPermissionTo('rfp-record-all')) {
+            abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
+        }
 
         $validated = $updateRequest->validated();
 
@@ -295,7 +302,8 @@ class RfpRecordController extends Controller implements HasMiddleware
         $details = $validated['details'] ?? [];
         $logRemarks = $validated['log_remarks'] ?? null;
         $signs = $validated['signs'] ?? null;
-        unset($validated['details'], $validated['log_remarks'], $validated['signs']);
+
+        unset($validated['details'], $validated['log_remarks'], $validated['signs'], $validated['_raw_category_ids']);
 
         $record->update($validated);
 
@@ -312,7 +320,8 @@ class RfpRecordController extends Controller implements HasMiddleware
         if ($signs !== null) {
             $record->signs()->delete();
             $signsToCreate = collect($signs)->map(fn($s) => [
-                'user_id' => $s['user_id'],
+                'user_id' => $s['user_id'] ?? null,
+                'philex_user_name' => $s['philex_user_name'] ?? null,
                 'details' => $s['details'],
                 'is_signed' => null,
             ])->toArray();
@@ -524,5 +533,47 @@ class RfpRecordController extends Controller implements HasMiddleware
             ->select('id', 'code', 'description')
             ->get();
         return response()->json($usages);
+    }
+
+    public function getSwpPr()
+    {
+        try {
+            $records = \App\Models\SwpPr::select('custom_id', 'created_at')
+                ->whereNotNull('custom_id')
+                ->where('custom_id', '!=', '')
+                ->where('status', '!=', 'CANCELLED')
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn($r) => [
+                    'value' => $r->custom_id,
+                    'label' => $r->custom_id,
+                ])
+                ->values();
+
+            return response()->json($records);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getSwpRcw()
+    {
+        try {
+            $records = \App\Models\SwpRcw::select('custom_id', 'created_at')
+                ->whereNotNull('custom_id')
+                ->where('custom_id', '!=', '')
+                ->where('status', '!=', 'CANCELLED')
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn($r) => [
+                    'value' => $r->custom_id,
+                    'label' => $r->custom_id,
+                ])
+                ->values();
+
+            return response()->json($records);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

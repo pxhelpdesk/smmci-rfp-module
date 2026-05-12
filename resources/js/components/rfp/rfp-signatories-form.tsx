@@ -1,5 +1,5 @@
 // components/rfp/rfp-signatories-form.tsx
-import { X, GripVertical } from 'lucide-react';
+import { X, GripVertical, RotateCcw } from 'lucide-react';
 import Select from 'react-select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,7 @@ export type SignatoriesState = {
 type Entry = {
     id: string;
     user: UserOption | null;
+    philex_user_name?: string;
     isLocked: boolean;
 };
 
@@ -39,6 +40,11 @@ type Props = {
     signatories: SignatoriesState;
     userOptions: UserOption[];
     onChange: (signatories: SignatoriesState) => void;
+    onEntriesChange?: (entries: {
+        recommending: Entry[];
+        approved: Entry[];
+        concurred: Entry[];
+    }) => void;
     office: 'head_office' | 'mine_site';
     subtotalAmount: number;
     residentManager?: { id: number; name: string; department?: string } | null;
@@ -46,10 +52,6 @@ type Props = {
     cfo?: { id: number; name: string; department?: string } | null;
     ceo?: { id: number; name: string; department?: string } | null;
 };
-
-// ─── Priority: concurred (highest) > approved > recommending (lowest) ─────────
-// Each list is only flagged if it duplicates a HIGHER priority list.
-// On save, the lower-priority entry is dropped, higher-priority is retained.
 
 function getRecommendingDuplicateIds(
     recommending: Entry[],
@@ -83,13 +85,12 @@ function getApprovedDuplicateIds(
     return flagged;
 }
 
-// ─── Sortable Row ────────────────────────────────────────────────────────────
-
 function SortableRow({
     entry,
     userOptions,
     selectStyles,
     onUpdate,
+    onUpdatePhilexName,
     onRemove,
     allowRemove = false,
     sublabel,
@@ -99,6 +100,7 @@ function SortableRow({
     userOptions: UserOption[];
     selectStyles: any;
     onUpdate: (opt: UserOption | null) => void;
+    onUpdatePhilexName: (name: string) => void;
     onRemove: () => void;
     allowRemove?: boolean;
     sublabel?: string;
@@ -123,7 +125,7 @@ function SortableRow({
                     <GripVertical className="h-4 w-4" />
                 </button>
 
-                <div className="flex-1">
+                <div className="flex-1 space-y-1">
                     <Select
                         options={userOptions}
                         value={entry.user ?? null}
@@ -140,6 +142,15 @@ function SortableRow({
                             }),
                         }}
                     />
+                    {/* Manual name input — only shown when no user selected and not locked */}
+                    {!entry.user && !entry.isLocked && (
+                        <Input
+                            value={entry.philex_user_name ?? ''}
+                            onChange={(e) => onUpdatePhilexName(e.target.value)}
+                            placeholder="Manual for Philex Manager..."
+                            className="h-8 text-sm"
+                        />
+                    )}
                 </div>
 
                 {(!entry.isLocked || allowRemove) ? (
@@ -157,7 +168,6 @@ function SortableRow({
                 )}
             </div>
 
-            {/* Sublabel row */}
             <div className="pl-7 flex items-center gap-1.5">
                 {sublabel && (
                     <span className="text-[10px] text-muted-foreground">{sublabel}</span>
@@ -172,14 +182,13 @@ function SortableRow({
     );
 }
 
-// ─── Sortable List ───────────────────────────────────────────────────────────
-
 function SortableList({
     entries,
     userOptions,
     selectStyles,
     onDragEnd,
     onUpdate,
+    onUpdatePhilexName,
     onRemove,
     allowRemove = false,
     getSublabel,
@@ -190,6 +199,7 @@ function SortableList({
     selectStyles: any;
     onDragEnd: (event: DragEndEvent) => void;
     onUpdate: (id: string, opt: UserOption | null) => void;
+    onUpdatePhilexName: (id: string, name: string) => void;
     onRemove: (id: string) => void;
     allowRemove?: boolean;
     getSublabel?: (entry: Entry, index: number) => string | undefined;
@@ -211,6 +221,7 @@ function SortableList({
                         userOptions={userOptions}
                         selectStyles={selectStyles}
                         onUpdate={(opt) => onUpdate(entry.id, opt)}
+                        onUpdatePhilexName={(name) => onUpdatePhilexName(entry.id, name)}
                         onRemove={() => onRemove(entry.id)}
                         allowRemove={allowRemove}
                         sublabel={getSublabel?.(entry, index)}
@@ -222,23 +233,16 @@ function SortableList({
     );
 }
 
-// ─── Dedupe with priority on save ────────────────────────────────────────────
-// concurred (highest) > approved > recommending (lowest)
-// Lower priority entries are dropped if they appear in a higher priority list.
-
 export function dedupeSignatories(state: SignatoriesState): SignatoriesState {
-    // Concurred: keep all — highest priority, nothing drops it
     const deduped_concurred = state.concurred_by.filter(Boolean) as UserOption[];
     const concurredIds = new Set(deduped_concurred.map(u => u.value));
 
-    // Approved: drop anyone already in concurred
     const deduped_approved = state.approved_by.filter(u => {
         if (!u) return false;
         return !concurredIds.has(u.value);
     }) as UserOption[];
     const approvedIds = new Set(deduped_approved.map(u => u.value));
 
-    // Recommending: drop anyone already in approved or concurred
     const deduped_recommending = state.recommending_approval_by.filter(u => {
         if (!u) return false;
         return !approvedIds.has(u.value) && !concurredIds.has(u.value);
@@ -251,13 +255,12 @@ export function dedupeSignatories(state: SignatoriesState): SignatoriesState {
     };
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
-
 export function RfpSignatoriesForm({
     preparedByName,
     signatories,
     userOptions,
     onChange,
+    onEntriesChange,
     office,
     subtotalAmount,
     residentManager,
@@ -266,32 +269,42 @@ export function RfpSignatoriesForm({
     ceo,
 }: Props) {
 
-    // ── Recommending Approval By entries ──────────────────────────
-    const [recommendingEntries, setRecommendingEntries] = useState<Entry[]>(() =>
+    const defaultRecommendingEntries = useRef<Entry[]>(
         signatories.recommending_approval_by.map((u, i) => ({
             id: `rec-${i}-${Date.now()}`,
             user: u,
+            philex_user_name: '',
             isLocked: false,
         }))
     );
 
-    // ── Approved By entries ───────────────────────────────────────
+    const defaultConcurredEntries = useRef<Entry[]>(
+        signatories.concurred_by.map((u, i) => ({
+            id: `con-${i}-${Date.now()}`,
+            user: u,
+            philex_user_name: '',
+            isLocked: true,
+        }))
+    );
+
+    const [recommendingEntries, setRecommendingEntries] = useState<Entry[]>(() =>
+        defaultRecommendingEntries.current
+    );
+
     const [approvedEntries, setApprovedEntries] = useState<Entry[]>(() =>
         signatories.approved_by.map((u, i) => ({
             id: `app-${i}-${Date.now()}`,
             user: u,
+            philex_user_name: '',
             isLocked: isDefaultApprovedId(u?.value),
         }))
     );
 
-    // ── Concurred By entries ──────────────────────────────────────
     const [concurredEntries, setConcurredEntries] = useState<Entry[]>(() =>
-        signatories.concurred_by.map((u, i) => ({
-            id: `con-${i}-${Date.now()}`,
-            user: u,
-            isLocked: true,
-        }))
+        defaultConcurredEntries.current
     );
+
+    const defaultApprovedEntries = useRef<Entry[]>([]);
 
     function isDefaultApprovedId(id?: number): boolean {
         if (!id) return false;
@@ -314,6 +327,7 @@ export function RfpSignatoriesForm({
             pushIfNew(residentManager.id, {
                 id: `default-rm-${Date.now()}`,
                 user: { value: residentManager.id, label: residentManager.name, department: residentManager.department },
+                philex_user_name: '',
                 isLocked: true,
             });
         }
@@ -323,6 +337,7 @@ export function RfpSignatoriesForm({
                 pushIfNew(departmentHead.id, {
                     id: `default-dh-${Date.now()}`,
                     user: { value: departmentHead.id, label: departmentHead.name, department: departmentHead.department },
+                    philex_user_name: '',
                     isLocked: true,
                 });
             }
@@ -332,6 +347,7 @@ export function RfpSignatoriesForm({
             pushIfNew(cfo.id, {
                 id: `default-cfo-${Date.now()}`,
                 user: { value: cfo.id, label: cfo.name, department: cfo.department },
+                philex_user_name: '',
                 isLocked: true,
             });
         }
@@ -340,6 +356,7 @@ export function RfpSignatoriesForm({
             pushIfNew(ceo.id, {
                 id: `default-ceo-${Date.now()}`,
                 user: { value: ceo.id, label: ceo.name, department: ceo.department },
+                philex_user_name: '',
                 isLocked: true,
             });
         }
@@ -352,51 +369,104 @@ export function RfpSignatoriesForm({
     useEffect(() => {
         if (!isMounted.current) {
             isMounted.current = true;
+            defaultApprovedEntries.current = approvedEntries.filter(e => e.isLocked);
             return;
         }
 
         const defaults = computeDefaultApproved();
-        const defaultIds = new Set(defaults.map(e => e.user?.value).filter(Boolean));
+        defaultApprovedEntries.current = defaults;
 
-        // Keep extras that don't conflict with the new defaults
+        const defaultIds = new Set(defaults.map(e => e.user?.value).filter(Boolean));
         const extras = approvedEntries.filter(
             e => !e.isLocked && e.user?.value && !defaultIds.has(e.user.value)
         );
 
         const newEntries = [...extras, ...defaults];
         setApprovedEntries(newEntries);
-        handleChange({ ...signatories, approved_by: newEntries.map(e => e.user) });
+        handleChange({ ...signatories, approved_by: newEntries.map(e => e.user) }, newEntries, recommendingEntries, concurredEntries);
     }, [office, subtotalAmount]);
 
-    // ── Sync helpers ──────────────────────────────────────────────
-
-    const handleChange = (newState: SignatoriesState) => {
+    const handleChange = (
+        newState: SignatoriesState,
+        approved = approvedEntries,
+        recommending = recommendingEntries,
+        concurred = concurredEntries,
+    ) => {
         onChange(dedupeSignatories(newState));
+        onEntriesChange?.({ recommending, approved, concurred });
     };
 
     const syncRecommending = (entries: Entry[]) => {
         setRecommendingEntries(entries);
-        handleChange({ ...signatories, recommending_approval_by: entries.map(e => e.user) });
+        handleChange({ ...signatories, recommending_approval_by: entries.map(e => e.user) }, approvedEntries, entries, concurredEntries);
     };
 
     const syncApproved = (entries: Entry[]) => {
         setApprovedEntries(entries);
-        handleChange({ ...signatories, approved_by: entries.map(e => e.user) });
+        handleChange({ ...signatories, approved_by: entries.map(e => e.user) }, entries, recommendingEntries, concurredEntries);
     };
 
     const syncConcurred = (entries: Entry[]) => {
         setConcurredEntries(entries);
-        handleChange({ ...signatories, concurred_by: entries.map(e => e.user) });
+        handleChange({ ...signatories, concurred_by: entries.map(e => e.user) }, approvedEntries, recommendingEntries, entries);
     };
+
+    // ── Reset handlers ────────────────────────────────────────────
+
+    const resetRecommending = () => {
+        const restored = defaultRecommendingEntries.current.map(e => ({
+            ...e,
+            id: `rec-reset-${e.user?.value}-${Date.now()}`,
+        }));
+        syncRecommending(restored);
+    };
+
+    const resetApproved = () => {
+        const defaults = computeDefaultApproved();
+        const restored = defaults.map(e => ({
+            ...e,
+            id: `app-reset-${e.user?.value}-${Date.now()}`,
+        }));
+        syncApproved(restored);
+    };
+
+    const resetConcurred = () => {
+        const restored = defaultConcurredEntries.current.map(e => ({
+            ...e,
+            id: `con-reset-${e.user?.value}-${Date.now()}`,
+        }));
+        syncConcurred(restored);
+    };
+
+    // ── Modified detection ────────────────────────────────────────
+
+    const defaultRecommendingIds = defaultRecommendingEntries.current
+        .map(e => e.user?.value).filter(Boolean).sort().join(',');
+    const currentRecommendingIds = recommendingEntries
+        .map(e => e.user?.value).filter(Boolean).sort().join(',');
+    const recommendingIsModified = defaultRecommendingIds !== currentRecommendingIds;
+
+    const defaultApprovedIds = computeDefaultApproved()
+        .map(e => e.user?.value).filter(Boolean).sort().join(',');
+    const currentApprovedIds = approvedEntries
+        .filter(e => e.isLocked)
+        .map(e => e.user?.value).filter(Boolean).sort().join(',');
+    const approvedIsModified = defaultApprovedIds !== currentApprovedIds;
+
+    const defaultConcurredIds = defaultConcurredEntries.current
+        .map(e => e.user?.value).filter(Boolean).sort().join(',');
+    const currentConcurredIds = concurredEntries
+        .map(e => e.user?.value).filter(Boolean).sort().join(',');
+    const concurredIsModified = defaultConcurredIds !== currentConcurredIds;
 
     // ── Add ───────────────────────────────────────────────────────
 
     const addRecommending = () => {
-        syncRecommending([...recommendingEntries, { id: `rec-${Date.now()}`, user: null, isLocked: false }]);
+        syncRecommending([...recommendingEntries, { id: `rec-${Date.now()}`, user: null, philex_user_name: '', isLocked: false }]);
     };
 
     const addApproved = () => {
-        const newEntry: Entry = { id: `app-extra-${Date.now()}`, user: null, isLocked: false };
+        const newEntry: Entry = { id: `app-extra-${Date.now()}`, user: null, philex_user_name: '', isLocked: false };
         syncApproved([newEntry, ...approvedEntries]);
     };
 
@@ -411,13 +481,24 @@ export function RfpSignatoriesForm({
         syncApproved(approvedEntries.filter(e => e.id !== id));
     };
 
-    // ── Update ────────────────────────────────────────────────────
+    // ── Update user ───────────────────────────────────────────────
 
     const updateRecommending = (id: string, opt: UserOption | null) =>
-        syncRecommending(recommendingEntries.map(e => e.id === id ? { ...e, user: opt } : e));
+        syncRecommending(recommendingEntries.map(e => e.id === id ? { ...e, user: opt, philex_user_name: opt ? '' : e.philex_user_name } : e));
 
     const updateApproved = (id: string, opt: UserOption | null) =>
-        syncApproved(approvedEntries.map(e => e.id === id ? { ...e, user: opt } : e));
+        syncApproved(approvedEntries.map(e => e.id === id ? { ...e, user: opt, philex_user_name: opt ? '' : e.philex_user_name } : e));
+
+    // ── Update philex_user_name ───────────────────────────────────
+
+    const updateRecommendingPhilexName = (id: string, name: string) =>
+        syncRecommending(recommendingEntries.map(e => e.id === id ? { ...e, philex_user_name: name } : e));
+
+    const updateApprovedPhilexName = (id: string, name: string) =>
+        syncApproved(approvedEntries.map(e => e.id === id ? { ...e, philex_user_name: name } : e));
+
+    const updateConcurredPhilexName = (id: string, name: string) =>
+        syncConcurred(concurredEntries.map(e => e.id === id ? { ...e, philex_user_name: name } : e));
 
     // ── Drag End ──────────────────────────────────────────────────
 
@@ -445,53 +526,35 @@ export function RfpSignatoriesForm({
         syncConcurred(arrayMove(concurredEntries, oldIndex, newIndex));
     };
 
-    // ─────────────────────────────────────────────────────────────
-
     const selectStyles = {
         control: (base: any) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
         menu: (base: any) => ({ ...base, fontSize: '14px' }),
     };
 
-    // Resolve preparedBy user ID for duplicate detection
     const preparedByUserId = userOptions.find(u => u.label === preparedByName)?.value;
 
-    // Per-list duplicate IDs — each list only flags against higher-priority lists
     const recommendingDuplicateIds = getRecommendingDuplicateIds(
-        recommendingEntries,
-        approvedEntries,
-        concurredEntries,
-        preparedByUserId,
+        recommendingEntries, approvedEntries, concurredEntries, preparedByUserId,
     );
     const approvedDuplicateIds = getApprovedDuplicateIds(approvedEntries, concurredEntries);
-    // concurred is highest priority — never receives duplicate flags
 
     const getRecommendingSublabel = (_entry: Entry, index: number) =>
         index === 0 ? 'Scope Owner' : 'Additional';
 
     const getApprovedSublabel = (entry: Entry, _index: number): string => {
         if (!entry.isLocked) return 'Additional';
-
-        if (entry.user?.value === ceo?.id && subtotalAmount >= 5000000) {
-            return 'President & CEO (>5M – 50M)';
-        }
-        if (entry.user?.value === cfo?.id && subtotalAmount >= 1000000) {
-            return 'Treasurer & CFO (>1M – 5M)';
-        }
+        if (entry.user?.value === ceo?.id && subtotalAmount >= 5000000) return 'President & CEO (>5M – 50M)';
+        if (entry.user?.value === cfo?.id && subtotalAmount >= 1000000) return 'Treasurer & CFO (>1M – 5M)';
         if (entry.user?.value === departmentHead?.id) {
-            if (office === 'mine_site' && subtotalAmount >= 500000 && subtotalAmount < 1000000) {
+            if (office === 'mine_site' && subtotalAmount >= 500000 && subtotalAmount < 1000000)
                 return 'Department Highest Manager (>500k – 1M)';
-            }
             return 'Department Highest Manager (1 – 1M)';
         }
-        if (entry.user?.value === residentManager?.id) {
-            return 'Resident Manager (1 – 500k)';
-        }
-
+        if (entry.user?.value === residentManager?.id) return 'Resident Manager (1 – 500k)';
         return '';
     };
 
-    const getConcurredSublabel = (_entry: Entry, _index: number) =>
-        'Finance Concurrence';
+    const getConcurredSublabel = () => 'Finance Concurrence';
 
     return (
         <Card>
@@ -499,44 +562,63 @@ export function RfpSignatoriesForm({
                 <CardTitle className="text-base">Signatories</CardTitle>
             </CardHeader>
             <CardContent>
-                {/* Column Headers */}
                 <div className="flex gap-2 px-3 pb-2">
                     <div className="flex-1 grid grid-cols-4 gap-4">
                         <p className="text-xs font-medium text-muted-foreground">Prepared By</p>
 
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-medium text-muted-foreground">Recommending Approval By</p>
-                            <Button type="button" variant="outline" size="sm" className="h-5 text-xs px-1"
-                                onClick={addRecommending}>
-                                + Add
-                            </Button>
+                            <div className="flex items-center gap-1">
+                                {recommendingIsModified && defaultRecommendingEntries.current.length > 0 && (
+                                    <Button type="button" variant="outline" size="sm"
+                                        className="h-5 text-xs px-1 text-muted-foreground"
+                                        onClick={resetRecommending} title="Restore default recommending signatories">
+                                        <RotateCcw className="h-3 w-3 mr-1" />Reset
+                                    </Button>
+                                )}
+                                <Button type="button" variant="outline" size="sm" className="h-5 text-xs px-1" onClick={addRecommending}>
+                                    + Add
+                                </Button>
+                            </div>
                         </div>
 
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-medium text-muted-foreground">Approved By</p>
-                            <Button type="button" variant="outline" size="sm" className="h-5 text-xs px-1"
-                                onClick={addApproved}>
-                                + Add
-                            </Button>
+                            <div className="flex items-center gap-1">
+                                {approvedIsModified && (
+                                    <Button type="button" variant="outline" size="sm"
+                                        className="h-5 text-xs px-1 text-muted-foreground"
+                                        onClick={resetApproved} title="Restore default approved signatories">
+                                        <RotateCcw className="h-3 w-3 mr-1" />Reset
+                                    </Button>
+                                )}
+                                <Button type="button" variant="outline" size="sm" className="h-5 text-xs px-1" onClick={addApproved}>
+                                    + Add
+                                </Button>
+                            </div>
                         </div>
 
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-medium text-muted-foreground">Concurred By</p>
+                            {concurredIsModified && defaultConcurredEntries.current.length > 0 && (
+                                <Button type="button" variant="outline" size="sm"
+                                    className="h-5 text-xs px-1 text-muted-foreground"
+                                    onClick={resetConcurred} title="Restore default concurred signatories">
+                                    <RotateCcw className="h-3 w-3 mr-1" />Reset
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Signatory Inputs */}
                 <div className="flex gap-2 items-start px-3">
                     <div className="flex-1 grid grid-cols-4 gap-4">
 
-                        {/* Prepared By */}
                         <div className="space-y-0.5">
                             <Input value={preparedByName} className="h-9 bg-muted" readOnly />
                             <p className="text-[10px] text-muted-foreground pl-1">Requestor</p>
                         </div>
 
-                        {/* Recommending — flagged if duplicate of approved, concurred, or preparedBy */}
                         <div className="space-y-1.5">
                             <SortableList
                                 entries={recommendingEntries}
@@ -544,13 +626,13 @@ export function RfpSignatoriesForm({
                                 selectStyles={selectStyles}
                                 onDragEnd={handleDragEndRecommending}
                                 onUpdate={updateRecommending}
+                                onUpdatePhilexName={updateRecommendingPhilexName}
                                 onRemove={removeRecommending}
                                 getSublabel={getRecommendingSublabel}
                                 duplicateIds={recommendingDuplicateIds}
                             />
                         </div>
 
-                        {/* Approved — flagged only if duplicate of concurred */}
                         <div className="space-y-1.5">
                             <SortableList
                                 entries={approvedEntries}
@@ -558,13 +640,13 @@ export function RfpSignatoriesForm({
                                 selectStyles={selectStyles}
                                 onDragEnd={handleDragEndApproved}
                                 onUpdate={updateApproved}
+                                onUpdatePhilexName={updateApprovedPhilexName}
                                 onRemove={removeApproved}
                                 getSublabel={getApprovedSublabel}
                                 duplicateIds={approvedDuplicateIds}
                             />
                         </div>
 
-                        {/* Concurred — highest priority, never flagged */}
                         <div className="space-y-1.5">
                             <SortableList
                                 entries={concurredEntries}
@@ -572,6 +654,7 @@ export function RfpSignatoriesForm({
                                 selectStyles={selectStyles}
                                 onDragEnd={handleDragEndConcurred}
                                 onUpdate={() => {}}
+                                onUpdatePhilexName={updateConcurredPhilexName}
                                 onRemove={(id) => syncConcurred(concurredEntries.filter(e => e.id !== id))}
                                 allowRemove={true}
                                 getSublabel={getConcurredSublabel}

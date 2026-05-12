@@ -39,6 +39,8 @@ import { RfpBadge } from '@/components/rfp/rfp-display';
 import { RfpSignatoriesForm, type SignatoriesState, dedupeSignatories } from '@/components/rfp/rfp-signatories-form';
 import { toast } from 'sonner';
 
+type SelectOption = { value: string; label: string };
+
 type ChangeLog = {
     field: string;
     old: string;
@@ -75,15 +77,21 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     const [detectedChanges, setDetectedChanges] = useState<ChangeLog[]>([]);
     const [logRemarksError, setLogRemarksError] = useState(false);
 
-    // Per-category usage cache to support per-row category+usage selection
+    // SWP PR / RCW options
+    const [swpPrOptions, setSwpPrOptions] = useState<SelectOption[]>([]);
+    const [loadingSwpPr, setLoadingSwpPr] = useState(false);
+    const [swpRcwOptions, setSwpRcwOptions] = useState<SelectOption[]>([]);
+    const [loadingSwpRcw, setLoadingSwpRcw] = useState(false);
+
     const [usagesByCategory, setUsagesByCategory] = useState<Record<number, RfpUsage[]>>({});
 
     const [signatories, setSignatories] = useState<SignatoriesState>(() => {
         const signs = rfp_record.signs ?? [];
         const toOption = (sign: typeof signs[0]): UserOption | null =>
-            sign.user_id ? { value: sign.user_id, label: sign.user?.name ?? '', department: sign.user?.department?.department } : null;
+            sign.user_id
+                ? { value: sign.user_id, label: sign.user?.name ?? '', department: sign.user?.department?.department }
+                : null;
 
-        // Return raw from DB — do NOT dedupe here so the form can show duplicate warnings visually
         return {
             recommending_approval_by: signs.filter(s => s.details === 'recommending_approval_by').map(toOption).filter(Boolean) as UserOption[],
             approved_by: signs.filter(s => s.details === 'approved_by').map(toOption).filter(Boolean) as UserOption[],
@@ -91,7 +99,6 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         };
     });
 
-    // Load usages for a category, using cache to avoid duplicate requests
     const loadUsagesForCategory = async (categoryId: number) => {
         if (usagesByCategory[categoryId]) return;
         try {
@@ -115,6 +122,34 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         setLoadingSuppliers(false);
     };
 
+    const loadSwpPr = async () => {
+        if (swpPrOptions.length) return;
+        setLoadingSwpPr(true);
+        try {
+            const res = await fetch('/rfp/api/swp/pr');
+            const json = await res.json();
+            setSwpPrOptions(Array.isArray(json) ? json : []);
+        } catch (error) {
+            console.error('Failed to load SWP PR', error);
+            setSwpPrOptions([]);
+        }
+        setLoadingSwpPr(false);
+    };
+
+    const loadSwpRcw = async () => {
+        if (swpRcwOptions.length) return;
+        setLoadingSwpRcw(true);
+        try {
+            const res = await fetch('/rfp/api/swp/rcw');
+            const json = await res.json();
+            setSwpRcwOptions(Array.isArray(json) ? json : []);
+        } catch (error) {
+            console.error('Failed to load SWP RCW', error);
+            setSwpRcwOptions([]);
+        }
+        setLoadingSwpRcw(false);
+    };
+
     // Pre-load usages for all categories used in existing details
     useEffect(() => {
         const categoryIds = rfp_record.details
@@ -129,6 +164,18 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             loadSuppliers();
         }
     }, []);
+
+    // Pre-load SWP PR / RCW if record has existing values
+    useEffect(() => {
+        if (rfp_record.swp_pr_no) loadSwpPr();
+        if (rfp_record.swp_rcw_no) loadSwpRcw();
+    }, []);
+
+    const [signEntries, setSignEntries] = useState<{
+        recommending: any[];
+        approved: any[];
+        concurred: any[];
+    }>({ recommending: [], approved: [], concurred: [] });
 
     const { data, setData, put, processing, errors, transform } = useForm<{
         ap_no: string;
@@ -177,7 +224,12 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         log_remarks: '',
     });
 
-    // ── Helpers for human-readable change log values ──────────────
+    // Check if any detail row has ADVN category
+    const hasAdvanceCategory = data.details.some(d => {
+        const cat = categories.find(c => c.id === d.rfp_category_id);
+        return cat?.code === 'ADVN';
+    });
+
     const getCurrencyLabel = (id: number | null | undefined): string => {
         if (!id) return 'N/A';
         const currency = currencies.find(c => c.id === id);
@@ -186,14 +238,11 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
     const getSupplierLabel = (code: string | null | undefined, name: string | null | undefined): string => {
         if (!code) return 'N/A';
-        // Try to find label from loaded suppliers first (most complete)
         const found = suppliers.find(s => s.value === code);
         if (found) return found.label;
-        // Fallback: compose from code + name props
         return name ? `${code} - ${name}` : code;
     };
 
-    // Detect field-level changes for the change log dialog
     useEffect(() => {
         const changes: ChangeLog[] = [];
 
@@ -223,14 +272,13 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         checkField('due_date', 'Due Date', rfp_record.due_date, data.due_date);
         checkField('rr_no', 'RR No.', rfp_record.rr_no, data.rr_no);
         checkField('po_no', 'PO No.', rfp_record.po_no, data.po_no);
-        checkField('swp_pr_no', 'Requisition No.', rfp_record.swp_pr_no, data.swp_pr_no);
-        checkField('swp_rcw_no', 'Contract No.', rfp_record.swp_rcw_no, data.swp_rcw_no);
+        checkField('swp_pr_no', 'SWP PR No.', rfp_record.swp_pr_no, data.swp_pr_no);
+        checkField('swp_rcw_no', 'SWP RCW No.', rfp_record.swp_rcw_no, data.swp_rcw_no);
         checkField('office', 'Office', rfp_record.office, data.office);
         checkField('employee_code', 'Employee Code', rfp_record.employee_code, data.employee_code);
         checkField('employee_name', 'Employee Name', rfp_record.employee_name, data.employee_name);
         checkField('vendor_ref', 'Vendor Ref', rfp_record.vendor_ref, data.vendor_ref);
 
-        // Supplier — show human-readable name instead of raw code
         checkField(
             'supplier_code', 'Supplier',
             rfp_record.supplier_code, data.supplier_code,
@@ -238,7 +286,6 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             getSupplierLabel(data.supplier_code, data.supplier_name),
         );
 
-        // Currency — show code + name instead of raw ID
         checkField(
             'rfp_currency_id', 'Currency',
             rfp_record.rfp_currency_id, data.rfp_currency_id,
@@ -248,7 +295,6 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
         checkField('purpose', 'Purpose', rfp_record.purpose, data.purpose);
 
-        // Compare details by usage and amount — label changed to "Category - Usage"
         const oldDetails = rfp_record.details ?? [];
         const newDetails = data.details ?? [];
 
@@ -285,8 +331,6 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             changes.push({ field: 'Details', old: oldFormatted, new: newFormatted });
         }
 
-        // Compare signatories excluding prepared_by
-        // Use deduped values so change log reflects what will actually be saved
         const dedupedSignatories = dedupeSignatories(signatories);
         const oldSigns = rfp_record.signs ?? [];
         const roleLabels: Record<string, string> = {
@@ -315,7 +359,10 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
             const oldFormatted = oldSigns
                 .filter(s => s.details !== 'prepared_by')
-                .map(s => ({ role: s.details ?? '', name: s.user?.name ?? 'N/A' }));
+                .map(s => ({
+                    role: s.details ?? '',
+                    name: s.user?.name ?? s.philex_user_name ?? 'N/A',  // ← add philex_user_name fallback
+                }));
 
             const newFormatted = [
                 ...dedupedSignatories.recommending_approval_by.filter(Boolean).map(u => ({ role: 'recommending_approval_by', name: u!.label })),
@@ -344,14 +391,53 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     };
 
     const buildSigns = () => {
-        // Dedupe only on save — priority: concurred > approved > recommending
         const deduped = dedupeSignatories(signatories);
+
+        const buildSign = (u: UserOption | null, role: string, entries: any[]) => {
+            const entry = entries.find((e: any) => e.user?.value === u?.value);
+            return {
+                user_id: u?.value ?? null,
+                philex_user_name: null as string | null,
+                details: role,
+            };
+        };
+
         return [
-            { user_id: rfp_record.prepared_by?.id ?? auth.user.id, details: 'prepared_by' },
-            ...deduped.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
-            ...deduped.approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
-            ...deduped.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
+            { user_id: rfp_record.prepared_by?.id ?? auth.user.id, philex_user_name: null, details: 'prepared_by' },
+            ...deduped.recommending_approval_by.filter(Boolean).map(u =>
+                buildSign(u, 'recommending_approval_by', signEntries.recommending)
+            ),
+            ...deduped.approved_by.filter(Boolean).map(u =>
+                buildSign(u, 'approved_by', signEntries.approved)
+            ),
+            ...deduped.concurred_by.filter(Boolean).map(u =>
+                buildSign(u, 'concurred_by', signEntries.concurred)
+            ),
+            // Manual-only entries with philex_user_name
+            ...signEntries.recommending
+                .filter((e: any) => !e.user && e.philex_user_name?.trim())
+                .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'recommending_approval_by' })),
+            ...signEntries.approved
+                .filter((e: any) => !e.user && e.philex_user_name?.trim())
+                .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'approved_by' })),
+            ...signEntries.concurred
+                .filter((e: any) => !e.user && e.philex_user_name?.trim())
+                .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'concurred_by' })),
         ];
+    };
+
+    const buildTransformPayload = (d: typeof data, signs: ReturnType<typeof buildSigns>, remarks?: string) => {
+        const rawCategoryIds = data.details
+            .map(d => d.rfp_category_id)
+            .filter((id): id is number => id !== null);
+
+        return {
+            ...d,
+            _raw_category_ids: rawCategoryIds,
+            signs,
+            ...(remarks !== undefined ? { log_remarks: remarks } : {}),
+            details: d.details.map(({ rfp_category_id, ...rest }) => rest),
+        };
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -360,11 +446,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             setShowLogDialog(true);
         } else {
             const signs = buildSigns();
-            transform(d => ({
-                ...d,
-                signs,
-                details: d.details.map(({ rfp_category_id, ...rest }) => rest),
-            }));
+            transform(d => buildTransformPayload(d, signs));
             put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
         }
     };
@@ -378,12 +460,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         setShowLogDialog(false);
         setLogRemarksError(false);
         const signs = buildSigns();
-        transform(d => ({
-            ...d,
-            signs,
-            log_remarks: logRemarks.trim().toUpperCase(),
-            details: d.details.map(({ rfp_category_id, ...rest }) => rest),
-        }));
+        transform(d => buildTransformPayload(d, signs, logRemarks.trim().toUpperCase()));
         put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
     };
 
@@ -405,6 +482,11 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    const selectStyles = {
+        control: (base: any) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+        menu: (base: any) => ({ ...base, fontSize: '14px' }),
+    };
 
     return (
         <AppLayout
@@ -445,19 +527,11 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                         <div className="grid md:grid-cols-3 gap-3">
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Prepared By</Label>
-                                <Input
-                                    value={rfp_record.prepared_by?.name ?? auth.user.name as string}
-                                    className="h-9"
-                                    readOnly
-                                />
+                                <Input value={rfp_record.prepared_by?.name ?? auth.user.name as string} className="h-9" readOnly />
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Department</Label>
-                                <Input
-                                    value={rfp_record.prepared_by?.department?.department ?? auth.user.department?.department ?? 'N/A'}
-                                    className="h-9"
-                                    readOnly
-                                />
+                                <Input value={rfp_record.prepared_by?.department?.department ?? auth.user.department?.department ?? 'N/A'} className="h-9" readOnly />
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Status</Label>
@@ -536,10 +610,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                             isClearable
                                             placeholder="Select supplier..."
                                             className="text-sm"
-                                            styles={{
-                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
-                                            }}
+                                            styles={selectStyles}
                                         />
                                         {errors.supplier_code && <p className="text-xs text-destructive">{errors.supplier_code}</p>}
                                     </div>
@@ -588,11 +659,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
                                     <Label className="text-sm">Prepared Date</Label>
-                                    <Input
-                                        value={formatDate(rfp_record.created_at)}
-                                        className="h-9"
-                                        readOnly
-                                    />
+                                    <Input value={formatDate(rfp_record.created_at)} className="h-9" readOnly />
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-sm">Due Date <Req /></Label>
@@ -616,34 +683,52 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                         className="h-9"
                                     />
                                 </div>
+                                {/* PO No. — required when any detail has ADVN category */}
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="po_no" className="text-sm">PO No.</Label>
+                                    <Label htmlFor="po_no" className="text-sm">
+                                        PO No. {hasAdvanceCategory && <Req />}
+                                    </Label>
                                     <Input
                                         id="po_no"
                                         value={data.po_no}
                                         onChange={(e) => setData('po_no', e.target.value)}
                                         className="h-9"
                                     />
+                                    {errors.po_no && <p className="text-xs text-destructive">{errors.po_no}</p>}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
+                                {/* SWP PR No. — react-select lazy loaded */}
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR No.</Label>
-                                    <Input
-                                        id="swp_pr_no"
-                                        value={data.swp_pr_no}
-                                        onChange={(e) => setData('swp_pr_no', e.target.value)}
-                                        className="h-9"
+                                    <Label className="text-sm">SWP PR No.</Label>
+                                    <Select
+                                        options={swpPrOptions}
+                                        value={swpPrOptions.find(o => o.value === data.swp_pr_no) ?? (data.swp_pr_no ? { value: data.swp_pr_no, label: data.swp_pr_no } : null)}
+                                        onChange={(opt) => setData('swp_pr_no', opt?.value ?? '')}
+                                        onMenuOpen={loadSwpPr}
+                                        isLoading={loadingSwpPr}
+                                        isClearable
+                                        placeholder="Select PR No..."
+                                        className="text-sm"
+                                        styles={selectStyles}
                                     />
+                                    {errors.swp_pr_no && <p className="text-xs text-destructive">{errors.swp_pr_no}</p>}
                                 </div>
+                                {/* SWP RCW No. — react-select lazy loaded */}
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="swp_rcw_no" className="text-sm">SWP RCW No.</Label>
-                                    <Input
-                                        id="swp_rcw_no"
-                                        value={data.swp_rcw_no}
-                                        onChange={(e) => setData('swp_rcw_no', e.target.value)}
-                                        className="h-9"
+                                    <Label className="text-sm">SWP RCW No.</Label>
+                                    <Select
+                                        options={swpRcwOptions}
+                                        value={swpRcwOptions.find(o => o.value === data.swp_rcw_no) ?? (data.swp_rcw_no ? { value: data.swp_rcw_no, label: data.swp_rcw_no } : null)}
+                                        onChange={(opt) => setData('swp_rcw_no', opt?.value ?? '')}
+                                        onMenuOpen={loadSwpRcw}
+                                        isLoading={loadingSwpRcw}
+                                        isClearable
+                                        placeholder="Select RCW No..."
+                                        className="text-sm"
+                                        styles={selectStyles}
                                     />
+                                    {errors.swp_rcw_no && <p className="text-xs text-destructive">{errors.swp_rcw_no}</p>}
                                 </div>
                             </div>
                         </CardContent>
@@ -676,7 +761,6 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                         {data.details.map((detail, index) => (
                             <div key={index} className="flex gap-2 items-start px-3">
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
-                                    {/* Category */}
                                     <div className="space-y-1">
                                         <Select
                                             options={categoryOptions}
@@ -694,13 +778,9 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                             isClearable
                                             placeholder="Select category..."
                                             className="text-sm"
-                                            styles={{
-                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
-                                            }}
+                                            styles={selectStyles}
                                         />
                                     </div>
-                                    {/* Usage */}
                                     <div className="space-y-1">
                                         <Select
                                             options={(usagesByCategory[detail.rfp_category_id ?? 0] ?? []).map(u => ({
@@ -717,16 +797,12 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                             isDisabled={!detail.rfp_category_id}
                                             placeholder="Select usage..."
                                             className="text-sm"
-                                            styles={{
-                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
-                                            }}
+                                            styles={selectStyles}
                                         />
                                         {errors[`details.${index}.rfp_usage_id`] && (
                                             <p className="text-xs text-destructive">{errors[`details.${index}.rfp_usage_id`]}</p>
                                         )}
                                     </div>
-                                    {/* Currency */}
                                     <div className="space-y-1">
                                         <Select
                                             options={currencyOptions}
@@ -736,22 +812,20 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                             isDisabled={index !== 0}
                                             className="text-sm"
                                             styles={{
-                                                control: (base) => ({
+                                                control: (base: any) => ({
                                                     ...base,
                                                     minHeight: '36px',
                                                     fontSize: '14px',
-                                                    // visually distinguish readonly rows from truly disabled
                                                     opacity: index !== 0 ? 0.6 : 1,
                                                     cursor: index !== 0 ? 'not-allowed' : 'default',
                                                 }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
+                                                menu: (base: any) => ({ ...base, fontSize: '14px' }),
                                             }}
                                         />
                                         {index === 0 && errors.rfp_currency_id && (
                                             <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>
                                         )}
                                     </div>
-                                    {/* Amount */}
                                     <div className="space-y-1">
                                         <InputAmount
                                             value={detail.total_amount || undefined}
@@ -816,6 +890,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                     signatories={signatories}
                     userOptions={userOptions}
                     onChange={setSignatories}
+                    onEntriesChange={setSignEntries}
                     office={data.office}
                     subtotalAmount={data.details.reduce((sum, d) => sum + (Number(d.total_amount ?? 0)), 0)}
                     residentManager={residentManager}

@@ -88,6 +88,7 @@ export type RfpSign = {
     code: string | null;
     user_id: number | null;
     user?: RfpUser;
+    philex_user_name: string | null;
     is_signed: boolean | null;
     details: RfpSignatoryRole | null;
     remarks: string | null;

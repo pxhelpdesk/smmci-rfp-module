@@ -6,6 +6,7 @@ export type Permission =
     | 'rfp-record-cancel'
     | 'rfp-record-post'
     | 'rfp-record-revert'
+    | 'rfp-record-all'
     | 'rfp-category-view'
     | 'rfp-category-create'
     | 'rfp-category-edit'

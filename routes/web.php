@@ -19,13 +19,13 @@ use App\Http\Controllers\RfpDashboardController;
 //     ]);
 // })->name('home');
 
-Route::get('/', function () { return redirect()->away('http://172.17.2.69:8001'); })->name('home');
-Route::get('/login', function () { return redirect()->away('http://172.17.2.69:8001/login'); })->name('login');
+Route::get('/', function () { return redirect()->away('https://portal.silanganmining.com.ph'); })->name('home');
+Route::get('/login', function () { return redirect()->away('https://portal.silanganmining.com.ph/login'); })->name('login');
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return Inertia::location('http://172.17.2.69:8001/login');
+    return Inertia::location('https://portal.silanganmining.com.ph/login');
 })->name('logout');
 
 Route::prefix('rfp')->middleware(['auth'])->group(function () {
@@ -54,10 +54,17 @@ Route::prefix('rfp')->middleware(['auth'])->group(function () {
         Route::get('suppliers', [SapSupplierController::class, 'index'])->name('suppliers.index');
     });
 
-    // API SAP Supplier
+    // API
     Route::prefix('api')->group(function () {
+        // SAP Supplier
         Route::prefix('sap')->name('api.sap.')->group(function () {
             Route::get('suppliers', [SapController::class, 'getSuppliers'])->name('suppliers');
+        });
+
+        // SWP PR / RCW lookup
+        Route::prefix('swp')->name('api.swp.')->group(function () {
+            Route::get('pr', [RfpRecordController::class, 'getSwpPr'])->name('pr');
+            Route::get('rcw', [RfpRecordController::class, 'getSwpRcw'])->name('rcw');
         });
     });
 });

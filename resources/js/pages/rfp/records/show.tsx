@@ -238,8 +238,8 @@ export default function Show({ rfp_record, logs }: Props) {
                             </Button>
                         )}
 
-                        {/* Edit — hidden when posted or cancelled */}
-                        {can('rfp-record-edit') && !isPosted && !isCancelled && (
+                        {/* Edit — hidden when posted or cancelled, UNLESS admin */}
+                        {can('rfp-record-edit') && (!isPosted && !isCancelled || can('rfp-record-all')) && (
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={`/rfp/records/${rfp_record.id}/edit`}>
                                     <Edit className="h-4 w-4 mr-1.5" />
@@ -529,7 +529,9 @@ export default function Show({ rfp_record, logs }: Props) {
                                             <p className="text-sm text-muted-foreground">N/A</p>
                                         ) : (
                                             signs.map((sign) => (
-                                                <p key={sign.id} className="text-sm font-medium">{sign.user?.name || 'N/A'}</p>
+                                                <p key={sign.id} className="text-sm font-medium">
+                                                    {sign.user?.name ?? sign.philex_user_name ?? 'N/A'}
+                                                </p>
                                             ))
                                         )}
                                     </div>
