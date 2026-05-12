@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const LOGO_URL = '/storage/images/logos/SMMCI_Logo_icon-text.png';
+const LOGO_URL = '/rfp/storage/images/logos/SMMCI_Logo_icon-text.png';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component

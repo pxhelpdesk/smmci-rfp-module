@@ -5,7 +5,7 @@
 
     RewriteEngine On
 
-    # RewriteBase /rfp
+    RewriteBase /rfp
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
