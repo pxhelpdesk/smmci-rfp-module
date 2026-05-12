@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('rfp_record_id')->constrained('rfp_records')->cascadeOnDelete();
             $table->string('code')->unique()->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('philex_user_name')->nullable();
             $table->boolean('is_signed')->nullable();
             $table->text('details')->nullable();
             $table->text('remarks')->nullable();

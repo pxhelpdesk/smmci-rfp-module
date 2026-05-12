@@ -16,6 +16,7 @@ class RfpSign extends Model
         'rfp_record_id',
         'code',
         'user_id',
+        'philex_user_name',
         'is_signed',
         'details',
         'remarks',
@@ -34,5 +35,10 @@ class RfpSign extends Model
     {
         return $this->setConnection('mysql')
             ->belongsTo(User::class, 'user_id');
+    }
+
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->user?->name ?? $this->philex_user_name ?? 'N/A';
     }
 }

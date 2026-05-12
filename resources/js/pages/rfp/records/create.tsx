@@ -36,6 +36,8 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+type SelectOption = { value: string; label: string };
+
 type DetailFormItem = {
     rfp_category_id: number | null;
     rfp_usage_id: number | null;
@@ -63,7 +65,12 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [createRemarks, setCreateRemarks] = useState('');
 
-    // Per-category usage cache to support per-row category+usage selection
+    // SWP PR / RCW options
+    const [swpPrOptions, setSwpPrOptions] = useState<SelectOption[]>([]);
+    const [loadingSwpPr, setLoadingSwpPr] = useState(false);
+    const [swpRcwOptions, setSwpRcwOptions] = useState<SelectOption[]>([]);
+    const [loadingSwpRcw, setLoadingSwpRcw] = useState(false);
+
     const [usagesByCategory, setUsagesByCategory] = useState<Record<number, RfpUsage[]>>({});
 
     const [signatories, setSignatories] = useState<SignatoriesState>(() => {
@@ -76,12 +83,9 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
             approvedDefaults.push({ value: u.id, label: u.name, department: u.department });
         };
 
-        // Default office is 'mine_site' on create
         if (residentManager) pushIfNew(residentManager);
         if (departmentHead) pushIfNew(departmentHead);
-        // cfo/ceo not added initially since amount starts at 0
 
-        // Return raw — do NOT dedupe here so the form can show duplicate warnings visually
         return {
             recommending_approval_by: scopeOwner
                 ? [{ value: scopeOwner.id, label: scopeOwner.name, department: scopeOwner.department }]
@@ -93,6 +97,12 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                 .map(u => ({ value: u.id, label: u.name, department: u.department })),
         };
     });
+
+    const [signEntries, setSignEntries] = useState<{
+        recommending: any[];
+        approved: any[];
+        concurred: any[];
+    }>({ recommending: [], approved: [], concurred: [] });
 
     const { data, setData, post, processing, errors, transform } = useForm<{
         ap_no: string;
@@ -134,6 +144,11 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         log_remarks: '',
     });
 
+    const hasAdvanceCategory = data.details.some(d => {
+        const cat = categories.find(c => c.id === d.rfp_category_id);
+        return cat?.code === 'ADVN';
+    });
+
     const loadSuppliers = async () => {
         setLoadingSuppliers(true);
         try {
@@ -146,7 +161,34 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         setLoadingSuppliers(false);
     };
 
-    // Load usages for a category, using cache to avoid duplicate requests
+    const loadSwpPr = async () => {
+        if (swpPrOptions.length) return;
+        setLoadingSwpPr(true);
+        try {
+            const res = await fetch('/rfp/api/swp/pr');
+            const json = await res.json();
+            setSwpPrOptions(Array.isArray(json) ? json : []);
+        } catch (error) {
+            console.error('Failed to load SWP PR', error);
+            setSwpPrOptions([]);
+        }
+        setLoadingSwpPr(false);
+    };
+
+    const loadSwpRcw = async () => {
+        if (swpRcwOptions.length) return;
+        setLoadingSwpRcw(true);
+        try {
+            const res = await fetch('/rfp/api/swp/rcw');
+            const json = await res.json();
+            setSwpRcwOptions(Array.isArray(json) ? json : []);
+        } catch (error) {
+            console.error('Failed to load SWP RCW', error);
+            setSwpRcwOptions([]);
+        }
+        setLoadingSwpRcw(false);
+    };
+
     const loadUsagesForCategory = async (categoryId: number) => {
         if (usagesByCategory[categoryId]) return;
         try {
@@ -179,15 +221,45 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
 
     const handleConfirmCreate = () => {
         setShowConfirmDialog(false);
-        // Dedupe only on save — priority: concurred > approved > recommending
         const deduped = dedupeSignatories(signatories);
+        const rawCategoryIds = data.details
+            .map(d => d.rfp_category_id)
+            .filter((id): id is number => id !== null);
+
+        // Build signs with philex_user_name support
+        const buildSign = (u: UserOption | null, role: string, entries: any[]) => {
+            const entry = entries.find((e: any) => e.user?.value === u?.value);
+            return {
+                user_id: u?.value ?? null,
+                philex_user_name: u ? null : (entry?.philex_user_name?.trim() || null),
+                details: role,
+            };
+        };
+
         transform(d => ({
             ...d,
+            _raw_category_ids: rawCategoryIds,
             signs: [
-                { user_id: auth.user.id, details: 'prepared_by' },
-                ...deduped.recommending_approval_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'recommending_approval_by' })),
-                ...deduped.approved_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'approved_by' })),
-                ...deduped.concurred_by.filter(Boolean).map(u => ({ user_id: u!.value, details: 'concurred_by' })),
+                { user_id: auth.user.id, philex_user_name: null, details: 'prepared_by' },
+                ...deduped.recommending_approval_by.filter(Boolean).map(u =>
+                    buildSign(u, 'recommending_approval_by', signEntries.recommending)
+                ),
+                ...deduped.approved_by.filter(Boolean).map(u =>
+                    buildSign(u, 'approved_by', signEntries.approved)
+                ),
+                ...deduped.concurred_by.filter(Boolean).map(u =>
+                    buildSign(u, 'concurred_by', signEntries.concurred)
+                ),
+                // Include manual-only entries (no user selected but has philex_user_name)
+                ...signEntries.recommending
+                    .filter((e: any) => !e.user && e.philex_user_name?.trim())
+                    .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'recommending_approval_by' })),
+                ...signEntries.approved
+                    .filter((e: any) => !e.user && e.philex_user_name?.trim())
+                    .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'approved_by' })),
+                ...signEntries.concurred
+                    .filter((e: any) => !e.user && e.philex_user_name?.trim())
+                    .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'concurred_by' })),
             ],
             details: d.details.map(({ rfp_category_id, ...rest }) => rest),
             log_remarks: createRemarks,
@@ -213,6 +285,11 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    const selectStyles = {
+        control: (base: any) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
+        menu: (base: any) => ({ ...base, fontSize: '14px' }),
+    };
 
     return (
         <AppLayout
@@ -331,10 +408,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                             isClearable
                                             placeholder="Select supplier..."
                                             className="text-sm"
-                                            styles={{
-                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
-                                            }}
+                                            styles={selectStyles}
                                         />
                                         {errors.supplier_code && <p className="text-xs text-destructive">{errors.supplier_code}</p>}
                                     </div>
@@ -408,33 +482,50 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="po_no" className="text-sm">PO No.</Label>
+                                    <Label htmlFor="po_no" className="text-sm">
+                                        PO No. {hasAdvanceCategory && <Req />}
+                                    </Label>
                                     <Input
                                         id="po_no"
                                         value={data.po_no}
                                         onChange={(e) => setData('po_no', e.target.value)}
                                         className="h-9"
                                     />
+                                    {errors.po_no && <p className="text-xs text-destructive">{errors.po_no}</p>}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
+                                {/* SWP PR No. — react-select lazy loaded */}
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="swp_pr_no" className="text-sm">SWP PR No.</Label>
-                                    <Input
-                                        id="swp_pr_no"
-                                        value={data.swp_pr_no}
-                                        onChange={(e) => setData('swp_pr_no', e.target.value)}
-                                        className="h-9"
+                                    <Label className="text-sm">SWP PR No.</Label>
+                                    <Select
+                                        options={swpPrOptions}
+                                        value={swpPrOptions.find(o => o.value === data.swp_pr_no) ?? (data.swp_pr_no ? { value: data.swp_pr_no, label: data.swp_pr_no } : null)}
+                                        onChange={(opt) => setData('swp_pr_no', opt?.value ?? '')}
+                                        onMenuOpen={loadSwpPr}
+                                        isLoading={loadingSwpPr}
+                                        isClearable
+                                        placeholder="Select PR No..."
+                                        className="text-sm"
+                                        styles={selectStyles}
                                     />
+                                    {errors.swp_pr_no && <p className="text-xs text-destructive">{errors.swp_pr_no}</p>}
                                 </div>
+                                {/* SWP RCW No. — react-select lazy loaded */}
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="swp_rcw_no" className="text-sm">SWP RCW No.</Label>
-                                    <Input
-                                        id="swp_rcw_no"
-                                        value={data.swp_rcw_no}
-                                        onChange={(e) => setData('swp_rcw_no', e.target.value)}
-                                        className="h-9"
+                                    <Label className="text-sm">SWP RCW No.</Label>
+                                    <Select
+                                        options={swpRcwOptions}
+                                        value={swpRcwOptions.find(o => o.value === data.swp_rcw_no) ?? (data.swp_rcw_no ? { value: data.swp_rcw_no, label: data.swp_rcw_no } : null)}
+                                        onChange={(opt) => setData('swp_rcw_no', opt?.value ?? '')}
+                                        onMenuOpen={loadSwpRcw}
+                                        isLoading={loadingSwpRcw}
+                                        isClearable
+                                        placeholder="Select RCW No..."
+                                        className="text-sm"
+                                        styles={selectStyles}
                                     />
+                                    {errors.swp_rcw_no && <p className="text-xs text-destructive">{errors.swp_rcw_no}</p>}
                                 </div>
                             </div>
                         </CardContent>
@@ -467,7 +558,6 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                         {data.details.map((detail, index) => (
                             <div key={index} className="flex gap-2 items-start px-3">
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
-                                    {/* Category */}
                                     <div className="space-y-1">
                                         <Select
                                             options={categoryOptions}
@@ -485,13 +575,9 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                             isClearable
                                             placeholder="Select category..."
                                             className="text-sm"
-                                            styles={{
-                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
-                                            }}
+                                            styles={selectStyles}
                                         />
                                     </div>
-                                    {/* Usage */}
                                     <div className="space-y-1">
                                         <Select
                                             options={(usagesByCategory[detail.rfp_category_id ?? 0] ?? []).map(u => ({
@@ -508,16 +594,12 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                             isDisabled={!detail.rfp_category_id}
                                             placeholder="Select usage..."
                                             className="text-sm"
-                                            styles={{
-                                                control: (base) => ({ ...base, minHeight: '36px', fontSize: '14px' }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
-                                            }}
+                                            styles={selectStyles}
                                         />
                                         {errors[`details.${index}.rfp_usage_id`] && (
                                             <p className="text-xs text-destructive">{errors[`details.${index}.rfp_usage_id`]}</p>
                                         )}
                                     </div>
-                                    {/* Currency */}
                                     <div className="space-y-1">
                                         <Select
                                             options={currencyOptions}
@@ -527,22 +609,20 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                             isDisabled={index !== 0}
                                             className="text-sm"
                                             styles={{
-                                                control: (base) => ({
+                                                control: (base: any) => ({
                                                     ...base,
                                                     minHeight: '36px',
                                                     fontSize: '14px',
-                                                    // visually distinguish readonly rows from truly disabled
                                                     opacity: index !== 0 ? 0.6 : 1,
                                                     cursor: index !== 0 ? 'not-allowed' : 'default',
                                                 }),
-                                                menu: (base) => ({ ...base, fontSize: '14px' }),
+                                                menu: (base: any) => ({ ...base, fontSize: '14px' }),
                                             }}
                                         />
                                         {index === 0 && errors.rfp_currency_id && (
                                             <p className="text-xs text-destructive">{errors.rfp_currency_id}</p>
                                         )}
                                     </div>
-                                    {/* Amount */}
                                     <div className="space-y-1">
                                         <InputAmount
                                             value={detail.total_amount || undefined}
@@ -609,7 +689,6 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                 Review your entry before saving. You may add remarks below.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
-
                         <div className="space-y-1.5 px-0">
                             <Label htmlFor="create_remarks" className="text-sm">
                                 Remarks <span className="text-muted-foreground">(Optional)</span>
@@ -623,7 +702,6 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                 className="resize-none"
                             />
                         </div>
-
                         <AlertDialogFooter>
                             <AlertDialogCancel>Back</AlertDialogCancel>
                             <AlertDialogAction onClick={handleConfirmCreate} disabled={processing}>
@@ -633,12 +711,12 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                     </AlertDialogContent>
                 </AlertDialog>
 
-                {/* Signatories */}
                 <RfpSignatoriesForm
                     preparedByName={auth.user.name as string}
                     signatories={signatories}
                     userOptions={userOptions}
                     onChange={setSignatories}
+                    onEntriesChange={setSignEntries}
                     office={data.office}
                     subtotalAmount={data.details.reduce((sum, d) => sum + (d.total_amount ?? 0), 0)}
                     residentManager={residentManager}

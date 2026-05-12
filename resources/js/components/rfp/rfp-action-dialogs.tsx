@@ -1,8 +1,8 @@
 // components/rfp/rfp-action-dialogs.tsx
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
     AlertDialog,
-    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
@@ -10,6 +10,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -85,6 +86,7 @@ export function RfpActionDialogs({ rfpNumber, activeAction, onClose, onConfirm }
 
         if (config.remarksRequired && !remarks.trim()) {
             setRemarksError(true);
+            toast.error('Remarks is required before proceeding.');
             return;
         }
 
@@ -133,12 +135,14 @@ export function RfpActionDialogs({ rfpNumber, activeAction, onClose, onConfirm }
 
                     <AlertDialogFooter>
                         <AlertDialogCancel>Back</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleConfirm}
+                        {/* Regular Button instead of AlertDialogAction to prevent auto-close on validation fail */}
+                        <Button
+                            type="button"
                             className={config.confirmClass}
+                            onClick={handleConfirm}
                         >
                             {config.confirmLabel}
-                        </AlertDialogAction>
+                        </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             )}

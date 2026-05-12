@@ -12,9 +12,24 @@ class UpdateRfpRecordRequest extends FormRequest
         return true;
     }
 
+    private array $rawCategoryIdsBeforeFilter = [];
+
+    private function hasAdvanceCategory(): bool
+    {
+        // Use what was captured in prepareForValidation
+        $categoryIds = $this->rawCategoryIdsBeforeFilter;
+
+        if (empty($categoryIds)) return false;
+
+        return \App\Models\RfpCategory::whereIn('id', $categoryIds)
+            ->where('code', 'ADVN')
+            ->exists();
+    }
+
     public function rules(): array
     {
         $rfpRecord = $this->route('record');
+        $isAdvance = $this->hasAdvanceCategory();
 
         $existingDueDate = $rfpRecord?->due_date
             ? \Carbon\Carbon::parse($rfpRecord->due_date)->format('Y-m-d')
@@ -31,7 +46,7 @@ class UpdateRfpRecordRequest extends FormRequest
             'ap_no' => 'nullable|string',
             'due_date' => $dueDateRule,
             'rr_no' => 'nullable|string',
-            'po_no' => 'nullable|string',
+            'po_no' => $isAdvance ? 'required|string' : 'nullable|string',
             'swp_pr_no' => 'nullable|string',
             'swp_rcw_no' => 'nullable|string',
             'office' => 'required|in:head_office,mine_site',
@@ -45,12 +60,15 @@ class UpdateRfpRecordRequest extends FormRequest
             'purpose' => 'required|string',
             'status' => 'nullable|in:cancelled,draft,posted',
             'log_remarks' => 'nullable|string|max:500',
+            '_raw_category_ids' => 'nullable|array',
+            '_raw_category_ids.*' => 'nullable|integer',
             'details' => 'required|array|min:1',
             'details.*.id' => 'sometimes|exists:mysql_rfp.rfp_details,id',
             'details.*.rfp_usage_id' => 'required|exists:mysql_rfp.rfp_usages,id',
             'details.*.total_amount' => 'required|numeric|min:0.01',
             'signs' => 'nullable|array',
-            'signs.*.user_id' => 'required|integer|exists:mysql.users,id',
+            'signs.*.user_id' => 'nullable|integer|exists:mysql.users,id',
+            'signs.*.philex_user_name' => 'nullable|string|max:255',
             'signs.*.details' => 'required|in:prepared_by,recommending_approval_by,approved_by,concurred_by',
         ];
     }
@@ -76,6 +94,7 @@ class UpdateRfpRecordRequest extends FormRequest
             'details.*.total_amount.min' => 'Amount must be greater than zero.',
             'signs.*.user_id.required' => 'A user is required for each signatory.',
             'signs.*.details.required' => 'Signatory role is required.',
+            'po_no.required' => 'PO No. is required for Advances/Down payments.',
         ];
     }
 
@@ -88,14 +107,32 @@ class UpdateRfpRecordRequest extends FormRequest
     protected function prepareForValidation()
     {
         if ($this->has('details')) {
+            // Capture raw category IDs from the ORIGINAL details before any filtering
+            $this->rawCategoryIdsBeforeFilter = collect($this->details)
+                ->pluck('rfp_category_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+
+            // Also check _raw_category_ids sent explicitly from frontend as fallback
+            if (empty($this->rawCategoryIdsBeforeFilter)) {
+                $this->rawCategoryIdsBeforeFilter = collect($this->input('_raw_category_ids', []))
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->toArray();
+            }
+
             $this->merge([
                 'details' => collect($this->details)
-                    ->filter(function($item) {
+                    ->filter(function ($item) {
                         return !empty($item['rfp_usage_id']) ||
                             !empty($item['total_amount']);
                     })
                     ->values()
-                    ->toArray()
+                    ->toArray(),
+                '_raw_category_ids' => $this->rawCategoryIdsBeforeFilter,
             ]);
         }
     }

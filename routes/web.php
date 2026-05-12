@@ -54,10 +54,17 @@ Route::prefix('rfp')->middleware(['auth'])->group(function () {
         Route::get('suppliers', [SapSupplierController::class, 'index'])->name('suppliers.index');
     });
 
-    // API SAP Supplier
+    // API
     Route::prefix('api')->group(function () {
+        // SAP Supplier
         Route::prefix('sap')->name('api.sap.')->group(function () {
             Route::get('suppliers', [SapController::class, 'getSuppliers'])->name('suppliers');
+        });
+
+        // SWP PR / RCW lookup
+        Route::prefix('swp')->name('api.swp.')->group(function () {
+            Route::get('pr', [RfpRecordController::class, 'getSwpPr'])->name('pr');
+            Route::get('rcw', [RfpRecordController::class, 'getSwpRcw'])->name('rcw');
         });
     });
 });

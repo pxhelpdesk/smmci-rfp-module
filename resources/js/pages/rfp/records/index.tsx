@@ -191,8 +191,8 @@ export default function Index({ rfp_records }: Props) {
                             </Button>
                         )}
 
-                        {/* Edit — hidden when posted or cancelled */}
-                        {can('rfp-record-edit') && !isPosted && !isCancelled && (
+                        {/* Edit — hidden when posted or cancelled, UNLESS admin */}
+                        {can('rfp-record-edit') && (!isPosted && !isCancelled || can('rfp-record-all')) && (
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={`/rfp/records/${rfp.id}/edit`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                     <Pencil className="h-4 w-4" />
