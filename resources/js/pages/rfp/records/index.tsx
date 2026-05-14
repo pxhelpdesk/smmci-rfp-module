@@ -191,23 +191,13 @@ export default function Index({ rfp_records }: Props) {
                             </Button>
                         )}
 
-                        {/* Edit — hidden when posted or cancelled, UNLESS admin */}
-                        {can('rfp-record-edit') && (!isPosted && !isCancelled || can('rfp-record-all')) && (
+                        {/* Edit — draft only for everyone including admin */}
+                        {can('rfp-record-edit') && isDraft && (
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={`/rfp/records/${rfp.id}/edit`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                     <Pencil className="h-4 w-4" />
                                     <span className="text-[10px] leading-none">Edit</span>
                                 </Link>
-                            </Button>
-                        )}
-
-                        {/* Cancel — hidden when posted or cancelled */}
-                        {can('rfp-record-cancel') && (!isPosted && !isCancelled || can('rfp-record-all')) && (
-                            <Button variant="ghost" size="sm"
-                                onClick={() => setActiveAction({ type: 'cancel', id: rfp.id })}
-                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
-                                <Ban className="h-4 w-4 text-orange-600" />
-                                <span className="text-[10px] leading-none">Cancel</span>
                             </Button>
                         )}
 
@@ -218,6 +208,16 @@ export default function Index({ rfp_records }: Props) {
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                 <RotateCcw className="h-4 w-4 text-yellow-600" />
                                 <span className="text-[10px] leading-none">Revert</span>
+                            </Button>
+                        )}
+
+                        {/* Cancel — only on draft, or admin can cancel posted too */}
+                        {can('rfp-record-cancel') && (isDraft || (can('rfp-record-all') && !isCancelled)) && (
+                            <Button variant="ghost" size="sm"
+                                onClick={() => setActiveAction({ type: 'cancel', id: rfp.id })}
+                                className="flex flex-col items-center gap-1 h-auto py-1 w-14">
+                                <Ban className="h-4 w-4 text-orange-600" />
+                                <span className="text-[10px] leading-none">Cancel</span>
                             </Button>
                         )}
 

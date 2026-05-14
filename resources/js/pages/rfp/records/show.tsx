@@ -238,8 +238,8 @@ export default function Show({ rfp_record, logs }: Props) {
                             </Button>
                         )}
 
-                        {/* Edit — hidden when posted or cancelled, UNLESS admin */}
-                        {can('rfp-record-edit') && (!isPosted && !isCancelled || can('rfp-record-all')) && (
+                        {/* Edit — draft only for everyone including admin */}
+                        {can('rfp-record-edit') && isDraft && (
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={`/rfp/records/${rfp_record.id}/edit`}>
                                     <Edit className="h-4 w-4 mr-1.5" />
@@ -261,8 +261,8 @@ export default function Show({ rfp_record, logs }: Props) {
                             </Button>
                         )}
 
-                        {/* Cancel — hidden when posted or cancelled */}
-                        {can('rfp-record-cancel') && (!isPosted && !isCancelled || can('rfp-record-all')) && (
+                        {/* Cancel — only on draft, or admin can cancel posted too */}
+                        {can('rfp-record-cancel') && (isDraft || (can('rfp-record-all') && !isCancelled)) && (
                             <Button
                                 variant="outline"
                                 size="sm"

@@ -220,10 +220,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function edit(RfpRecord $record)
     {
-        // Allow admin to edit even posted/cancelled records
-        if (!auth()->user()->hasPermissionTo('rfp-record-all')) {
-            abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
-        }
+        abort_if($record->status !== 'draft', 403, 'Only draft RFP can be edited.');
 
         $record->load(['details.usage.category', 'signs.user.department']);
 
@@ -287,10 +284,8 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function update(UpdateRfpRecordRequest $updateRequest, RfpRecord $record)
     {
-        // Allow admin to update even posted/cancelled records
-        if (!auth()->user()->hasPermissionTo('rfp-record-all')) {
-            abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
-        }
+        // Only draft is editable for everyone including admin
+        abort_if($record->status !== 'draft', 403, 'Only draft RFP can be edited.');
 
         $validated = $updateRequest->validated();
 
