@@ -479,6 +479,12 @@ class RfpRecordController extends Controller implements HasMiddleware
     public function cancel(RfpRecord $record)
     {
         abort_if($record->status === 'cancelled', 422, 'RFP is already cancelled.');
+
+        // Only block posted if not admin
+        if (!auth()->user()->hasPermissionTo('rfp-record-all')) {
+            abort_if($record->status === 'posted', 422, 'Posted RFP cannot be cancelled.');
+        }
+
         $previousStatus = $record->status;
         $record->update(['status' => 'cancelled']);
         RfpLog::create([

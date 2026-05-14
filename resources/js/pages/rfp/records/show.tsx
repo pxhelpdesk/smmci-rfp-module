@@ -262,7 +262,7 @@ export default function Show({ rfp_record, logs }: Props) {
                         )}
 
                         {/* Cancel — hidden when posted or cancelled */}
-                        {can('rfp-record-cancel') && !isPosted && !isCancelled && (
+                        {can('rfp-record-cancel') && (!isPosted && !isCancelled || can('rfp-record-all')) && (
                             <Button
                                 variant="outline"
                                 size="sm"

@@ -28,7 +28,7 @@ Route::post('/logout', function () {
     return Inertia::location('https://portal.silanganmining.com.ph/login');
 })->name('logout');
 
-Route::prefix('rfp')->middleware(['auth'])->group(function () {
+// Route::prefix('rfp')->middleware(['auth'])->group(function () {
     Route::name('rfp.')->group(function () {
         Route::get('dashboard', [RfpDashboardController::class, 'index'])->name('dashboard');
 
@@ -67,6 +67,6 @@ Route::prefix('rfp')->middleware(['auth'])->group(function () {
             Route::get('rcw', [RfpRecordController::class, 'getSwpRcw'])->name('rcw');
         });
     });
-});
+// });
 
 // require __DIR__.'/settings.php';

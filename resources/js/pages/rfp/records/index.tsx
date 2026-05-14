@@ -202,7 +202,7 @@ export default function Index({ rfp_records }: Props) {
                         )}
 
                         {/* Cancel — hidden when posted or cancelled */}
-                        {can('rfp-record-cancel') && !isPosted && !isCancelled && (
+                        {can('rfp-record-cancel') && (!isPosted && !isCancelled || can('rfp-record-all')) && (
                             <Button variant="ghost" size="sm"
                                 onClick={() => setActiveAction({ type: 'cancel', id: rfp.id })}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
