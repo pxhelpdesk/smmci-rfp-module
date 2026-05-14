@@ -14,23 +14,19 @@ use App\Models\User;
 use App\Http\Requests\StoreRfpRecordRequest;
 use App\Http\Requests\UpdateRfpRecordRequest;
 use Inertia\Inertia;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 
-class RfpRecordController extends Controller implements HasMiddleware
+class RfpRecordController extends Controller
 {
-    public static function middleware(): array
+    public function __construct()
     {
-        return [
-            new Middleware('permission:rfp-record-view', only: ['index', 'show']),
-            new Middleware('permission:rfp-record-create', only: ['create', 'store']),
-            new Middleware('permission:rfp-record-edit', only: ['edit', 'update']),
-            new Middleware('permission:rfp-record-delete', only: ['destroy']),
-            new Middleware('permission:rfp-record-cancel', only: ['cancel']),
-            new Middleware('permission:rfp-record-post', only: ['markAsPosted']),
-            new Middleware('permission:rfp-record-revert', only: ['revert']),
-        ];
+        $this->middleware('permission:rfp-record-view', ['only' => ['index', 'show']]);
+        $this->middleware('permission:rfp-record-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:rfp-record-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:rfp-record-delete', ['only' => ['destroy']]);
+        $this->middleware('permission:rfp-record-cancel', ['only' => ['cancel']]);
+        $this->middleware('permission:rfp-record-post', ['only' => ['markAsPosted']]);
+        $this->middleware('permission:rfp-record-revert', ['only' => ['revert']]);
     }
 
     public function index(Request $request)

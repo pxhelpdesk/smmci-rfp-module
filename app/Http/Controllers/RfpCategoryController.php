@@ -5,19 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\RfpCategory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
-class RfpCategoryController extends Controller implements HasMiddleware
+class RfpCategoryController extends Controller
 {
-    public static function middleware(): array
+    public function __construct()
     {
-        return [
-            new Middleware('permission:rfp-category-view', only: ['index', 'show']),
-            new Middleware('permission:rfp-category-create', only: ['create', 'store']),
-            new Middleware('permission:rfp-category-edit', only: ['edit', 'update']),
-            new Middleware('permission:rfp-category-delete', only: ['destroy']),
-        ];
+        $this->middleware('permission:rfp-category-view', ['only' => ['index', 'show']]);
+        $this->middleware('permission:rfp-category-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:rfp-category-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:rfp-category-delete', ['only' => ['destroy']]);
     }
 
     public function index()
