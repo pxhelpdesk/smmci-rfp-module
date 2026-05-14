@@ -14,23 +14,19 @@ use App\Models\User;
 use App\Http\Requests\StoreRfpRecordRequest;
 use App\Http\Requests\UpdateRfpRecordRequest;
 use Inertia\Inertia;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Http\Request;
 
-class RfpRecordController extends Controller implements HasMiddleware
+class RfpRecordController extends Controller
 {
-    public static function middleware(): array
+    public function __construct()
     {
-        return [
-            new Middleware('permission:rfp-record-view', only: ['index', 'show']),
-            new Middleware('permission:rfp-record-create', only: ['create', 'store']),
-            new Middleware('permission:rfp-record-edit', only: ['edit', 'update']),
-            new Middleware('permission:rfp-record-delete', only: ['destroy']),
-            new Middleware('permission:rfp-record-cancel', only: ['cancel']),
-            new Middleware('permission:rfp-record-post', only: ['markAsPosted']),
-            new Middleware('permission:rfp-record-revert', only: ['revert']),
-        ];
+        $this->middleware('permission:rfp-record-view', ['only' => ['index', 'show']]);
+        $this->middleware('permission:rfp-record-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:rfp-record-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:rfp-record-delete', ['only' => ['destroy']]);
+        $this->middleware('permission:rfp-record-cancel', ['only' => ['cancel']]);
+        $this->middleware('permission:rfp-record-post', ['only' => ['markAsPosted']]);
+        $this->middleware('permission:rfp-record-revert', ['only' => ['revert']]);
     }
 
     public function index(Request $request)
@@ -220,10 +216,7 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function edit(RfpRecord $record)
     {
-        // Allow admin to edit even posted/cancelled records
-        if (!auth()->user()->hasPermissionTo('rfp-record-all')) {
-            abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
-        }
+        abort_if($record->status !== 'draft', 403, 'Only draft RFP can be edited.');
 
         $record->load(['details.usage.category', 'signs.user.department']);
 
@@ -287,10 +280,8 @@ class RfpRecordController extends Controller implements HasMiddleware
 
     public function update(UpdateRfpRecordRequest $updateRequest, RfpRecord $record)
     {
-        // Allow admin to update even posted/cancelled records
-        if (!auth()->user()->hasPermissionTo('rfp-record-all')) {
-            abort_if(in_array($record->status, ['cancelled', 'posted']), 403, 'This RFP cannot be edited.');
-        }
+        // Only draft is editable for everyone including admin
+        abort_if($record->status !== 'draft', 403, 'Only draft RFP can be edited.');
 
         $validated = $updateRequest->validated();
 
@@ -479,6 +470,12 @@ class RfpRecordController extends Controller implements HasMiddleware
     public function cancel(RfpRecord $record)
     {
         abort_if($record->status === 'cancelled', 422, 'RFP is already cancelled.');
+
+        // Only block posted if not admin
+        if (!auth()->user()->hasPermissionTo('rfp-record-all')) {
+            abort_if($record->status === 'posted', 422, 'Posted RFP cannot be cancelled.');
+        }
+
         $previousStatus = $record->status;
         $record->update(['status' => 'cancelled']);
         RfpLog::create([

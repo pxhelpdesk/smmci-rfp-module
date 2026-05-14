@@ -3,16 +3,12 @@
 namespace App\Http\Controllers;
 
 use Inertia\Inertia;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
-class RfpApprovalMatrixController extends Controller implements HasMiddleware
+class RfpApprovalMatrixController extends Controller
 {
-    public static function middleware(): array
+    public function __construct()
     {
-        return [
-            new Middleware('permission:rfp-approval-matrix-view', only: ['index']),
-        ];
+        $this->middleware('permission:rfp-approval-matrix-view', ['only' => ['index']]);
     }
 
     public function index()

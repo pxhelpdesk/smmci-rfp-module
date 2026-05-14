@@ -113,6 +113,7 @@ export type RfpLog = {
 export type RfpDashboardStats = {
     total_records: number;
     total_draft: number;
+    total_posted: number;
     total_cancelled: number;
     total_grand_amount: number;
 };

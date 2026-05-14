@@ -5,19 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\RfpCurrency;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
-class RfpCurrencyController extends Controller implements HasMiddleware
+class RfpCurrencyController extends Controller
 {
-    public static function middleware(): array
+    public function __construct()
     {
-        return [
-            new Middleware('permission:rfp-currency-view', only: ['index', 'show']),
-            new Middleware('permission:rfp-currency-create', only: ['create', 'store']),
-            new Middleware('permission:rfp-currency-edit', only: ['edit', 'update']),
-            new Middleware('permission:rfp-currency-delete', only: ['destroy']),
-        ];
+        $this->middleware('permission:rfp-currency-view', ['only' => ['index', 'show']]);
+        $this->middleware('permission:rfp-currency-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:rfp-currency-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:rfp-currency-delete', ['only' => ['destroy']]);
     }
 
     public function index()

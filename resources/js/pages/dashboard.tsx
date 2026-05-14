@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { FileText, List, TrendingUp, AlertTriangle, HandCoins, XCircle } from 'lucide-react';
+import { FileText, List, TrendingUp, CheckCircle, XCircle } from 'lucide-react'; // ← swap HandCoins for CheckCircle
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RfpBadge } from '@/components/rfp/rfp-display';
@@ -29,14 +29,6 @@ export default function Dashboard({ stats, recent_records }: Props) {
             sub: 'All accessible records',
             href: '/rfp/records',
         },
-        // {
-        //     title: 'Overdue',
-        //     value: stats.overdue_count,
-        //     icon: AlertTriangle,
-        //     iconClass: 'text-orange-500',
-        //     sub: 'Draft past due date',
-        //     href: '/rfp/records?status=draft&overdue=1',
-        // },
         {
             title: 'Total Value',
             value: `PHP ${formatCurrency(stats.total_grand_amount)}`,
@@ -64,14 +56,14 @@ export default function Dashboard({ stats, recent_records }: Props) {
             sub: 'Record created',
             href: '/rfp/records?status=draft',
         },
-        // {
-        //     title: 'Paid',
-        //     value: stats.total_paid,
-        //     icon: HandCoins,
-        //     iconClass: 'text-green-500',
-        //     sub: 'Completed payments',
-        //     href: '/rfp/records?status=paid',
-        // },
+        {
+            title: 'Posted',
+            value: stats.total_posted,
+            icon: CheckCircle,
+            iconClass: 'text-green-500',
+            sub: 'Posted records',
+            href: '/rfp/records?status=posted',
+        },
     ];
 
     const renderCard = (card: typeof row1[0], key: string) => {
@@ -134,58 +126,43 @@ export default function Dashboard({ stats, recent_records }: Props) {
                                     No records in the last 7 days.
                                 </p>
                             ) : (
-                                recent_records.map((rfp) => {
-                                    // const isOverdue =
-                                    //     rfp.status === 'draft' &&
-                                    //     new Date(rfp.due_date) < new Date(new Date().toDateString());
-
-                                    return (
-                                        <div
-                                            key={rfp.id}
-                                            className="flex items-center justify-between px-6 py-3 hover:bg-muted/40 transition-colors"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Link
-                                                            href={`/rfp/records/${rfp.id}`}
-                                                            className="text-sm font-medium hover:underline text-primary"
-                                                        >
-                                                            {rfp.rfp_number}
-                                                        </Link>
-                                                        {/* {isOverdue && (
-                                                            <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
-                                                                <AlertTriangle className="h-3 w-3" />
-                                                                Overdue
-                                                            </span>
-                                                        )} */}
-                                                    </div>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {rfp.prepared_by?.name ?? '—'}
-                                                        {rfp.prepared_by?.department?.department
-                                                            ? ` · ${rfp.prepared_by.department.department}`
-                                                            : ''}
-                                                    </p>
+                                recent_records.map((rfp) => (
+                                    <div
+                                        key={rfp.id}
+                                        className="flex items-center justify-between px-6 py-3 hover:bg-muted/40 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <Link
+                                                        href={`/rfp/records/${rfp.id}`}
+                                                        className="text-sm font-medium hover:underline text-primary"
+                                                    >
+                                                        {rfp.rfp_number}
+                                                    </Link>
                                                 </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-right">
-                                                <div>
-                                                    <p className="text-xs font-medium">
-                                                        {rfp.currency?.code ?? 'PHP'}{' '}
-                                                        {rfp.subtotal_details_amount
-                                                            ? formatCurrency(Number(rfp.subtotal_details_amount))
-                                                            : '—'}
-                                                    </p>
-                                                    {/* <p className={`text-xs ${isOverdue ? 'text-orange-500 font-medium' : 'text-muted-foreground'}`}>
-                                                        Due {formatDate(rfp.due_date)}
-                                                    </p> */}
-                                                </div>
-                                                <RfpBadge type="status" value={rfp.status} />
+                                                <p className="text-xs text-muted-foreground">
+                                                    {rfp.prepared_by?.name ?? '—'}
+                                                    {rfp.prepared_by?.department?.department
+                                                        ? ` · ${rfp.prepared_by.department.department}`
+                                                        : ''}
+                                                </p>
                                             </div>
                                         </div>
-                                    );
-                                })
+                                        <div className="flex items-center gap-3 text-right">
+                                            <div>
+                                                <p className="text-xs font-medium">
+                                                    {rfp.currency?.code ?? 'PHP'}{' '}
+                                                    {rfp.subtotal_details_amount
+                                                        ? formatCurrency(Number(rfp.subtotal_details_amount))
+                                                        : '—'}
+                                                </p>
+                                            </div>
+                                            <RfpBadge type="status" value={rfp.status} />
+                                        </div>
+                                    </div>
+                                ))
                             )}
                         </div>
                     </CardContent>

@@ -5,16 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\SapSupplier;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
-class SapSupplierController extends Controller implements HasMiddleware
+class SapSupplierController extends Controller
 {
-    public static function middleware(): array
+    public function __construct()
     {
-        return [
-            new Middleware('permission:sap-supplier-view', only: ['index', 'show']),
-        ];
+        $this->middleware('permission:sap-supplier-view', ['only' => ['index', 'show']]);
     }
 
     public function index(): Response
