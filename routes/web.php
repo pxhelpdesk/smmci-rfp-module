@@ -61,6 +61,20 @@ Route::post('/logout', function () {
             Route::get('suppliers', [SapController::class, 'getSuppliers'])->name('suppliers');
         });
 
+        // Users
+        Route::get('users/active', function () {
+            $users = \App\Models\User::where('is_locked', false)
+                ->with('department:id,department')
+                ->orderBy('first_name')
+                ->get()
+                ->map(fn($u) => [
+                    'value' => $u->id,
+                    'label' => $u->name,
+                    'department' => $u->department?->department,
+                ]);
+            return response()->json($users);
+        })->name('api.users.active');
+
         // SWP PR / RCW lookup
         Route::prefix('swp')->name('api.swp.')->group(function () {
             Route::get('pr', [RfpRecordController::class, 'getSwpPr'])->name('pr');
