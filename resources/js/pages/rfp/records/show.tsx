@@ -396,6 +396,11 @@ export default function Show({ rfp_record, logs }: Props) {
                                     </div>
                                     <Separator />
                                     <div>
+                                        <p className="text-xs text-muted-foreground">Vendor Ref</p>
+                                        <p className="text-sm">{rfp_record.vendor_ref || 'N/A'}</p>
+                                    </div>
+                                    <Separator />
+                                    <div>
                                         <p className="text-xs text-muted-foreground">Currency</p>
                                         <p className="text-sm">
                                             {rfp_record.currency?.code} - {rfp_record.currency?.name}

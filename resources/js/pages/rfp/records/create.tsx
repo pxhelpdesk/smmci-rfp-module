@@ -440,36 +440,47 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                     </div>
                                 </>
                             ) : (
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm">Employee <Req /></Label>
-                                    <Select
-                                        options={employeeOptions}
-                                        value={employeeOptions.find(o => o.value === data.employee_id) ?? null}
-                                        onChange={(opt) => {
-                                            setData({
-                                                ...data,
-                                                employee_id: opt?.value ?? null,
-                                                employee_name: opt?.label ?? '',
-                                                employee_code: opt?.value ? String(opt.value) : '',
-                                            } as any);
-                                        }}
-                                        onMenuOpen={loadEmployees}
-                                        isLoading={loadingEmployees}
-                                        isClearable
-                                        placeholder="Select employee..."
-                                        className="text-sm"
-                                        styles={selectStyles}
-                                        formatOptionLabel={(opt) => (
-                                            <div>
-                                                <div className="text-sm">{opt.label}</div>
-                                                {opt.department && (
-                                                    <div className="text-xs text-muted-foreground">{opt.department}</div>
-                                                )}
-                                            </div>
-                                        )}
-                                    />
-                                    {errors.employee_id && <p className="text-xs text-destructive">{errors.employee_id}</p>}
-                                </div>
+                                <>
+                                    <div className="space-y-1.5">
+                                        <Label className="text-sm">Employee <Req /></Label>
+                                        <Select
+                                            options={employeeOptions}
+                                            value={employeeOptions.find(o => o.value === data.employee_id) ?? null}
+                                            onChange={(opt) => {
+                                                setData({
+                                                    ...data,
+                                                    employee_id: opt?.value ?? null,
+                                                    employee_name: opt?.label ?? '',
+                                                    employee_code: opt?.value ? String(opt.value) : '',
+                                                } as any);
+                                            }}
+                                            onMenuOpen={loadEmployees}
+                                            isLoading={loadingEmployees}
+                                            isClearable
+                                            placeholder="Select employee..."
+                                            className="text-sm"
+                                            styles={selectStyles}
+                                            formatOptionLabel={(opt) => (
+                                                <div>
+                                                    <div className="text-sm">{opt.label}</div>
+                                                    {opt.department && (
+                                                        <div className="text-xs text-muted-foreground">{opt.department}</div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        />
+                                        {errors.employee_id && <p className="text-xs text-destructive">{errors.employee_id}</p>}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="vendor_ref" className="text-sm">Vendor Ref</Label>
+                                        <Input
+                                            id="vendor_ref"
+                                            value={data.vendor_ref}
+                                            onChange={(e) => setData('vendor_ref', e.target.value)}
+                                            className="h-9"
+                                        />
+                                    </div>
+                                </>
                             )}
                         </CardContent>
                     </Card>
