@@ -90,7 +90,9 @@ export default function Index({ rfp_records }: Props) {
                     <div>
                         <RfpBadge type="payee" value={rfp.payee_type} />
                         <p className="text-xs text-muted-foreground">
-                            {rfp.payee_type === 'supplier' ? rfp.supplier_code : rfp.employee_code}
+                            {rfp.payee_type === 'supplier'
+                                ? rfp.supplier_name
+                                : (rfp.employee?.name ?? rfp.employee_name)}
                         </p>
                     </div>
                 );

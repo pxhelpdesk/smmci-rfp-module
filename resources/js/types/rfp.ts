@@ -32,7 +32,10 @@ export type RfpUser = {
     first_name: string;
     last_name: string;
     department_id?: number;
-    department?: Department;
+    department?: {
+        id: number;
+        department: string;
+    };
     name: string;
 };
 
@@ -54,6 +57,8 @@ export type RfpRecord = {
     rfp_number: string;
     office: 'head_office' | 'mine_site';
     payee_type: 'employee' | 'supplier';
+    employee_id: number | null;
+    employee?: RfpUser | null;
     employee_code: string | null;
     employee_name: string | null;
     supplier_code: string | null;
