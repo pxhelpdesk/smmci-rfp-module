@@ -374,23 +374,51 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                                 {rfp_record.office === 'head_office' ? 'Head Office' : rfp_record.office === 'mine_site' ? 'Mine Site' : '—'}
                             </Text>
                         </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Supplier</Text>
-                            <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValue}>{rfp_record.supplier_name ?? '—'}</Text>
-                        </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Vendor Ref.</Text>
-                            <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValue}>{rfp_record.vendor_ref ?? '—'}</Text>
-                        </View>
-                        <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Department</Text>
-                            <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValue}>
-                                {preparedBySign?.user?.department?.department ?? '—'}
-                            </Text>
-                        </View>
+
+                        {rfp_record.payee_type === 'supplier' ? (
+                            <>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Supplier</Text>
+                                    <Text style={styles.infoColon}>:</Text>
+                                    <Text style={styles.infoValue}>{rfp_record.supplier_name ?? '—'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Vendor Ref.</Text>
+                                    <Text style={styles.infoColon}>:</Text>
+                                    <Text style={styles.infoValue}>{rfp_record.vendor_ref ?? '—'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Department</Text>
+                                    <Text style={styles.infoColon}>:</Text>
+                                    <Text style={styles.infoValue}>
+                                        {preparedBySign?.user?.department?.department ?? '—'}
+                                    </Text>
+                                </View>
+                            </>
+                        ) : (
+                            <>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Employee</Text>
+                                    <Text style={styles.infoColon}>:</Text>
+                                    <Text style={styles.infoValue}>
+                                        {rfp_record.employee?.name ?? rfp_record.employee_name ?? '—'}
+                                    </Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Vendor Ref.</Text>
+                                    <Text style={styles.infoColon}>:</Text>
+                                    <Text style={styles.infoValue}>{rfp_record.vendor_ref ?? '—'}</Text>
+                                </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoLabel}>Department</Text>
+                                    <Text style={styles.infoColon}>:</Text>
+                                    <Text style={styles.infoValue}>
+                                        {rfp_record.employee?.department?.department ?? '—'}
+                                    </Text>
+                                </View>
+                            </>
+                        )}
+
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Currency</Text>
                             <Text style={styles.infoColon}>:</Text>
