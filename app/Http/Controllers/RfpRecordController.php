@@ -61,6 +61,20 @@ class RfpRecordController extends Controller
 
         $rfp_records = $query->latest()->get();
 
+        $employeeIds = $rfp_records->pluck('employee_id')->filter()->unique()->values()->toArray();
+        if (!empty($employeeIds)) {
+            $employees = \App\Models\User::with('department')
+                ->whereIn('id', $employeeIds)
+                ->get()
+                ->keyBy('id');
+
+            $rfp_records->each(function ($record) use ($employees) {
+                if ($record->employee_id && isset($employees[$record->employee_id])) {
+                    $record->setRelation('employee', $employees[$record->employee_id]);
+                }
+            });
+        }
+
         return Inertia::render('rfp/records/index', [
             'rfp_records' => $rfp_records,
         ]);
@@ -136,6 +150,12 @@ class RfpRecordController extends Controller
         $validated['subtotal_details_amount'] = $detailsSubtotal;
         $validated['prepared_by'] = auth()->id();
 
+        if (!empty($validated['employee_id'])) {
+            $emp = \App\Models\User::find($validated['employee_id']);
+            $validated['employee_name'] = $emp?->name;
+            $validated['employee_code'] = (string) $emp?->id;
+        }
+
         $detailsData = $validated['details'] ?? [];
         $signsData = $validated['signs'] ?? [];
         $logRemarks = $validated['log_remarks'] ?? null;
@@ -203,6 +223,12 @@ class RfpRecordController extends Controller
             'supplier',
         ]);
 
+        if ($record->employee_id) {
+            $record->setRelation('employee',
+                \App\Models\User::with('department')->find($record->employee_id)
+            );
+        }
+
         $logs = RfpLog::where('rfp_record_id', $record->id)
             ->with('user.department')
             ->latest()
@@ -218,7 +244,19 @@ class RfpRecordController extends Controller
     {
         abort_if($record->status !== 'draft', 403, 'Only draft RFP can be edited.');
 
-        $record->load(['details.usage.category', 'signs.user.department']);
+        $record->load([
+            'currency',
+            'details.usage.category',
+            'signs.user.department',
+            'preparedBy.department',
+            'supplier',
+        ]);
+
+        if ($record->employee_id) {
+            $record->setRelation('employee',
+                \App\Models\User::with('department')->find($record->employee_id)
+            );
+        }
 
         $users = User::select('id', 'first_name', 'middle_name', 'last_name', 'suffix', 'acronym')
             ->with('department:id,department')
@@ -287,6 +325,12 @@ class RfpRecordController extends Controller
 
         $detailsSubtotal = collect($updateRequest->details)->sum('total_amount');
         $validated['subtotal_details_amount'] = $detailsSubtotal;
+
+        if (!empty($validated['employee_id'])) {
+            $emp = \App\Models\User::find($validated['employee_id']);
+            $validated['employee_name'] = $emp?->name;
+            $validated['employee_code'] = (string) $emp?->id;
+        }
 
         $changes = $this->detectChanges($record, $validated);
 

@@ -72,6 +72,8 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     const { auth } = usePage<SharedData>().props;
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+    const [employeeOptions, setEmployeeOptions] = useState<{ value: number; label: string; department?: string }[]>([]);
+    const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [showLogDialog, setShowLogDialog] = useState(false);
     const [logRemarks, setLogRemarks] = useState('');
     const [detectedChanges, setDetectedChanges] = useState<ChangeLog[]>([]);
@@ -122,6 +124,19 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         setLoadingSuppliers(false);
     };
 
+    const loadEmployees = async () => {
+        if (employeeOptions.length) return;
+        setLoadingEmployees(true);
+        try {
+            const res = await fetch('/rfp/api/users/active');
+            const json = await res.json();
+            setEmployeeOptions(json);
+        } catch (e) {
+            console.error('Failed to load employees', e);
+        }
+        setLoadingEmployees(false);
+    };
+
     const loadSwpPr = async () => {
         if (swpPrOptions.length) return;
         setLoadingSwpPr(true);
@@ -165,6 +180,12 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         }
     }, []);
 
+    useEffect(() => {
+        if (rfp_record.employee_id) {
+            loadEmployees();
+        }
+    }, []);
+
     // Pre-load SWP PR / RCW if record has existing values
     useEffect(() => {
         if (rfp_record.swp_pr_no) loadSwpPr();
@@ -186,6 +207,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         swp_rcw_no: string;
         office: 'head_office' | 'mine_site';
         payee_type: 'employee' | 'supplier';
+        employee_id: number | null;
         employee_code: string;
         employee_name: string;
         supplier_code: string | null;
@@ -205,6 +227,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         swp_rcw_no: rfp_record.swp_rcw_no || '',
         office: rfp_record.office,
         payee_type: rfp_record.payee_type,
+        employee_id: rfp_record.employee_id ?? null,
         employee_code: rfp_record.employee_code || '',
         employee_name: rfp_record.employee_name || '',
         supplier_code: rfp_record.supplier_code,
@@ -275,8 +298,12 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         checkField('swp_pr_no', 'SWP PR No.', rfp_record.swp_pr_no, data.swp_pr_no);
         checkField('swp_rcw_no', 'SWP RCW No.', rfp_record.swp_rcw_no, data.swp_rcw_no);
         checkField('office', 'Office', rfp_record.office, data.office);
-        checkField('employee_code', 'Employee Code', rfp_record.employee_code, data.employee_code);
-        checkField('employee_name', 'Employee Name', rfp_record.employee_name, data.employee_name);
+        checkField(
+            'employee_id', 'Employee',
+            rfp_record.employee_id, data.employee_id,
+            rfp_record.employee?.name ?? rfp_record.employee_name ?? 'N/A',
+            employeeOptions.find(o => o.value === data.employee_id)?.label ?? data.employee_name ?? 'N/A',
+        );
         checkField('vendor_ref', 'Vendor Ref', rfp_record.vendor_ref, data.vendor_ref);
 
         checkField(
@@ -576,7 +603,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Type <Req /></Label>
-                                <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)} disabled>
+                                <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -625,28 +652,41 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                     </div>
                                 </>
                             ) : (
-                                <>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="employee_code" className="text-sm">Employee Code <Req /></Label>
-                                        <Input
-                                            id="employee_code"
-                                            value={data.employee_code}
-                                            onChange={(e) => setData('employee_code', e.target.value)}
-                                            className="h-9"
-                                        />
-                                        {errors.employee_code && <p className="text-xs text-destructive">{errors.employee_code}</p>}
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="employee_name" className="text-sm">Employee Name <Req /></Label>
-                                        <Input
-                                            id="employee_name"
-                                            value={data.employee_name}
-                                            onChange={(e) => setData('employee_name', e.target.value)}
-                                            className="h-9"
-                                        />
-                                        {errors.employee_name && <p className="text-xs text-destructive">{errors.employee_name}</p>}
-                                    </div>
-                                </>
+                                <div className="space-y-1.5">
+                                    <Label className="text-sm">Employee <Req /></Label>
+                                    <Select
+                                        options={employeeOptions}
+                                        value={
+                                            employeeOptions.find(o => o.value === data.employee_id)
+                                            ?? (data.employee_id
+                                                ? { value: data.employee_id, label: data.employee_name || String(data.employee_id), department: undefined }
+                                                : null)
+                                        }
+                                        onChange={(opt) => {
+                                            setData({
+                                                ...data,
+                                                employee_id: opt?.value ?? null,
+                                                employee_name: opt?.label ?? '',
+                                                employee_code: opt?.value ? String(opt.value) : '',
+                                            } as any);
+                                        }}
+                                        onMenuOpen={loadEmployees}
+                                        isLoading={loadingEmployees}
+                                        isClearable
+                                        placeholder="Select employee..."
+                                        className="text-sm"
+                                        styles={selectStyles}
+                                        formatOptionLabel={(opt) => (
+                                            <div>
+                                                <div className="text-sm">{opt.label}</div>
+                                                {opt.department && (
+                                                    <div className="text-xs text-muted-foreground">{opt.department}</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    />
+                                    {errors.employee_id && <p className="text-xs text-destructive">{errors.employee_id}</p>}
+                                </div>
                             )}
                         </CardContent>
                     </Card>

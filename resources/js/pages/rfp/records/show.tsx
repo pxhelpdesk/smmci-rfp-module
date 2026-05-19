@@ -385,14 +385,14 @@ export default function Show({ rfp_record, logs }: Props) {
                                 </>
                             ) : (
                                 <>
-                                    <div>
+                                    {/* <div>
                                         <p className="text-xs text-muted-foreground">Employee Code</p>
                                         <p className="text-sm">{rfp_record.employee_code || 'N/A'}</p>
                                     </div>
-                                    <Separator />
+                                    <Separator /> */}
                                     <div>
                                         <p className="text-xs text-muted-foreground">Employee Name</p>
-                                        <p className="text-sm">{rfp_record.employee_name || 'N/A'}</p>
+                                        <p className="text-sm">{rfp_record.employee?.name ?? rfp_record.employee_name ?? 'N/A'}</p>
                                     </div>
                                     <Separator />
                                     <div>

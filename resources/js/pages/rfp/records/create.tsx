@@ -62,6 +62,8 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     const { auth } = usePage<SharedData>().props;
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+    const [employeeOptions, setEmployeeOptions] = useState<{ value: number; label: string; department?: string }[]>([]);
+    const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [createRemarks, setCreateRemarks] = useState('');
 
@@ -113,6 +115,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         swp_rcw_no: string;
         office: 'head_office' | 'mine_site';
         payee_type: 'employee' | 'supplier';
+        employee_id: number | null;
         employee_code: string;
         employee_name: string;
         supplier_code: string | null;
@@ -132,6 +135,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         swp_rcw_no: '',
         office: 'mine_site',
         payee_type: 'supplier',
+        employee_id: null,
         employee_code: '',
         employee_name: '',
         supplier_code: null,
@@ -159,6 +163,19 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
             console.error('Failed to load suppliers', error);
         }
         setLoadingSuppliers(false);
+    };
+
+    const loadEmployees = async () => {
+        if (employeeOptions.length) return;
+        setLoadingEmployees(true);
+        try {
+            const res = await fetch('/rfp/api/users/active');
+            const json = await res.json();
+            setEmployeeOptions(json);
+        } catch (e) {
+            console.error('Failed to load employees', e);
+        }
+        setLoadingEmployees(false);
     };
 
     const loadSwpPr = async () => {
@@ -377,7 +394,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                         <CardContent className="space-y-3">
                             <div className="space-y-1.5">
                                 <Label className="text-sm">Type <Req /></Label>
-                                <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)} disabled>
+                                <SelectUI value={data.payee_type} onValueChange={(v) => setData('payee_type', v as any)}>
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -423,28 +440,36 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                     </div>
                                 </>
                             ) : (
-                                <>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="employee_code" className="text-sm">Employee Code <Req /></Label>
-                                        <Input
-                                            id="employee_code"
-                                            value={data.employee_code}
-                                            onChange={(e) => setData('employee_code', e.target.value)}
-                                            className="h-9"
-                                        />
-                                        {errors.employee_code && <p className="text-xs text-destructive">{errors.employee_code}</p>}
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="employee_name" className="text-sm">Employee Name <Req /></Label>
-                                        <Input
-                                            id="employee_name"
-                                            value={data.employee_name}
-                                            onChange={(e) => setData('employee_name', e.target.value)}
-                                            className="h-9"
-                                        />
-                                        {errors.employee_name && <p className="text-xs text-destructive">{errors.employee_name}</p>}
-                                    </div>
-                                </>
+                                <div className="space-y-1.5">
+                                    <Label className="text-sm">Employee <Req /></Label>
+                                    <Select
+                                        options={employeeOptions}
+                                        value={employeeOptions.find(o => o.value === data.employee_id) ?? null}
+                                        onChange={(opt) => {
+                                            setData({
+                                                ...data,
+                                                employee_id: opt?.value ?? null,
+                                                employee_name: opt?.label ?? '',
+                                                employee_code: opt?.value ? String(opt.value) : '',
+                                            } as any);
+                                        }}
+                                        onMenuOpen={loadEmployees}
+                                        isLoading={loadingEmployees}
+                                        isClearable
+                                        placeholder="Select employee..."
+                                        className="text-sm"
+                                        styles={selectStyles}
+                                        formatOptionLabel={(opt) => (
+                                            <div>
+                                                <div className="text-sm">{opt.label}</div>
+                                                {opt.department && (
+                                                    <div className="text-xs text-muted-foreground">{opt.department}</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    />
+                                    {errors.employee_id && <p className="text-xs text-destructive">{errors.employee_id}</p>}
+                                </div>
                             )}
                         </CardContent>
                     </Card>

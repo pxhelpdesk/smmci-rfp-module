@@ -22,6 +22,7 @@ class RfpRecord extends Model
         'rfp_number',
         'office',
         'payee_type',
+        'employee_id',
         'employee_code',
         'employee_name',
         'supplier_code',
@@ -67,5 +68,10 @@ class RfpRecord extends Model
     public function supplier()
     {
         return $this->belongsTo(SapSupplier::class, 'supplier_code', 'card_code');
+    }
+
+    public function employee()
+    {
+        return $this->setConnection('mysql')->belongsTo(User::class, 'employee_id');
     }
 }
