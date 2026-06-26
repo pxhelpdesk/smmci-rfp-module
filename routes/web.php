@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
 use App\Http\Controllers\RfpCategoryController;
 use App\Http\Controllers\RfpUsageController;
 use App\Http\Controllers\RfpCurrencyController;
@@ -12,12 +11,6 @@ use App\Http\Controllers\SapController;
 use App\Http\Controllers\SapSupplierController;
 use App\Http\Controllers\RfpApprovalMatrixController;
 use App\Http\Controllers\RfpDashboardController;
-
-// Route::get('/', function () {
-//     return Inertia::render('welcome', [
-//         'canRegister' => Features::enabled(Features::registration()),
-//     ]);
-// })->name('home');
 
 Route::get('/', function () { return redirect()->away('https://portal.silanganmining.com.ph'); })->name('home');
 Route::get('/login', function () { return redirect()->away('https://portal.silanganmining.com.ph/login'); })->name('login');
@@ -52,6 +45,7 @@ Route::post('/logout', function () {
     // SAP Supplier
     Route::prefix('sap')->name('sap.')->group(function () {
         Route::get('suppliers', [SapSupplierController::class, 'index'])->name('suppliers.index');
+        Route::post('suppliers/sync', [SapSupplierController::class, 'sync'])->name('suppliers.sync');
     });
 
     // API

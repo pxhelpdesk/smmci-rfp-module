@@ -1,5 +1,6 @@
 import { useForm, Head, usePage } from '@inertiajs/react';
-import { Save, X } from 'lucide-react';
+import { Save, X, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
 import AppLayout from '@/layouts/app-layout';
@@ -37,7 +38,6 @@ import type { RfpRecord, RfpCategory, RfpUsage, RfpCurrency, RfpDetail, UserOpti
 import type { SharedData } from '@/types';
 import { RfpBadge } from '@/components/rfp/rfp-display';
 import { RfpSignatoriesForm, type SignatoriesState, dedupeSignatories } from '@/components/rfp/rfp-signatories-form';
-import { toast } from 'sonner';
 
 type SelectOption = { value: string; label: string };
 
@@ -72,6 +72,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     const { auth } = usePage<SharedData>().props;
     const [suppliers, setSuppliers] = useState<SapSupplierOption[]>([]);
     const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+    const [syncingSuppliers, setSyncingSuppliers] = useState(false);
     const [employeeOptions, setEmployeeOptions] = useState<{ value: number; label: string; department?: string }[]>([]);
     const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [showLogDialog, setShowLogDialog] = useState(false);
@@ -122,6 +123,35 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             console.error('Failed to load suppliers', error);
         }
         setLoadingSuppliers(false);
+    };
+
+    const handleSyncSuppliers = async () => {
+        if (syncingSuppliers) return;
+        setSyncingSuppliers(true);
+        try {
+            const res = await fetch('/rfp/sap/suppliers/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN':
+                        document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '',
+                },
+            });
+            const json = await res.json();
+
+            if (!res.ok) {
+                throw new Error(json.message || 'Failed to sync suppliers from SAP.');
+            }
+
+            await loadSuppliers(); // re-fetch the dropdown options in place
+            toast.success(json.message ?? 'Suppliers synced successfully.');
+        } catch (error: any) {
+            console.error('Failed to sync suppliers', error);
+            toast.error(error?.message || 'Failed to sync suppliers from SAP.');
+        } finally {
+            setSyncingSuppliers(false);
+        }
     };
 
     const loadEmployees = async () => {
@@ -618,7 +648,18 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                             {data.payee_type === 'supplier' ? (
                                 <>
                                     <div className="space-y-1.5">
-                                        <Label className="text-sm">Supplier <Req /></Label>
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-sm">Supplier <Req /></Label>
+                                            <button
+                                                type="button"
+                                                onClick={handleSyncSuppliers}
+                                                disabled={syncingSuppliers}
+                                                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
+                                            >
+                                                <RefreshCw className={`h-3 w-3 ${syncingSuppliers ? 'animate-spin' : ''}`} />
+                                                {syncingSuppliers ? 'Syncing...' : 'Refresh'}
+                                            </button>
+                                        </div>
                                         <Select
                                             options={suppliers}
                                             value={
