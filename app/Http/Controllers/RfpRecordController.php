@@ -213,7 +213,7 @@ class RfpRecordController extends Controller
         $isPreparedByDept = in_array($record->prepared_by, $sameDeptUserIds);
         $isOwner = $record->prepared_by === $userId;
 
-        abort_unless($isOwner || $isPreparedByDept || $isSignatory, 403);
+        // abort_unless($isOwner || $isPreparedByDept || $isSignatory, 403);
 
         $record->load([
             'currency',

@@ -122,6 +122,29 @@ export default function Index({ rfp_records }: Props) {
             ),
         },
         {
+            accessorKey: 'purpose',
+            header: 'Purpose',
+            // remove size: 200
+            cell: ({ row }) => {
+                const [expanded, setExpanded] = useState(false);
+                const text = row.original.purpose ?? '';
+                const isLong = text.length > 80;
+                return (
+                    <div className="text-sm text-muted-foreground min-w-[200px]">
+                        <span>{isLong && !expanded ? text.slice(0, 80) + '…' : text}</span>
+                        {isLong && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
+                                className="ml-1 text-xs text-primary hover:underline whitespace-nowrap"
+                            >
+                                {expanded ? 'See less' : 'See more'}
+                            </button>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
             accessorKey: 'currency',
             header: 'Currency',
             size: 100,
@@ -131,6 +154,56 @@ export default function Index({ rfp_records }: Props) {
                     {row.original.currency?.code ?? 'PHP'}
                 </span>
             ),
+        },
+        {
+            accessorKey: 'subtotal_details_amount',
+            header: 'Amount',
+            size: 130,
+            accessorFn: (row) => row.subtotal_details_amount ?? '',
+            cell: ({ row }) => (
+                <span className="text-sm font-medium tabular-nums">
+                    {row.original.subtotal_details_amount != null
+                        ? Number(row.original.subtotal_details_amount).toLocaleString('en-PH', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        })
+                        : '—'}
+                </span>
+            ),
+        },
+        {
+            accessorKey: 'po_no',
+            header: 'PO No.',
+            size: 120,
+            accessorFn: (row) => row.po_no ?? '',
+            cell: ({ row }) => (
+                <span className="text-sm text-muted-foreground">{row.original.po_no ?? '—'}</span>
+            ),
+        },
+        // {
+        //     accessorKey: 'ro_no',
+        //     header: 'RO No.',
+        //     size: 120,
+        //     accessorFn: (row) => (row as any).ro_no ?? '',
+        //     cell: ({ row }) => (
+        //         <span className="text-sm text-muted-foreground">{(row.original as any).ro_no ?? '—'}</span>
+        //     ),
+        // },
+        {
+            id: 'payee_name',
+            header: 'Payee Name',
+            size: 160,
+            accessorFn: (row) =>
+                row.payee_type === 'supplier'
+                    ? (row.supplier_name ?? '')
+                    : (row.employee?.name ?? row.employee_name ?? ''),
+            cell: ({ row }) => {
+                const rfp = row.original;
+                const name = rfp.payee_type === 'supplier'
+                    ? rfp.supplier_name
+                    : (rfp.employee?.name ?? rfp.employee_name);
+                return <span className="text-sm text-muted-foreground">{name ?? '—'}</span>;
+            },
         },
         {
             accessorKey: 'status',
