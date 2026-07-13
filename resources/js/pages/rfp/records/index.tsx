@@ -180,15 +180,6 @@ export default function Index({ rfp_records }: Props) {
                 <span className="text-sm text-muted-foreground">{row.original.po_no ?? '—'}</span>
             ),
         },
-        // {
-        //     accessorKey: 'ro_no',
-        //     header: 'RO No.',
-        //     size: 120,
-        //     accessorFn: (row) => (row as any).ro_no ?? '',
-        //     cell: ({ row }) => (
-        //         <span className="text-sm text-muted-foreground">{(row.original as any).ro_no ?? '—'}</span>
-        //     ),
-        // },
         {
             id: 'payee_name',
             header: 'Payee Name',
@@ -204,6 +195,15 @@ export default function Index({ rfp_records }: Props) {
                     : (rfp.employee?.name ?? rfp.employee_name);
                 return <span className="text-sm text-muted-foreground">{name ?? '—'}</span>;
             },
+        },
+        {
+            accessorKey: 'vendor_ref',
+            header: 'Vendor Ref',
+            size: 130,
+            accessorFn: (row) => row.vendor_ref ?? '',
+            cell: ({ row }) => (
+                <span className="text-sm text-muted-foreground">{row.original.vendor_ref ?? '—'}</span>
+            ),
         },
         {
             accessorKey: 'status',

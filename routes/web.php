@@ -12,14 +12,14 @@ use App\Http\Controllers\SapSupplierController;
 use App\Http\Controllers\RfpApprovalMatrixController;
 use App\Http\Controllers\RfpDashboardController;
 
-Route::get('/', function () { return redirect()->away('https://portal.silanganmining.com.ph'); })->name('home');
-Route::get('/login', function () { return redirect()->away('https://portal.silanganmining.com.ph/login'); })->name('login');
-Route::post('/logout', function () {
-    Auth::logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
-    return Inertia::location('https://portal.silanganmining.com.ph/login');
-})->name('logout');
+// Route::get('/', function () { return redirect()->away('https://portal.silanganmining.com.ph'); })->name('home');
+// Route::get('/login', function () { return redirect()->away('https://portal.silanganmining.com.ph/login'); })->name('login');
+// Route::post('/logout', function () {
+//     Auth::logout();
+//     request()->session()->invalidate();
+//     request()->session()->regenerateToken();
+//     return Inertia::location('https://portal.silanganmining.com.ph/login');
+// })->name('logout');
 
 // Route::prefix('rfp')->middleware(['auth'])->group(function () {
     Route::name('rfp.')->group(function () {
