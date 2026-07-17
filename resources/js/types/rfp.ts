@@ -85,7 +85,12 @@ export type RfpDetail = {
     total_amount: number | null;
 };
 
-export type RfpSignatoryRole = 'prepared_by' | 'recommending_approval_by' | 'approved_by' | 'concurred_by';
+export type RfpSignatoryRole =
+    | 'prepared_by'
+    | 'checked_reviewed_by'
+    | 'recommending_approval_by'
+    | 'approved_by'
+    | 'concurred_by';
 
 export type RfpSign = {
     id: number;

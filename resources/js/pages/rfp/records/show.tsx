@@ -518,10 +518,11 @@ export default function Show({ rfp_record, logs }: Props) {
                         <CardTitle className="text-base">Signatories</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-4 divide-x border rounded-lg">
-                            {(['prepared_by', 'recommending_approval_by', 'approved_by', 'concurred_by'] as const).map((role) => {
+                        <div className="grid grid-cols-5 divide-x border rounded-lg">
+                            {(['prepared_by', 'checked_reviewed_by', 'recommending_approval_by', 'approved_by', 'concurred_by'] as const).map((role) => {
                                 const labels: Record<string, string> = {
                                     prepared_by: 'Prepared By',
+                                    checked_reviewed_by: 'Checked and Reviewed By',
                                     recommending_approval_by: 'Recommending Approval By',
                                     approved_by: 'Approved By',
                                     concurred_by: 'Concurred By',

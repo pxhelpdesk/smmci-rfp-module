@@ -91,6 +91,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         if (departmentHead) pushIfNew(departmentHead);
 
         return {
+            checked_reviewed_by: [], // no default — user must select
             recommending_approval_by: scopeOwner
                 ? [{ value: scopeOwner.id, label: scopeOwner.name, department: scopeOwner.department }]
                 : [],
@@ -103,10 +104,11 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     });
 
     const [signEntries, setSignEntries] = useState<{
+        checkedReviewed: any[];
         recommending: any[];
         approved: any[];
         concurred: any[];
-    }>({ recommending: [], approved: [], concurred: [] });
+    }>({ checkedReviewed: [], recommending: [], approved: [], concurred: [] });
 
     const { data, setData, post, processing, errors, transform } = useForm<{
         ap_no: string;
@@ -268,6 +270,13 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     };
 
     const handleConfirmCreate = () => {
+        const hasCheckedReviewed = signatories.checked_reviewed_by[0]
+            || signEntries.checkedReviewed.some((e: any) => !e.user && e.philex_user_name?.trim());
+        if (!hasCheckedReviewed) {
+            toast.error('Checked and Reviewed By is required.');
+            return;
+        }
+
         setShowConfirmDialog(false);
         const deduped = dedupeSignatories(signatories);
         const rawCategoryIds = data.details
@@ -289,6 +298,9 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
             _raw_category_ids: rawCategoryIds,
             signs: [
                 { user_id: auth.user.id, philex_user_name: null, details: 'prepared_by' },
+                ...deduped.checked_reviewed_by.filter(Boolean).map(u =>
+                    buildSign(u, 'checked_reviewed_by', signEntries.checkedReviewed)
+                ),
                 ...deduped.recommending_approval_by.filter(Boolean).map(u =>
                     buildSign(u, 'recommending_approval_by', signEntries.recommending)
                 ),
@@ -299,6 +311,9 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                     buildSign(u, 'concurred_by', signEntries.concurred)
                 ),
                 // Include manual-only entries (no user selected but has philex_user_name)
+                ...signEntries.checkedReviewed
+                    .filter((e: any) => !e.user && e.philex_user_name?.trim())
+                    .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'checked_reviewed_by' })),
                 ...signEntries.recommending
                     .filter((e: any) => !e.user && e.philex_user_name?.trim())
                     .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'recommending_approval_by' })),
