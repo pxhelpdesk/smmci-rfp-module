@@ -96,6 +96,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                 : null;
 
         return {
+            checked_reviewed_by: signs.filter(s => s.details === 'checked_reviewed_by').map(toOption).filter(Boolean) as UserOption[],
             recommending_approval_by: signs.filter(s => s.details === 'recommending_approval_by').map(toOption).filter(Boolean) as UserOption[],
             approved_by: signs.filter(s => s.details === 'approved_by').map(toOption).filter(Boolean) as UserOption[],
             concurred_by: signs.filter(s => s.details === 'concurred_by').map(toOption).filter(Boolean) as UserOption[],
@@ -223,10 +224,11 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     }, []);
 
     const [signEntries, setSignEntries] = useState<{
+        checkedReviewed: any[];
         recommending: any[];
         approved: any[];
         concurred: any[];
-    }>({ recommending: [], approved: [], concurred: [] });
+    }>({ checkedReviewed: [], recommending: [], approved: [], concurred: [] });
 
     const { data, setData, put, processing, errors, transform } = useForm<{
         ap_no: string;
@@ -392,6 +394,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         const oldSigns = rfp_record.signs ?? [];
         const roleLabels: Record<string, string> = {
             prepared_by: 'Prepared By',
+            checked_reviewed_by: 'Checked and Reviewed By',
             recommending_approval_by: 'Recommending Approval By',
             approved_by: 'Approved By',
             concurred_by: 'Concurred By',
@@ -403,6 +406,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             .sort().join(';');
 
         const newSignsStr = [
+            ...dedupedSignatories.checked_reviewed_by.filter(Boolean).map(u => `checked_reviewed_by:${u!.value}`),
             ...dedupedSignatories.recommending_approval_by.filter(Boolean).map(u => `recommending_approval_by:${u!.value}`),
             ...dedupedSignatories.approved_by.filter(Boolean).map(u => `approved_by:${u!.value}`),
             ...dedupedSignatories.concurred_by.filter(Boolean).map(u => `concurred_by:${u!.value}`),
@@ -422,6 +426,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                 }));
 
             const newFormatted = [
+                ...dedupedSignatories.checked_reviewed_by.filter(Boolean).map(u => ({ role: 'checked_reviewed_by', name: u!.label })),
                 ...dedupedSignatories.recommending_approval_by.filter(Boolean).map(u => ({ role: 'recommending_approval_by', name: u!.label })),
                 ...dedupedSignatories.approved_by.filter(Boolean).map(u => ({ role: 'approved_by', name: u!.label })),
                 ...dedupedSignatories.concurred_by.filter(Boolean).map(u => ({ role: 'concurred_by', name: u!.label })),
@@ -450,27 +455,33 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     const buildSigns = () => {
         const deduped = dedupeSignatories(signatories);
 
-        const buildSign = (u: UserOption | null, role: string, entries: any[]) => {
-            const entry = entries.find((e: any) => e.user?.value === u?.value);
-            return {
-                user_id: u?.value ?? null,
-                philex_user_name: null as string | null,
-                details: role,
-            };
-        };
+        // Only called with real (non-null) users from `deduped`, so
+        // philex_user_name is always null here — manual-only entries
+        // are appended separately below.
+        const buildSign = (u: UserOption, role: string) => ({
+            user_id: u.value,
+            philex_user_name: null as string | null,
+            details: role,
+        });
 
         return [
             { user_id: rfp_record.prepared_by?.id ?? auth.user.id, philex_user_name: null, details: 'prepared_by' },
-            ...deduped.recommending_approval_by.filter(Boolean).map(u =>
-                buildSign(u, 'recommending_approval_by', signEntries.recommending)
+            ...deduped.checked_reviewed_by.filter((u): u is UserOption => Boolean(u)).map(u =>
+                buildSign(u, 'checked_reviewed_by')
             ),
-            ...deduped.approved_by.filter(Boolean).map(u =>
-                buildSign(u, 'approved_by', signEntries.approved)
+            ...deduped.recommending_approval_by.filter((u): u is UserOption => Boolean(u)).map(u =>
+                buildSign(u, 'recommending_approval_by')
             ),
-            ...deduped.concurred_by.filter(Boolean).map(u =>
-                buildSign(u, 'concurred_by', signEntries.concurred)
+            ...deduped.approved_by.filter((u): u is UserOption => Boolean(u)).map(u =>
+                buildSign(u, 'approved_by')
+            ),
+            ...deduped.concurred_by.filter((u): u is UserOption => Boolean(u)).map(u =>
+                buildSign(u, 'concurred_by')
             ),
             // Manual-only entries with philex_user_name
+            ...signEntries.checkedReviewed
+                .filter((e: any) => !e.user && e.philex_user_name?.trim())
+                .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'checked_reviewed_by' })),
             ...signEntries.recommending
                 .filter((e: any) => !e.user && e.philex_user_name?.trim())
                 .map((e: any) => ({ user_id: null, philex_user_name: e.philex_user_name.trim(), details: 'recommending_approval_by' })),
@@ -499,6 +510,12 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        const hasCheckedReviewed = signatories.checked_reviewed_by[0]
+            || signEntries.checkedReviewed.some((e: any) => !e.user && e.philex_user_name?.trim());
+        if (!hasCheckedReviewed) {
+            toast.error('Checked and Reviewed By is required.');
+            return;
+        }
         if (detectedChanges.length > 0) {
             setShowLogDialog(true);
         } else {
@@ -984,6 +1001,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                     departmentHead={departmentHead}
                     cfo={cfo}
                     ceo={ceo}
+                    initialSigns={rfp_record.signs}
                 />
             </form>
 

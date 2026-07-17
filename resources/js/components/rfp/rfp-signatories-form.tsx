@@ -23,6 +23,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 export type SignatoriesState = {
+    checked_reviewed_by: (UserOption | null)[];
     recommending_approval_by: (UserOption | null)[];
     approved_by: (UserOption | null)[];
     concurred_by: (UserOption | null)[];
@@ -35,12 +36,20 @@ type Entry = {
     isLocked: boolean;
 };
 
+type InitialSignInput = {
+    details: string | null;
+    user_id: number | null;
+    philex_user_name?: string | null;
+    user?: { name?: string | null; department?: { department?: string | null } | null } | null;
+};
+
 type Props = {
     preparedByName: string;
     signatories: SignatoriesState;
     userOptions: UserOption[];
     onChange: (signatories: SignatoriesState) => void;
     onEntriesChange?: (entries: {
+        checkedReviewed: Entry[];
         recommending: Entry[];
         approved: Entry[];
         concurred: Entry[];
@@ -51,6 +60,10 @@ type Props = {
     departmentHead?: { id: number; name: string; department?: string } | null;
     cfo?: { id: number; name: string; department?: string } | null;
     ceo?: { id: number; name: string; department?: string } | null;
+    /** Raw signs from the DB record (edit mode only) — needed to
+     * reconstruct manual/philex_user_name entries, which SignatoriesState
+     * alone can't represent since it only carries real UserOptions. */
+    initialSigns?: InitialSignInput[];
 };
 
 function getRecommendingDuplicateIds(
@@ -233,6 +246,68 @@ function SortableList({
     );
 }
 
+/**
+ * Single, non-draggable, non-removable required row.
+ * Used for "Checked and Reviewed By" — a single mandatory signatory
+ * with no default value.
+ */
+function RequiredSingleRow({
+    entry,
+    userOptions,
+    selectStyles,
+    onUpdate,
+    onUpdatePhilexName,
+}: {
+    entry: Entry;
+    userOptions: UserOption[];
+    selectStyles: any;
+    onUpdate: (opt: UserOption | null) => void;
+    onUpdatePhilexName: (name: string) => void;
+}) {
+    const isEmpty = !entry.user && !entry.philex_user_name?.trim();
+
+    return (
+        <div className="flex flex-col gap-0.5">
+            <div className="flex gap-1 items-center">
+                <div className="flex-1 space-y-1">
+                    <Select
+                        options={userOptions}
+                        value={entry.user ?? null}
+                        onChange={onUpdate}
+                        placeholder="Select user..."
+                        isClearable
+                        className="text-sm"
+                        styles={{
+                            ...selectStyles,
+                            control: (base: any) => ({
+                                ...selectStyles.control(base),
+                                borderColor: isEmpty ? 'rgb(239 68 68)' : base.borderColor,
+                            }),
+                        }}
+                    />
+                    {!entry.user && (
+                        <Input
+                            value={entry.philex_user_name ?? ''}
+                            onChange={(e) => onUpdatePhilexName(e.target.value)}
+                            placeholder="Manual for Philex Manager..."
+                            className="h-8 text-sm"
+                        />
+                    )}
+                </div>
+                <div className="w-9 shrink-0" />
+            </div>
+
+            <div className="pl-1 flex items-center gap-1.5">
+                {isEmpty && (
+                    <span className="text-[10px] text-destructive font-medium">
+                        Required
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export function dedupeSignatories(state: SignatoriesState): SignatoriesState {
     const deduped_concurred = state.concurred_by.filter(Boolean) as UserOption[];
     const concurredIds = new Set(deduped_concurred.map(u => u.value));
@@ -248,7 +323,10 @@ export function dedupeSignatories(state: SignatoriesState): SignatoriesState {
         return !approvedIds.has(u.value) && !concurredIds.has(u.value);
     }) as UserOption[];
 
+    const deduped_checked_reviewed = state.checked_reviewed_by.filter(Boolean) as UserOption[];
+
     return {
+        checked_reviewed_by: deduped_checked_reviewed,
         recommending_approval_by: deduped_recommending,
         approved_by: deduped_approved,
         concurred_by: deduped_concurred,
@@ -267,10 +345,44 @@ export function RfpSignatoriesForm({
     departmentHead,
     cfo,
     ceo,
+    initialSigns,
 }: Props) {
 
+    // Reconstruct entries (including manual philex_user_name values) from
+    // the raw signs when available — falls back to the SignatoriesState-
+    // derived defaults (create mode / no manual names to preserve).
+    const entriesFromSigns = (role: string, prefix: string, isLockedFn: (userId?: number | null) => boolean): Entry[] | null => {
+        if (!initialSigns) return null;
+        return initialSigns
+            .filter(s => s.details === role)
+            .map((s, i) => ({
+                id: `${prefix}-${i}-${Date.now()}`,
+                user: s.user_id
+                    ? { value: s.user_id, label: s.user?.name ?? '', department: s.user?.department?.department ?? undefined }
+                    : null,
+                philex_user_name: s.philex_user_name ?? '',
+                isLocked: isLockedFn(s.user_id),
+            }));
+    };
+
+    const defaultCheckedReviewedEntries = useRef<Entry[]>((() => {
+        const fromSigns = entriesFromSigns('checked_reviewed_by', 'chk', () => false);
+        if (fromSigns && fromSigns.length > 0) return fromSigns;
+        return [{
+            id: `chk-${Date.now()}`,
+            user: signatories.checked_reviewed_by?.[0] ?? null,
+            philex_user_name: '',
+            isLocked: false,
+        }];
+    })());
+
+    const [checkedReviewedEntries, setCheckedReviewedEntries] = useState<Entry[]>(() =>
+        defaultCheckedReviewedEntries.current
+    );
+
     const defaultRecommendingEntries = useRef<Entry[]>(
-        signatories.recommending_approval_by.map((u, i) => ({
+        entriesFromSigns('recommending_approval_by', 'rec', () => false)
+        ?? signatories.recommending_approval_by.map((u, i) => ({
             id: `rec-${i}-${Date.now()}`,
             user: u,
             philex_user_name: '',
@@ -279,7 +391,8 @@ export function RfpSignatoriesForm({
     );
 
     const defaultConcurredEntries = useRef<Entry[]>(
-        signatories.concurred_by.map((u, i) => ({
+        entriesFromSigns('concurred_by', 'con', () => true)
+        ?? signatories.concurred_by.map((u, i) => ({
             id: `con-${i}-${Date.now()}`,
             user: u,
             philex_user_name: '',
@@ -292,7 +405,8 @@ export function RfpSignatoriesForm({
     );
 
     const [approvedEntries, setApprovedEntries] = useState<Entry[]>(() =>
-        signatories.approved_by.map((u, i) => ({
+        entriesFromSigns('approved_by', 'app', (userId) => isDefaultApprovedId(userId ?? undefined))
+        ?? signatories.approved_by.map((u, i) => ({
             id: `app-${i}-${Date.now()}`,
             user: u,
             philex_user_name: '',
@@ -383,7 +497,10 @@ export function RfpSignatoriesForm({
 
         const newEntries = [...extras, ...defaults];
         setApprovedEntries(newEntries);
-        handleChange({ ...signatories, approved_by: newEntries.map(e => e.user) }, newEntries, recommendingEntries, concurredEntries);
+        handleChange(
+            { ...signatories, approved_by: newEntries.map(e => e.user) },
+            newEntries, recommendingEntries, concurredEntries, checkedReviewedEntries,
+        );
     }, [office, subtotalAmount]);
 
     const handleChange = (
@@ -391,24 +508,42 @@ export function RfpSignatoriesForm({
         approved = approvedEntries,
         recommending = recommendingEntries,
         concurred = concurredEntries,
+        checkedReviewed = checkedReviewedEntries,
     ) => {
         onChange(dedupeSignatories(newState));
-        onEntriesChange?.({ recommending, approved, concurred });
+        onEntriesChange?.({ checkedReviewed, recommending, approved, concurred });
+    };
+
+    const syncCheckedReviewed = (entries: Entry[]) => {
+        setCheckedReviewedEntries(entries);
+        handleChange(
+            { ...signatories, checked_reviewed_by: entries.map(e => e.user) },
+            approvedEntries, recommendingEntries, concurredEntries, entries,
+        );
     };
 
     const syncRecommending = (entries: Entry[]) => {
         setRecommendingEntries(entries);
-        handleChange({ ...signatories, recommending_approval_by: entries.map(e => e.user) }, approvedEntries, entries, concurredEntries);
+        handleChange(
+            { ...signatories, recommending_approval_by: entries.map(e => e.user) },
+            approvedEntries, entries, concurredEntries, checkedReviewedEntries,
+        );
     };
 
     const syncApproved = (entries: Entry[]) => {
         setApprovedEntries(entries);
-        handleChange({ ...signatories, approved_by: entries.map(e => e.user) }, entries, recommendingEntries, concurredEntries);
+        handleChange(
+            { ...signatories, approved_by: entries.map(e => e.user) },
+            entries, recommendingEntries, concurredEntries, checkedReviewedEntries,
+        );
     };
 
     const syncConcurred = (entries: Entry[]) => {
         setConcurredEntries(entries);
-        handleChange({ ...signatories, concurred_by: entries.map(e => e.user) }, approvedEntries, recommendingEntries, entries);
+        handleChange(
+            { ...signatories, concurred_by: entries.map(e => e.user) },
+            approvedEntries, recommendingEntries, entries, checkedReviewedEntries,
+        );
     };
 
     // ── Reset handlers ────────────────────────────────────────────
@@ -483,6 +618,9 @@ export function RfpSignatoriesForm({
 
     // ── Update user ───────────────────────────────────────────────
 
+    const updateCheckedReviewed = (id: string, opt: UserOption | null) =>
+        syncCheckedReviewed(checkedReviewedEntries.map(e => e.id === id ? { ...e, user: opt, philex_user_name: opt ? '' : e.philex_user_name } : e));
+
     const updateRecommending = (id: string, opt: UserOption | null) =>
         syncRecommending(recommendingEntries.map(e => e.id === id ? { ...e, user: opt, philex_user_name: opt ? '' : e.philex_user_name } : e));
 
@@ -490,6 +628,9 @@ export function RfpSignatoriesForm({
         syncApproved(approvedEntries.map(e => e.id === id ? { ...e, user: opt, philex_user_name: opt ? '' : e.philex_user_name } : e));
 
     // ── Update philex_user_name ───────────────────────────────────
+
+    const updateCheckedReviewedPhilexName = (id: string, name: string) =>
+        syncCheckedReviewed(checkedReviewedEntries.map(e => e.id === id ? { ...e, philex_user_name: name } : e));
 
     const updateRecommendingPhilexName = (id: string, name: string) =>
         syncRecommending(recommendingEntries.map(e => e.id === id ? { ...e, philex_user_name: name } : e));
@@ -563,8 +704,12 @@ export function RfpSignatoriesForm({
             </CardHeader>
             <CardContent>
                 <div className="flex gap-2 px-3 pb-2">
-                    <div className="flex-1 grid grid-cols-4 gap-4">
+                    <div className="flex-1 grid grid-cols-5 gap-4">
                         <p className="text-xs font-medium text-muted-foreground">Prepared By</p>
+
+                        <p className="text-xs font-medium text-muted-foreground">
+                            Checked and Reviewed By<span className="text-destructive ml-0.5">*</span>
+                        </p>
 
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-medium text-muted-foreground">Recommending Approval By</p>
@@ -612,11 +757,24 @@ export function RfpSignatoriesForm({
                 </div>
 
                 <div className="flex gap-2 items-start px-3">
-                    <div className="flex-1 grid grid-cols-4 gap-4">
+                    <div className="flex-1 grid grid-cols-5 gap-4">
 
                         <div className="space-y-0.5">
                             <Input value={preparedByName} className="h-9 bg-muted" readOnly />
                             <p className="text-[10px] text-muted-foreground pl-1">Requestor</p>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            {checkedReviewedEntries.map(entry => (
+                                <RequiredSingleRow
+                                    key={entry.id}
+                                    entry={entry}
+                                    userOptions={userOptions}
+                                    selectStyles={selectStyles}
+                                    onUpdate={(opt) => updateCheckedReviewed(entry.id, opt)}
+                                    onUpdatePhilexName={(name) => updateCheckedReviewedPhilexName(entry.id, name)}
+                                />
+                            ))}
                         </div>
 
                         <div className="space-y-1.5">

@@ -70,7 +70,7 @@ class UpdateRfpRecordRequest extends FormRequest
             'signs' => 'nullable|array',
             'signs.*.user_id' => 'nullable|integer|exists:mysql.users,id',
             'signs.*.philex_user_name' => 'nullable|string|max:255',
-            'signs.*.details' => 'required|in:prepared_by,recommending_approval_by,approved_by,concurred_by',
+            'signs.*.details' => 'required|in:prepared_by,checked_reviewed_by,recommending_approval_by,approved_by,concurred_by',
         ];
     }
 
@@ -95,8 +95,21 @@ class UpdateRfpRecordRequest extends FormRequest
             'details.*.total_amount.min' => 'Amount must be greater than zero.',
             'signs.*.user_id.required' => 'A user is required for each signatory.',
             'signs.*.details.required' => 'Signatory role is required.',
+            'signs.required' => 'Checked and Reviewed By is required.',
             'po_no.required' => 'PO No. is required for Advances/Down payments.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $signs = collect($this->input('signs', []));
+            $checkedReviewed = $signs->firstWhere('details', 'checked_reviewed_by');
+
+            if (! $checkedReviewed || (empty($checkedReviewed['user_id']) && empty($checkedReviewed['philex_user_name']))) {
+                $validator->errors()->add('signs', 'Checked and Reviewed By is required.');
+            }
+        });
     }
 
     protected function failedValidation(Validator $validator)

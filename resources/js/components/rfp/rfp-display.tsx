@@ -36,6 +36,7 @@ const payeeLabels = {
 
 const signatoryLabels = {
     prepared_by: 'Prepared By',
+    checked_reviewed_by: 'Checked and Reviewed By',
     recommending_approval_by: 'Recommending Approval By',
     approved_by: 'Approved By',
     concurred_by: 'Concurred By',

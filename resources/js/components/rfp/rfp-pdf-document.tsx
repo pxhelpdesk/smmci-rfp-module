@@ -521,6 +521,18 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                                 </View>
                             ))}
 
+                            {getSignsByRole(rfp_record.signs, 'checked_reviewed_by').length > 0 && (
+                                <>
+                                    <Text style={[styles.signatoryLabel, { marginTop: 10 }]}>Checked and Reviewed By :</Text>
+                                    {getSignsByRole(rfp_record.signs, 'checked_reviewed_by').map((s, i) => (
+                                        <View key={i} style={styles.signatoryEntry}>
+                                            <View style={styles.signatoryLine} />
+                                            <Text style={styles.signatoryName}>{s.user?.name ?? s.philex_user_name ?? ''}</Text>
+                                        </View>
+                                    ))}
+                                </>
+                            )}
+
                             {getSignsByRole(rfp_record.signs, 'recommending_approval_by').length > 0 && (
                                 <>
                                     <Text style={[styles.signatoryLabel, { marginTop: 10 }]}>Recommending Approval By :</Text>
