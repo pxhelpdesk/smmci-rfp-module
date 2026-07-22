@@ -12,7 +12,7 @@ class RfpUsageController extends Controller
     public function __construct()
     {
         $this->middleware('permission:rfp-usage-view', ['only' => ['index', 'show']]);
-        $this->middleware('permission:rfp-usage-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:rfp-usage-create', ['only' => ['create', 'store', 'nextCode']]);
         $this->middleware('permission:rfp-usage-edit', ['only' => ['edit', 'update']]);
         $this->middleware('permission:rfp-usage-delete', ['only' => ['destroy']]);
     }
@@ -42,15 +42,48 @@ class RfpUsageController extends Controller
     {
         $validated = $request->validate([
             'rfp_category_id' => 'required|exists:mysql_rfp.rfp_categories,id',
-            'code' => 'required|string|unique:mysql_rfp.rfp_usages,code',
             'description' => 'required|string',
             'is_active' => 'boolean',
         ]);
+
+        $category = RfpCategory::findOrFail($validated['rfp_category_id']);
+        $validated['code'] = $this->generateNextCode($category);
 
         $usage = RfpUsage::create($validated);
 
         return redirect()->route('rfp.usages.index')
             ->with('success', "Usage {$usage->description} created successfully.");
+    }
+
+    public function nextCode(Request $request)
+    {
+        $request->validate([
+            'rfp_category_id' => 'required|exists:mysql_rfp.rfp_categories,id',
+        ]);
+
+        $category = RfpCategory::findOrFail($request->rfp_category_id);
+
+        return response()->json([
+            'code' => $this->generateNextCode($category),
+        ]);
+    }
+
+    private function generateNextCode(RfpCategory $category): string
+    {
+        $prefix = strtoupper($category->code);
+
+        $lastUsage = RfpUsage::withTrashed()
+            ->where('code', 'like', "{$prefix}-%")
+            ->orderByRaw('CAST(SUBSTRING_INDEX(code, "-", -1) AS UNSIGNED) DESC')
+            ->first();
+
+        $nextNumber = 1;
+        if ($lastUsage) {
+            $lastNumber = (int) substr($lastUsage->code, strrpos($lastUsage->code, '-') + 1);
+            $nextNumber = $lastNumber + 1;
+        }
+
+        return $prefix . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
 
     public function show(RfpUsage $usage)
@@ -76,11 +109,11 @@ class RfpUsageController extends Controller
     {
         $validated = $request->validate([
             'rfp_category_id' => 'required|exists:mysql_rfp.rfp_categories,id',
-            'code' => 'required|string|unique:mysql_rfp.rfp_usages,code,' . $usage->id,
             'description' => 'required|string',
             'is_active' => 'boolean',
         ]);
 
+        // code intentionally excluded — immutable after creation
         $usage->update($validated);
 
         return redirect()->route('rfp.usages.index')

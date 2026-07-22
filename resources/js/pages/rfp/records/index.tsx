@@ -1,5 +1,5 @@
 import { Link, router, Head } from '@inertiajs/react';
-import { FileText, Pencil, Plus, Trash2, Printer, Ban, AlertTriangle, Eye, RotateCcw } from 'lucide-react';
+import { FileText, Pencil, Plus, Trash2, Printer, Ban, Eye, RotateCcw, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -19,25 +19,43 @@ type Props = {
 export default function Index({ rfp_records }: Props) {
     const [activeAction, setActiveAction] = useState<{ type: RfpActionType; id: number } | null>(null);
     const [previewRfp, setPreviewRfp] = useState<RfpRecord | null>(null);
+    const [processingIds, setProcessingIds] = useState<Set<number>>(new Set());
     const { can } = usePermission();
 
     const handleAction = (action: Exclude<RfpActionType, null>, remarks: string) => {
         if (!activeAction) return;
+        const id = activeAction.id;
+
+        const markStart = () => setProcessingIds(prev => new Set(prev).add(id));
+        const markDone = () => setProcessingIds(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+        });
+
         if (action === 'delete') {
-            router.delete(`/rfp/records/${activeAction.id}`, {
+            router.delete(`/rfp/records/${id}`, {
                 data: { remarks },
+                onStart: markStart,
+                onFinish: markDone,
                 onSuccess: () => setActiveAction(null),
             });
         } else if (action === 'cancel') {
-            router.patch(`/rfp/records/${activeAction.id}/cancel`, { remarks }, {
+            router.patch(`/rfp/records/${id}/cancel`, { remarks }, {
+                onStart: markStart,
+                onFinish: markDone,
                 onSuccess: () => setActiveAction(null),
             });
         } else if (action === 'post') {
-            router.patch(`/rfp/records/${activeAction.id}/post`, { remarks }, {
+            router.patch(`/rfp/records/${id}/post`, { remarks }, {
+                onStart: markStart,
+                onFinish: markDone,
                 onSuccess: () => setActiveAction(null),
             });
         } else if (action === 'revert') {
-            router.patch(`/rfp/records/${activeAction.id}/revert`, { remarks }, {
+            router.patch(`/rfp/records/${id}/revert`, { remarks }, {
+                onStart: markStart,
+                onFinish: markDone,
                 onSuccess: () => setActiveAction(null),
             });
         }
@@ -162,11 +180,12 @@ export default function Index({ rfp_records }: Props) {
                 const isPosted = rfp.status === 'posted';
                 const isCancelled = rfp.status === 'cancelled';
                 const isDraft = rfp.status === 'draft';
+                const isRowProcessing = processingIds.has(rfp.id);
 
                 return (
                     <div className="flex justify-end gap-1">
                         {/* View — always visible */}
-                        <Button variant="ghost" size="sm" asChild>
+                        <Button variant="ghost" size="sm" asChild disabled={isRowProcessing}>
                             <Link href={`/rfp/records/${rfp.id}`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                 <Eye className="h-4 w-4" />
                                 <span className="text-[10px] leading-none">View</span>
@@ -177,8 +196,9 @@ export default function Index({ rfp_records }: Props) {
                         {can('rfp-record-post') && isDraft && (
                             <Button variant="ghost" size="sm"
                                 onClick={() => setActiveAction({ type: 'post', id: rfp.id })}
+                                disabled={isRowProcessing}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
-                                <FileText className="h-4 w-4 text-green-600" />
+                                {isRowProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4 text-green-600" />}
                                 <span className="text-[10px] leading-none">Post</span>
                             </Button>
                         )}
@@ -187,6 +207,7 @@ export default function Index({ rfp_records }: Props) {
                         {isPosted && (
                             <Button variant="ghost" size="sm"
                                 onClick={() => setPreviewRfp(rfp)}
+                                disabled={isRowProcessing}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                 <Printer className="h-4 w-4" />
                                 <span className="text-[10px] leading-none">Print</span>
@@ -195,7 +216,7 @@ export default function Index({ rfp_records }: Props) {
 
                         {/* Edit — draft only for everyone including admin */}
                         {can('rfp-record-edit') && isDraft && (
-                            <Button variant="ghost" size="sm" asChild>
+                            <Button variant="ghost" size="sm" asChild disabled={isRowProcessing}>
                                 <Link href={`/rfp/records/${rfp.id}/edit`} className="flex flex-col items-center gap-1 h-auto py-1 w-14">
                                     <Pencil className="h-4 w-4" />
                                     <span className="text-[10px] leading-none">Edit</span>
@@ -207,8 +228,9 @@ export default function Index({ rfp_records }: Props) {
                         {can('rfp-record-revert') && (isPosted || isCancelled) && (
                             <Button variant="ghost" size="sm"
                                 onClick={() => setActiveAction({ type: 'revert', id: rfp.id })}
+                                disabled={isRowProcessing}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
-                                <RotateCcw className="h-4 w-4 text-yellow-600" />
+                                {isRowProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4 text-yellow-600" />}
                                 <span className="text-[10px] leading-none">Revert</span>
                             </Button>
                         )}
@@ -217,8 +239,9 @@ export default function Index({ rfp_records }: Props) {
                         {can('rfp-record-cancel') && (isDraft || (can('rfp-record-all') && !isCancelled)) && (
                             <Button variant="ghost" size="sm"
                                 onClick={() => setActiveAction({ type: 'cancel', id: rfp.id })}
+                                disabled={isRowProcessing}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
-                                <Ban className="h-4 w-4 text-orange-600" />
+                                {isRowProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4 text-orange-600" />}
                                 <span className="text-[10px] leading-none">Cancel</span>
                             </Button>
                         )}
@@ -227,8 +250,9 @@ export default function Index({ rfp_records }: Props) {
                         {can('rfp-record-delete') && !isPosted && (
                             <Button variant="ghost" size="sm"
                                 onClick={() => setActiveAction({ type: 'delete', id: rfp.id })}
+                                disabled={isRowProcessing}
                                 className="flex flex-col items-center gap-1 h-auto py-1 w-14">
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                                {isRowProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
                                 <span className="text-[10px] leading-none">Delete</span>
                             </Button>
                         )}
@@ -278,6 +302,7 @@ export default function Index({ rfp_records }: Props) {
                 activeAction={activeAction?.type ?? null}
                 onClose={() => setActiveAction(null)}
                 onConfirm={handleAction}
+                processing={activeAction ? processingIds.has(activeAction.id) : false}
             />
 
             <RfpPdfPreviewDialog

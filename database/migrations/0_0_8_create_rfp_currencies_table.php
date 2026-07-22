@@ -8,15 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::connection('mysql_rfp')->create('rfp_currencies', function (Blueprint $table) {
-            $table->id();
-            $table->string('code', 3)->unique();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        if (!Schema::connection('mysql_rfp')->hasTable('rfp_currencies'))
+        {
+            Schema::connection('mysql_rfp')->create('rfp_currencies', function (Blueprint $table) {
+                $table->id();
+                $table->string('code', 3)->unique();
+                $table->string('name');
+                $table->text('description')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
     }
 
     public function down(): void

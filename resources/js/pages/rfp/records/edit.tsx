@@ -86,7 +86,13 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     const [swpRcwOptions, setSwpRcwOptions] = useState<SelectOption[]>([]);
     const [loadingSwpRcw, setLoadingSwpRcw] = useState(false);
 
+    // SAP PO options
+    const [sapPoOptions, setSapPoOptions] = useState<SelectOption[]>([]);
+    const [loadingSapPo, setLoadingSapPo] = useState(false);
+
     const [usagesByCategory, setUsagesByCategory] = useState<Record<number, RfpUsage[]>>({});
+    const [liveCategories, setLiveCategories] = useState<RfpCategory[]>(categories);
+    const [liveCurrencies, setLiveCurrencies] = useState<RfpCurrency[]>(currencies);
 
     const [signatories, setSignatories] = useState<SignatoriesState>(() => {
         const signs = rfp_record.signs ?? [];
@@ -104,7 +110,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     });
 
     const loadUsagesForCategory = async (categoryId: number) => {
-        if (usagesByCategory[categoryId]) return;
+        // Always refetch — ensures newly added usages show up without a page reload
         try {
             const res = await fetch(`/rfp/usages/category/${categoryId}`);
             const json = await res.json();
@@ -113,6 +119,39 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             console.error('Failed to load usages', error);
         }
     };
+
+    const loadCategories = async () => {
+        try {
+            const res = await fetch('/rfp/categories/active');
+            const json = await res.json();
+            if (Array.isArray(json)) setLiveCategories(json);
+        } catch (error) {
+            console.error('Failed to refresh categories', error);
+        }
+    };
+
+    const loadCurrencies = async () => {
+        try {
+            const res = await fetch('/rfp/currencies/active');
+            const json = await res.json();
+            if (Array.isArray(json)) setLiveCurrencies(json);
+        } catch (error) {
+            console.error('Failed to refresh currencies', error);
+        }
+    };
+
+    // Silently refresh Category/Usage/Currency options whenever the tab
+    // regains focus — picks up records added elsewhere without reloading
+    // the page or touching any of the form's own input values.
+    useEffect(() => {
+        const handleFocus = () => {
+            loadCategories();
+            loadCurrencies();
+            Object.keys(usagesByCategory).forEach(id => loadUsagesForCategory(Number(id)));
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, [usagesByCategory]);
 
     const loadSuppliers = async () => {
         setLoadingSuppliers(true);
@@ -196,6 +235,20 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         setLoadingSwpRcw(false);
     };
 
+    const loadSapPo = async () => {
+        if (sapPoOptions.length) return;
+        setLoadingSapPo(true);
+        try {
+            const res = await fetch('/rfp/api/sap/po');
+            const json = await res.json();
+            setSapPoOptions(Array.isArray(json) ? json : []);
+        } catch (error) {
+            console.error('Failed to load SAP PO', error);
+            setSapPoOptions([]);
+        }
+        setLoadingSapPo(false);
+    };
+
     // Pre-load usages for all categories used in existing details
     useEffect(() => {
         const categoryIds = rfp_record.details
@@ -223,6 +276,11 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         if (rfp_record.swp_rcw_no) loadSwpRcw();
     }, []);
 
+    // Pre-load SAP PO if record has an existing value
+    useEffect(() => {
+        if (rfp_record.sap_po_no) loadSapPo();
+    }, []);
+
     const [signEntries, setSignEntries] = useState<{
         checkedReviewed: any[];
         recommending: any[];
@@ -231,10 +289,9 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
     }>({ checkedReviewed: [], recommending: [], approved: [], concurred: [] });
 
     const { data, setData, put, processing, errors, transform } = useForm<{
-        ap_no: string;
         due_date: string;
-        rr_no: string;
-        po_no: string;
+        sap_rr_no: string;
+        sap_po_no: string;
         swp_pr_no: string;
         swp_rcw_no: string;
         office: 'head_office' | 'mine_site';
@@ -251,10 +308,9 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         signs: { user_id: number; details: string }[];
         log_remarks?: string;
     }>({
-        ap_no: rfp_record.ap_no || '',
         due_date: rfp_record.due_date || '',
-        rr_no: rfp_record.rr_no || '',
-        po_no: rfp_record.po_no || '',
+        sap_rr_no: rfp_record.sap_rr_no || '',
+        sap_po_no: rfp_record.sap_po_no || '',
         swp_pr_no: rfp_record.swp_pr_no || '',
         swp_rcw_no: rfp_record.swp_rcw_no || '',
         office: rfp_record.office,
@@ -323,10 +379,9 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             }
         };
 
-        checkField('ap_no', 'AP No.', rfp_record.ap_no, data.ap_no);
         checkField('due_date', 'Due Date', rfp_record.due_date, data.due_date);
-        checkField('rr_no', 'RR No.', rfp_record.rr_no, data.rr_no);
-        checkField('po_no', 'PO No.', rfp_record.po_no, data.po_no);
+        checkField('sap_rr_no', 'SAP RR No.', rfp_record.sap_rr_no, data.sap_rr_no);
+        checkField('sap_po_no', 'SAP PO No.', rfp_record.sap_po_no, data.sap_po_no);
         checkField('swp_pr_no', 'SWP PR No.', rfp_record.swp_pr_no, data.swp_pr_no);
         checkField('swp_rcw_no', 'SWP RCW No.', rfp_record.swp_rcw_no, data.swp_rcw_no);
         checkField('office', 'Office', rfp_record.office, data.office);
@@ -538,12 +593,12 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
     };
 
-    const categoryOptions = categories.map(c => ({
+    const categoryOptions = liveCategories.map(c => ({
         value: c.id,
         label: `${c.code} - ${c.name}`,
     }));
 
-    const currencyOptions = currencies.map(c => ({
+    const currencyOptions = liveCurrencies.map(c => ({
         value: c.id,
         label: `${c.code} - ${c.name}`,
     }));
@@ -779,26 +834,31 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="rr_no" className="text-sm">RR No.</Label>
+                                    <Label htmlFor="sap_rr_no" className="text-sm">SAP RR No.</Label>
                                     <Input
-                                        id="rr_no"
-                                        value={data.rr_no}
-                                        onChange={(e) => setData('rr_no', e.target.value)}
+                                        id="sap_rr_no"
+                                        value={data.sap_rr_no}
+                                        onChange={(e) => setData('sap_rr_no', e.target.value)}
                                         className="h-9"
                                     />
                                 </div>
-                                {/* PO No. — required when any detail has ADVN category */}
+                                {/* SAP PO No. — required when any detail has ADVN category */}
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="po_no" className="text-sm">
-                                        PO No. {hasAdvanceCategory && <Req />}
+                                    <Label className="text-sm">
+                                        SAP PO No. {hasAdvanceCategory && <Req />}
                                     </Label>
-                                    <Input
-                                        id="po_no"
-                                        value={data.po_no}
-                                        onChange={(e) => setData('po_no', e.target.value)}
-                                        className="h-9"
+                                    <Select
+                                        options={sapPoOptions}
+                                        value={sapPoOptions.find(o => o.value === data.sap_po_no) ?? (data.sap_po_no ? { value: data.sap_po_no, label: data.sap_po_no } : null)}
+                                        onChange={(opt) => setData('sap_po_no', opt?.value ?? '')}
+                                        onMenuOpen={loadSapPo}
+                                        isLoading={loadingSapPo}
+                                        isClearable
+                                        placeholder="Select PO No..."
+                                        className="text-sm"
+                                        styles={selectStyles}
                                     />
-                                    {errors.po_no && <p className="text-xs text-destructive">{errors.po_no}</p>}
+                                    {errors.sap_po_no && <p className="text-xs text-destructive">{errors.sap_po_no}</p>}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -879,6 +939,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                                 setData('details', updated);
                                                 if (opt?.value) loadUsagesForCategory(opt.value);
                                             }}
+                                            onMenuOpen={loadCategories}
                                             isClearable
                                             placeholder="Select category..."
                                             className="text-sm"
@@ -897,6 +958,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                                     .find(o => o.value === detail.rfp_usage_id) ?? null
                                             }
                                             onChange={(opt) => updateDetail(index, 'rfp_usage_id', opt?.value || null)}
+                                            onMenuOpen={() => detail.rfp_category_id && loadUsagesForCategory(detail.rfp_category_id)}
                                             isClearable
                                             isDisabled={!detail.rfp_category_id}
                                             placeholder="Select usage..."
@@ -912,6 +974,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                             options={currencyOptions}
                                             value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
                                             onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
+                                            onMenuOpen={loadCurrencies}
                                             placeholder="Select currency..."
                                             isDisabled={index !== 0}
                                             className="text-sm"

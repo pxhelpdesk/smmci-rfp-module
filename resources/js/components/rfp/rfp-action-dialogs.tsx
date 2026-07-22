@@ -1,5 +1,6 @@
 // components/rfp/rfp-action-dialogs.tsx
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
     AlertDialog,
@@ -65,15 +66,17 @@ type Props = {
     activeAction: RfpActionType;
     onClose: () => void;
     onConfirm: (action: Exclude<RfpActionType, null>, remarks: string) => void;
+    processing?: boolean;
 };
 
-export function RfpActionDialogs({ rfpNumber, activeAction, onClose, onConfirm }: Props) {
+export function RfpActionDialogs({ rfpNumber, activeAction, onClose, onConfirm, processing = false }: Props) {
     const [remarks, setRemarks] = useState('');
     const [remarksError, setRemarksError] = useState(false);
 
     const config = activeAction ? DIALOG_CONFIGS[activeAction] : null;
 
     const handleOpenChange = (open: boolean) => {
+        if (processing) return; // block closing (Esc, overlay click) mid-request
         if (!open) {
             setRemarks('');
             setRemarksError(false);
@@ -82,7 +85,7 @@ export function RfpActionDialogs({ rfpNumber, activeAction, onClose, onConfirm }
     };
 
     const handleConfirm = () => {
-        if (!activeAction || !config) return;
+        if (!activeAction || !config || processing) return;
 
         if (config.remarksRequired && !remarks.trim()) {
             setRemarksError(true);
@@ -91,8 +94,9 @@ export function RfpActionDialogs({ rfpNumber, activeAction, onClose, onConfirm }
         }
 
         onConfirm(activeAction, remarks.trim());
-        setRemarks('');
-        setRemarksError(false);
+        // Note: remarks/error are intentionally not reset here — if the
+        // request fails, the dialog stays open with what the user typed.
+        // They're reset in handleOpenChange when the dialog actually closes.
     };
 
     const handleRemarksChange = (val: string) => {
@@ -125,6 +129,7 @@ export function RfpActionDialogs({ rfpNumber, activeAction, onClose, onConfirm }
                                 onChange={(e) => handleRemarksChange(e.target.value)}
                                 placeholder="Add remarks..."
                                 rows={3}
+                                disabled={processing}
                                 className={`resize-none uppercase ${remarksError ? 'border-destructive' : ''}`}
                             />
                             {remarksError && (
@@ -134,13 +139,15 @@ export function RfpActionDialogs({ rfpNumber, activeAction, onClose, onConfirm }
                     )}
 
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Back</AlertDialogCancel>
+                        <AlertDialogCancel disabled={processing}>Back</AlertDialogCancel>
                         {/* Regular Button instead of AlertDialogAction to prevent auto-close on validation fail */}
                         <Button
                             type="button"
                             className={config.confirmClass}
                             onClick={handleConfirm}
+                            disabled={processing}
                         >
+                            {processing && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
                             {config.confirmLabel}
                         </Button>
                     </AlertDialogFooter>

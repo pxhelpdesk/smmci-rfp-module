@@ -3,7 +3,6 @@ import { Save, X } from 'lucide-react';
 import Select from 'react-select';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,12 +16,10 @@ type Props = {
 export default function Create({ categories }: Props) {
     const { data, setData, post, processing, errors } = useForm<{
         rfp_category_id: number | null;
-        code: string;
         description: string;
         is_active: boolean;
     }>({
         rfp_category_id: null,
-        code: '',
         description: '',
         is_active: true,
     });
@@ -88,17 +85,6 @@ export default function Create({ categories }: Props) {
                                 }}
                             />
                             {errors.rfp_category_id && <p className="text-xs text-destructive">{errors.rfp_category_id}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="code">Code *</Label>
-                            <Input
-                                id="code"
-                                value={data.code}
-                                onChange={(e) => setData('code', e.target.value)}
-                                placeholder="e.g., UTIL-001"
-                            />
-                            {errors.code && <p className="text-xs text-destructive">{errors.code}</p>}
                         </div>
 
                         <div className="space-y-2">

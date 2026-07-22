@@ -382,10 +382,9 @@ class RfpRecordController extends Controller
         $changes = [];
 
         $fieldsToTrack = [
-            'ap_no'                   => 'AP No.',
             'due_date'                => 'Due Date',
-            'rr_no'                   => 'RR No.',
-            'po_no'                   => 'PO No.',
+            'sap_rr_no'               => 'SAP RR No.',
+            'sap_po_no'               => 'SAP PO No.',
             'swp_pr_no'               => 'SWP PR No.',
             'swp_rcw_no'              => 'SWP RCW No.',
             'office'                  => 'Office',
@@ -513,11 +512,13 @@ class RfpRecordController extends Controller
 
     public function cancel(RfpRecord $record)
     {
-        abort_if($record->status === 'cancelled', 422, 'RFP is already cancelled.');
+        if ($record->status === 'cancelled') {
+            return redirect()->back()->with('error', 'RFP is already cancelled.');
+        }
 
         // Only block posted if not admin
-        if (!auth()->user()->hasPermissionTo('rfp-record-all')) {
-            abort_if($record->status === 'posted', 422, 'Posted RFP cannot be cancelled.');
+        if ($record->status === 'posted' && !auth()->user()->hasPermissionTo('rfp-record-all')) {
+            return redirect()->back()->with('error', 'Posted RFP cannot be cancelled.');
         }
 
         $previousStatus = $record->status;
@@ -535,8 +536,14 @@ class RfpRecordController extends Controller
 
     public function markAsPosted(RfpRecord $record)
     {
-        abort_if($record->status === 'posted', 422, 'RFP is already posted.');
-        abort_if($record->status === 'cancelled', 422, 'Cancelled RFP cannot be posted.');
+        if ($record->status === 'posted') {
+            return redirect()->back()->with('error', 'RFP is already posted.');
+        }
+
+        if ($record->status === 'cancelled') {
+            return redirect()->back()->with('error', 'Cancelled RFP cannot be posted.');
+        }
+
         $previousStatus = $record->status;
         $record->update(['status' => 'posted']);
         RfpLog::create([
@@ -553,7 +560,10 @@ class RfpRecordController extends Controller
     // Revert: cancelled → draft, posted → draft
     public function revert(RfpRecord $record)
     {
-        abort_unless(in_array($record->status, ['posted', 'cancelled']), 422, 'Only posted or cancelled RFPs can be reverted to draft.');
+        if (!in_array($record->status, ['posted', 'cancelled'])) {
+            return redirect()->back()->with('error', 'Only posted or cancelled RFPs can be reverted to draft.');
+        }
+
         $previousStatus = $record->status;
         $record->update(['status' => 'draft']);
         RfpLog::create([
@@ -609,6 +619,26 @@ class RfpRecordController extends Controller
                 ->map(fn($r) => [
                     'value' => $r->custom_id,
                     'label' => $r->custom_id,
+                ])
+                ->values();
+
+            return response()->json($records);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getSapPo()
+    {
+        try {
+            $records = \App\Models\SapPurchaseOrder::select('doc_num', 'created_at')
+                ->whereNotNull('doc_num')
+                ->where('doc_num', '!=', '')
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn($r) => [
+                    'value' => $r->doc_num,
+                    'label' => $r->doc_num,
                 ])
                 ->values();
 

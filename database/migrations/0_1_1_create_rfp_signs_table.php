@@ -8,18 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::connection('mysql_rfp')->create('rfp_signs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('rfp_record_id')->constrained('rfp_records')->cascadeOnDelete();
-            $table->string('code')->unique()->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->string('philex_user_name')->nullable();
-            $table->boolean('is_signed')->nullable();
-            $table->text('details')->nullable();
-            $table->text('remarks')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        if (!Schema::connection('mysql_rfp')->hasTable('rfp_signs'))
+        {
+            Schema::connection('mysql_rfp')->create('rfp_signs', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('rfp_record_id')->constrained('rfp_records')->cascadeOnDelete();
+                $table->string('code')->unique()->nullable();
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->string('philex_user_name')->nullable();
+                $table->boolean('is_signed')->nullable();
+                $table->text('details')->nullable();
+                $table->text('remarks')->nullable();
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
     }
 
     public function down(): void
