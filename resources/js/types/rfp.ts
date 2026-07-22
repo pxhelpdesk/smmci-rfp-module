@@ -48,10 +48,9 @@ export type UserOption = {
 export type RfpRecord = {
     id: number;
     prepared_by?: RfpUser;
-    ap_no: string | null;
     due_date: string;
-    rr_no: string | null;
-    po_no: string | null;
+    sap_rr_no: string | null;
+    sap_po_no: string | null;
     swp_pr_no: string | null;
     swp_rcw_no: string | null;
     rfp_number: string;

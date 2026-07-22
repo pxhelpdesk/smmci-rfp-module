@@ -16,6 +16,16 @@ class RfpCurrencyController extends Controller
         $this->middleware('permission:rfp-currency-delete', ['only' => ['destroy']]);
     }
 
+    public function activeList()
+    {
+        $currencies = RfpCurrency::select('id', 'code', 'name')
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get();
+
+        return response()->json($currencies);
+    }
+
     public function index()
     {
         $currencies = RfpCurrency::latest()->get();

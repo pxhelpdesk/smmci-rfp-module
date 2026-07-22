@@ -1,7 +1,7 @@
 import { useForm, Head, usePage } from '@inertiajs/react';
 import { Save, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Select from 'react-select';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -69,13 +69,19 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [createRemarks, setCreateRemarks] = useState('');
 
-    // SWP PR / RCW options
+    /// SWP PR / RCW options
     const [swpPrOptions, setSwpPrOptions] = useState<SelectOption[]>([]);
     const [loadingSwpPr, setLoadingSwpPr] = useState(false);
     const [swpRcwOptions, setSwpRcwOptions] = useState<SelectOption[]>([]);
     const [loadingSwpRcw, setLoadingSwpRcw] = useState(false);
 
+    // SAP PO options
+    const [sapPoOptions, setSapPoOptions] = useState<SelectOption[]>([]);
+    const [loadingSapPo, setLoadingSapPo] = useState(false);
+
     const [usagesByCategory, setUsagesByCategory] = useState<Record<number, RfpUsage[]>>({});
+    const [liveCategories, setLiveCategories] = useState<RfpCategory[]>(categories);
+    const [liveCurrencies, setLiveCurrencies] = useState<RfpCurrency[]>(currencies);
 
     const [signatories, setSignatories] = useState<SignatoriesState>(() => {
         const approvedDefaults: UserOption[] = [];
@@ -111,10 +117,9 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
     }>({ checkedReviewed: [], recommending: [], approved: [], concurred: [] });
 
     const { data, setData, post, processing, errors, transform } = useForm<{
-        ap_no: string;
         due_date: string;
-        rr_no: string;
-        po_no: string;
+        sap_rr_no: string;
+        sap_po_no: string;
         swp_pr_no: string;
         swp_rcw_no: string;
         office: 'head_office' | 'mine_site';
@@ -131,10 +136,9 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         signs: { user_id: number; details: string }[];
         log_remarks: string;
     }>({
-        ap_no: '',
         due_date: '',
-        rr_no: '',
-        po_no: '',
+        sap_rr_no: '',
+        sap_po_no: '',
         swp_pr_no: '',
         swp_rcw_no: '',
         office: 'mine_site',
@@ -225,7 +229,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         setLoadingSwpPr(false);
     };
 
-    const loadSwpRcw = async () => {
+   const loadSwpRcw = async () => {
         if (swpRcwOptions.length) return;
         setLoadingSwpRcw(true);
         try {
@@ -239,8 +243,22 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         setLoadingSwpRcw(false);
     };
 
+    const loadSapPo = async () => {
+        if (sapPoOptions.length) return;
+        setLoadingSapPo(true);
+        try {
+            const res = await fetch('/rfp/api/sap/po');
+            const json = await res.json();
+            setSapPoOptions(Array.isArray(json) ? json : []);
+        } catch (error) {
+            console.error('Failed to load SAP PO', error);
+            setSapPoOptions([]);
+        }
+        setLoadingSapPo(false);
+    };
+
     const loadUsagesForCategory = async (categoryId: number) => {
-        if (usagesByCategory[categoryId]) return;
+        // Always refetch — ensures newly added usages show up without a page reload
         try {
             const res = await fetch(`/rfp/usages/category/${categoryId}`);
             const json = await res.json();
@@ -249,6 +267,39 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
             console.error('Failed to load usages', error);
         }
     };
+
+    const loadCategories = async () => {
+        try {
+            const res = await fetch('/rfp/categories/active');
+            const json = await res.json();
+            if (Array.isArray(json)) setLiveCategories(json);
+        } catch (error) {
+            console.error('Failed to refresh categories', error);
+        }
+    };
+
+    const loadCurrencies = async () => {
+        try {
+            const res = await fetch('/rfp/currencies/active');
+            const json = await res.json();
+            if (Array.isArray(json)) setLiveCurrencies(json);
+        } catch (error) {
+            console.error('Failed to refresh currencies', error);
+        }
+    };
+
+    // Silently refresh Category/Usage/Currency options whenever the tab
+    // regains focus — picks up records added elsewhere without reloading
+    // the page or touching any of the form's own input values.
+    useEffect(() => {
+        const handleFocus = () => {
+            loadCategories();
+            loadCurrencies();
+            Object.keys(usagesByCategory).forEach(id => loadUsagesForCategory(Number(id)));
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, [usagesByCategory]);
 
     const addDetail = () => {
         setData('details', [...data.details, { rfp_category_id: null, rfp_usage_id: null, total_amount: null }]);
@@ -330,12 +381,12 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
         post('/rfp/records');
     };
 
-    const categoryOptions = categories.map(c => ({
+    const categoryOptions = liveCategories.map(c => ({
         value: c.id,
         label: `${c.code} - ${c.name}`,
     }));
 
-    const currencyOptions = currencies.map(c => ({
+    const currencyOptions = liveCurrencies.map(c => ({
         value: c.id,
         label: `${c.code} - ${c.name}`,
     }));
@@ -566,25 +617,30 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="rr_no" className="text-sm">RR No.</Label>
+                                    <Label htmlFor="sap_rr_no" className="text-sm">SAP RR No.</Label>
                                     <Input
-                                        id="rr_no"
-                                        value={data.rr_no}
-                                        onChange={(e) => setData('rr_no', e.target.value)}
+                                        id="sap_rr_no"
+                                        value={data.sap_rr_no}
+                                        onChange={(e) => setData('sap_rr_no', e.target.value)}
                                         className="h-9"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="po_no" className="text-sm">
-                                        PO No. {hasAdvanceCategory && <Req />}
+                                    <Label className="text-sm">
+                                        SAP PO No. {hasAdvanceCategory && <Req />}
                                     </Label>
-                                    <Input
-                                        id="po_no"
-                                        value={data.po_no}
-                                        onChange={(e) => setData('po_no', e.target.value)}
-                                        className="h-9"
+                                    <Select
+                                        options={sapPoOptions}
+                                        value={sapPoOptions.find(o => o.value === data.sap_po_no) ?? (data.sap_po_no ? { value: data.sap_po_no, label: data.sap_po_no } : null)}
+                                        onChange={(opt) => setData('sap_po_no', opt?.value ?? '')}
+                                        onMenuOpen={loadSapPo}
+                                        isLoading={loadingSapPo}
+                                        isClearable
+                                        placeholder="Select PO No..."
+                                        className="text-sm"
+                                        styles={selectStyles}
                                     />
-                                    {errors.po_no && <p className="text-xs text-destructive">{errors.po_no}</p>}
+                                    {errors.sap_po_no && <p className="text-xs text-destructive">{errors.sap_po_no}</p>}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
@@ -665,6 +721,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                                 setData('details', updated);
                                                 if (opt?.value) loadUsagesForCategory(opt.value);
                                             }}
+                                            onMenuOpen={loadCategories}
                                             isClearable
                                             placeholder="Select category..."
                                             className="text-sm"
@@ -683,6 +740,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                                     .find(o => o.value === detail.rfp_usage_id) ?? null
                                             }
                                             onChange={(opt) => updateDetail(index, 'rfp_usage_id', opt?.value || null)}
+                                            onMenuOpen={() => detail.rfp_category_id && loadUsagesForCategory(detail.rfp_category_id)}
                                             isClearable
                                             isDisabled={!detail.rfp_category_id}
                                             placeholder="Select usage..."
@@ -698,6 +756,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                             options={currencyOptions}
                                             value={currencyOptions.find(o => o.value === data.rfp_currency_id)}
                                             onChange={(opt) => setData('rfp_currency_id', opt?.value || null)}
+                                            onMenuOpen={loadCurrencies}
                                             placeholder="Select currency..."
                                             isDisabled={index !== 0}
                                             className="text-sm"

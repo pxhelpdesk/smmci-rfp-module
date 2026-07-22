@@ -13,10 +13,9 @@ class RfpRecord extends Model
 
     protected $fillable = [
         'prepared_by',
-        'ap_no',
         'due_date',
-        'rr_no',
-        'po_no',
+        'sap_rr_no',
+        'sap_po_no',
         'swp_pr_no',
         'swp_rcw_no',
         'rfp_number',

@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight, Ban, RotateCcw, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Printer, ChevronDown, ChevronRight, Ban, RotateCcw, FileText, Loader2 } from 'lucide-react';
 import React, { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,7 @@ export default function Show({ rfp_record, logs }: Props) {
     const [activeAction, setActiveAction] = useState<RfpActionType>(null);
     const [expandedLogIds, setExpandedLogIds] = useState<Set<number>>(new Set());
     const [previewPdf, setPreviewPdf] = useState(false);
+    const [isActionProcessing, setIsActionProcessing] = useState(false);
 
     const isPosted = rfp_record.status === 'posted';
     const isCancelled = rfp_record.status === 'cancelled';
@@ -66,21 +67,29 @@ export default function Show({ rfp_record, logs }: Props) {
     const handleDelete = (remarks: string) => {
         router.delete(`/rfp/records/${rfp_record.id}`, {
             data: { remarks },
+            onStart: () => setIsActionProcessing(true),
+            onFinish: () => setIsActionProcessing(false),
             onSuccess: () => router.visit('/rfp/records'),
         });
     };
     const handleCancel = (remarks: string) => {
         router.patch(`/rfp/records/${rfp_record.id}/cancel`, { remarks }, {
+            onStart: () => setIsActionProcessing(true),
+            onFinish: () => setIsActionProcessing(false),
             onSuccess: () => setActiveAction(null),
         });
     };
     const handlePost = (remarks: string) => {
         router.patch(`/rfp/records/${rfp_record.id}/post`, { remarks }, {
+            onStart: () => setIsActionProcessing(true),
+            onFinish: () => setIsActionProcessing(false),
             onSuccess: () => setActiveAction(null),
         });
     };
     const handleRevert = (remarks: string) => {
         router.patch(`/rfp/records/${rfp_record.id}/revert`, { remarks }, {
+            onStart: () => setIsActionProcessing(true),
+            onFinish: () => setIsActionProcessing(false),
             onSuccess: () => setActiveAction(null),
         });
     };
@@ -223,16 +232,17 @@ export default function Show({ rfp_record, logs }: Props) {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setActiveAction('post')}
+                                disabled={isActionProcessing}
                                 className="text-green-600 hover:text-green-600"
                             >
-                                <FileText className="h-4 w-4 mr-1.5" />
+                                {isActionProcessing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <FileText className="h-4 w-4 mr-1.5" />}
                                 Post
                             </Button>
                         )}
 
                         {/* Print — only when posted */}
                         {isPosted && (
-                            <Button variant="outline" size="sm" onClick={handlePrint}>
+                            <Button variant="outline" size="sm" onClick={handlePrint} disabled={isActionProcessing}>
                                 <Printer className="h-4 w-4 mr-1.5" />
                                 Print
                             </Button>
@@ -240,7 +250,7 @@ export default function Show({ rfp_record, logs }: Props) {
 
                         {/* Edit — draft only for everyone including admin */}
                         {can('rfp-record-edit') && isDraft && (
-                            <Button variant="outline" size="sm" asChild>
+                            <Button variant="outline" size="sm" asChild disabled={isActionProcessing}>
                                 <Link href={`/rfp/records/${rfp_record.id}/edit`}>
                                     <Edit className="h-4 w-4 mr-1.5" />
                                     Edit
@@ -254,9 +264,10 @@ export default function Show({ rfp_record, logs }: Props) {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setActiveAction('revert')}
+                                disabled={isActionProcessing}
                                 className="text-yellow-600 hover:text-yellow-600"
                             >
-                                <RotateCcw className="h-4 w-4 mr-1.5" />
+                                {isActionProcessing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-1.5" />}
                                 Revert to Draft
                             </Button>
                         )}
@@ -267,9 +278,10 @@ export default function Show({ rfp_record, logs }: Props) {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setActiveAction('cancel')}
+                                disabled={isActionProcessing}
                                 className="text-orange-600 hover:text-orange-600"
                             >
-                                <Ban className="h-4 w-4 mr-1.5" />
+                                {isActionProcessing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Ban className="h-4 w-4 mr-1.5" />}
                                 Cancel
                             </Button>
                         )}
@@ -280,9 +292,10 @@ export default function Show({ rfp_record, logs }: Props) {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setActiveAction('delete')}
+                                disabled={isActionProcessing}
                                 className="text-destructive hover:text-destructive"
                             >
-                                <Trash2 className="h-4 w-4 mr-1.5" />
+                                {isActionProcessing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
                                 Delete
                             </Button>
                         )}
@@ -427,12 +440,12 @@ export default function Show({ rfp_record, logs }: Props) {
                                 <p className="text-sm font-medium">{formatDate(rfp_record.due_date)}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground">RR No.</p>
-                                <p className="text-sm font-medium">{rfp_record.rr_no || 'N/A'}</p>
+                                <p className="text-xs text-muted-foreground">SAP RR No.</p>
+                                <p className="text-sm font-medium">{rfp_record.sap_rr_no || 'N/A'}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground">PO No.</p>
-                                <p className="text-sm font-medium">{rfp_record.po_no || 'N/A'}</p>
+                                <p className="text-xs text-muted-foreground">SAP PO No.</p>
+                                <p className="text-sm font-medium">{rfp_record.sap_po_no || 'N/A'}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground">SWP PR No.</p>
@@ -764,6 +777,7 @@ export default function Show({ rfp_record, logs }: Props) {
                     else if (action === 'post') handlePost(remarks);
                     else if (action === 'revert') handleRevert(remarks);
                 }}
+                processing={isActionProcessing}
             />
 
             <RfpPdfPreviewDialog

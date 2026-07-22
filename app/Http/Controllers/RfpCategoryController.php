@@ -16,6 +16,16 @@ class RfpCategoryController extends Controller
         $this->middleware('permission:rfp-category-delete', ['only' => ['destroy']]);
     }
 
+    public function activeList()
+    {
+        $categories = RfpCategory::select('id', 'code', 'name')
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get();
+
+        return response()->json($categories);
+    }
+
     public function index()
     {
         $categories = RfpCategory::withCount('usages')

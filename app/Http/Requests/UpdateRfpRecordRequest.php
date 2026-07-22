@@ -38,15 +38,27 @@ class UpdateRfpRecordRequest extends FormRequest
             ? \Carbon\Carbon::parse($this->due_date)->format('Y-m-d')
             : null;
 
-        $dueDateRule = $incomingDueDate && $incomingDueDate !== $existingDueDate
-            ? 'required|date|after_or_equal:today'
-            : 'required|date';
+        $dueDateChanged = $incomingDueDate && $incomingDueDate !== $existingDueDate;
 
         return [
-            'ap_no' => 'nullable|string',
-            'due_date' => $dueDateRule,
-            'rr_no' => 'nullable|string',
-            'po_no' => $isAdvance ? 'required|string' : 'nullable|string',
+            'due_date' => [
+                'required',
+                'date',
+                function ($attribute, $value, $fail) use ($dueDateChanged) {
+                    if (!$dueDateChanged) {
+                        return;
+                    }
+
+                    $today = \Carbon\Carbon::now('Asia/Manila')->startOfDay();
+                    $dueDate = \Carbon\Carbon::parse($value, 'Asia/Manila')->startOfDay();
+
+                    if ($dueDate->lt($today)) {
+                        $fail('The due date must be today or a future date.');
+                    }
+                },
+            ],
+            'sap_rr_no' => 'nullable|string',
+            'sap_po_no' => $isAdvance ? 'required|string' : 'nullable|string',
             'swp_pr_no' => 'nullable|string',
             'swp_rcw_no' => 'nullable|string',
             'office' => 'required|in:head_office,mine_site',
@@ -96,7 +108,7 @@ class UpdateRfpRecordRequest extends FormRequest
             'signs.*.user_id.required' => 'A user is required for each signatory.',
             'signs.*.details.required' => 'Signatory role is required.',
             'signs.required' => 'Checked and Reviewed By is required.',
-            'po_no.required' => 'PO No. is required for Advances/Down payments.',
+            'sap_po_no.required' => 'SAP PO No. is required for Advances/Down payments.',
         ];
     }
 
