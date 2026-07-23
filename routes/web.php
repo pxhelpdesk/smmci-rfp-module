@@ -37,6 +37,15 @@ Route::post('/logout', function () {
         Route::get('usages/category/{categoryId}', [RfpRecordController::class, 'getUsagesByCategory'])
             ->name('usages.by-category');
 
+        Route::get('categories/active', [RfpCategoryController::class, 'activeList'])
+            ->name('categories.active');
+
+        Route::get('currencies/active', [RfpCurrencyController::class, 'activeList'])
+            ->name('currencies.active');
+
+        Route::get('usages/next-code', [RfpUsageController::class, 'nextCode'])
+            ->name('usages.next-code');
+
         Route::resource('categories', RfpCategoryController::class);
         Route::resource('usages', RfpUsageController::class);
         Route::resource('currencies', RfpCurrencyController::class);
@@ -50,9 +59,10 @@ Route::post('/logout', function () {
 
     // API
     Route::prefix('api')->group(function () {
-        // SAP Supplier
+        // SAP lookups
         Route::prefix('sap')->name('api.sap.')->group(function () {
             Route::get('suppliers', [SapController::class, 'getSuppliers'])->name('suppliers');
+            Route::get('po', [RfpRecordController::class, 'getSapPo'])->name('po');
         });
 
         // Users
