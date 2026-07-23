@@ -465,6 +465,10 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             ...dedupedSignatories.recommending_approval_by.filter(Boolean).map(u => `recommending_approval_by:${u!.value}`),
             ...dedupedSignatories.approved_by.filter(Boolean).map(u => `approved_by:${u!.value}`),
             ...dedupedSignatories.concurred_by.filter(Boolean).map(u => `concurred_by:${u!.value}`),
+            ...signEntries.checkedReviewed.filter((e: any) => !e.user && e.philex_user_name?.trim()).map((e: any) => `checked_reviewed_by:manual:${e.philex_user_name.trim()}`),
+            ...signEntries.recommending.filter((e: any) => !e.user && e.philex_user_name?.trim()).map((e: any) => `recommending_approval_by:manual:${e.philex_user_name.trim()}`),
+            ...signEntries.approved.filter((e: any) => !e.user && e.philex_user_name?.trim()).map((e: any) => `approved_by:manual:${e.philex_user_name.trim()}`),
+            ...signEntries.concurred.filter((e: any) => !e.user && e.philex_user_name?.trim()).map((e: any) => `concurred_by:manual:${e.philex_user_name.trim()}`),
         ].sort().join(';');
 
         if (oldSignsStr !== newSignsStr) {
@@ -485,13 +489,17 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                 ...dedupedSignatories.recommending_approval_by.filter(Boolean).map(u => ({ role: 'recommending_approval_by', name: u!.label })),
                 ...dedupedSignatories.approved_by.filter(Boolean).map(u => ({ role: 'approved_by', name: u!.label })),
                 ...dedupedSignatories.concurred_by.filter(Boolean).map(u => ({ role: 'concurred_by', name: u!.label })),
+                ...signEntries.checkedReviewed.filter((e: any) => !e.user && e.philex_user_name?.trim()).map((e: any) => ({ role: 'checked_reviewed_by', name: e.philex_user_name.trim() })),
+                ...signEntries.recommending.filter((e: any) => !e.user && e.philex_user_name?.trim()).map((e: any) => ({ role: 'recommending_approval_by', name: e.philex_user_name.trim() })),
+                ...signEntries.approved.filter((e: any) => !e.user && e.philex_user_name?.trim()).map((e: any) => ({ role: 'approved_by', name: e.philex_user_name.trim() })),
+                ...signEntries.concurred.filter((e: any) => !e.user && e.philex_user_name?.trim()).map((e: any) => ({ role: 'concurred_by', name: e.philex_user_name.trim() })),
             ];
 
             changes.push({ field: 'Signatories', old: formatSigns(oldFormatted), new: formatSigns(newFormatted) });
         }
 
         setDetectedChanges(changes);
-    }, [data, signatories, suppliers]);
+    }, [data, signatories, signEntries, suppliers]);
 
     const addDetail = () => {
         setData('details', [...data.details, { rfp_category_id: null, rfp_usage_id: null, total_amount: null }]);
