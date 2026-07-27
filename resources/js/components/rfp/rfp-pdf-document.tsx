@@ -450,12 +450,12 @@ export function RfpPdfDocument({ rfp_record }: Props) {
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabelRight}>RR No.</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValueRight}>{rfp_record.rr_no ?? '—'}</Text>
+                            <Text style={styles.infoValueRight}>{rfp_record.sap_rr_no ?? '—'}</Text>
                         </View>
                         <View style={styles.infoRow}>
                             <Text style={styles.infoLabelRight}>PO No.</Text>
                             <Text style={styles.infoColon}>:</Text>
-                            <Text style={styles.infoValueRight}>{rfp_record.po_no ?? '—'}</Text>
+                            <Text style={styles.infoValueRight}>{rfp_record.sap_po_no ?? '—'}</Text>
                         </View>
                     </View>
 

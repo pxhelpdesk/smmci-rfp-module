@@ -190,8 +190,8 @@ export default function Index({ rfp_records }: Props) {
             ),
         },
         {
-            accessorKey: 'po_no',
-            header: 'PO No.',
+            accessorKey: 'sap_po_no',
+            header: 'SAP PO No.',
             size: 120,
             accessorFn: (row) => row.sap_po_no ?? '',
             cell: ({ row }) => (
