@@ -517,9 +517,9 @@ class RfpRecordController extends Controller
         }
 
         // Only block posted if not admin
-        if ($record->status === 'posted' && !auth()->user()->hasPermissionTo('rfp-record-all')) {
-            return redirect()->back()->with('error', 'Posted RFP cannot be cancelled.');
-        }
+        // if ($record->status === 'posted' && !auth()->user()->hasPermissionTo('rfp-record-all')) {
+        //     return redirect()->back()->with('error', 'Posted RFP cannot be cancelled.');
+        // }
 
         $previousStatus = $record->status;
         $record->update(['status' => 'cancelled']);

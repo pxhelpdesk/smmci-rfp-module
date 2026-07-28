@@ -273,7 +273,8 @@ export default function Show({ rfp_record, logs }: Props) {
                         )}
 
                         {/* Cancel — only on draft, or admin can cancel posted too */}
-                        {can('rfp-record-cancel') && (isDraft || (can('rfp-record-all') && !isCancelled)) && (
+                        {/* {can('rfp-record-cancel') && (isDraft || (can('rfp-record-all') && !isCancelled)) && ( */}
+                        {(can('rfp-record-cancel') && !isCancelled) && (
                             <Button
                                 variant="outline"
                                 size="sm"
