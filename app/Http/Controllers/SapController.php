@@ -13,6 +13,7 @@ class SapController extends Controller
             ->get()
             ->map(fn($supplier) => [
                 'value' => $supplier->card_code,
+                'name'  => $supplier->card_name,
                 'label' => "{$supplier->card_code} - {$supplier->card_name}"
             ]);
 

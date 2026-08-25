@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import InputAmount from '@/components/ui/input-amount';
 import DateTimePicker from '@/components/ui/date-time-picker';
-import { formatDate } from '@/lib/formatters';
+import { formatDate, supplierNameOf } from '@/lib/formatters';
 import {
     Card,
     CardContent,
@@ -525,7 +525,7 @@ export default function Create({ categories, currencies, defaultCurrencyId, user
                                                 setData({
                                                     ...data,
                                                     supplier_code: opt?.value || null,
-                                                    supplier_name: opt?.label ? opt.label.split(' - ')[1] : null,
+                                                    supplier_name: supplierNameOf(opt),
                                                 } as any);
                                             }}
                                             onMenuOpen={() => !suppliers.length && loadSuppliers()}

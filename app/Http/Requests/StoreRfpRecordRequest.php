@@ -32,10 +32,12 @@ class StoreRfpRecordRequest extends FormRequest
 
         return [
             'due_date' => ['required', 'date', function ($attribute, $value, $fail) {
-                $today = \Carbon\Carbon::now('Asia/Manila')->startOfDay();
-                $dueDate = \Carbon\Carbon::parse($value, 'Asia/Manila')->startOfDay();
+                // Compare calendar dates in Manila — the client may post the
+                // date as a UTC instant, which is the previous day here.
+                $today = \Carbon\Carbon::now('Asia/Manila')->format('Y-m-d');
+                $dueDate = \Carbon\Carbon::parse($value)->setTimezone('Asia/Manila')->format('Y-m-d');
 
-                if ($dueDate->lt($today)) {
+                if ($dueDate < $today) {
                     $fail('The due date must be today or a future date.');
                 }
             }],

@@ -10,6 +10,7 @@ use App\Models\RfpSign;
 use App\Models\RfpLog;
 use App\Models\DepartmentHead;
 use App\Models\ScopeOwner;
+use App\Models\SapSupplier;
 use App\Models\User;
 use App\Http\Requests\StoreRfpRecordRequest;
 use App\Http\Requests\UpdateRfpRecordRequest;
@@ -155,6 +156,8 @@ class RfpRecordController extends Controller
             $validated['employee_name'] = $emp?->name;
             $validated['employee_code'] = (string) $emp?->id;
         }
+
+        $validated = $this->syncSupplierName($validated);
 
         $detailsData = $validated['details'] ?? [];
         $signsData = $validated['signs'] ?? [];
@@ -332,6 +335,8 @@ class RfpRecordController extends Controller
             $validated['employee_code'] = (string) $emp?->id;
         }
 
+        $validated = $this->syncSupplierName($validated);
+
         $changes = $this->detectChanges($record, $validated);
 
         $details = $validated['details'] ?? [];
@@ -375,6 +380,26 @@ class RfpRecordController extends Controller
         }
 
         return redirect()->route('rfp.records.show', $record->id)->with('success', "RFP {$record->rfp_number} updated successfully.");
+    }
+
+    /**
+     * The supplier name is a snapshot of SAP's card_name. Re-read it from the
+     * synced supplier table on every save so a rename at the source is picked
+     * up without the user having to re-select the same supplier.
+     */
+    private function syncSupplierName(array $validated): array
+    {
+        if (($validated['payee_type'] ?? null) !== 'supplier' || empty($validated['supplier_code'])) {
+            return $validated;
+        }
+
+        $cardName = SapSupplier::where('card_code', $validated['supplier_code'])->value('card_name');
+
+        if ($cardName) {
+            $validated['supplier_name'] = $cardName;
+        }
+
+        return $validated;
     }
 
     private function detectChanges(RfpRecord $original, array $newData): array
@@ -488,7 +513,12 @@ class RfpRecordController extends Controller
             return $currency ? "{$currency->code} - {$currency->name}" : (string) $value;
         }
         if ($field === 'supplier_code') {
-            $name = $original->supplier_name ?? '';
+            // The record's own snapshot describes the old value; anything else
+            // is the incoming supplier, whose name comes from the SAP table.
+            $name = $value === $original->supplier_code
+                ? ($original->supplier_name ?? '')
+                : (SapSupplier::where('card_code', $value)->value('card_name') ?? '');
+
             return $name ? "{$value} - {$name}" : (string) $value;
         }
         if ($field === 'due_date' && $value) return date('m/d/Y', strtotime($value));

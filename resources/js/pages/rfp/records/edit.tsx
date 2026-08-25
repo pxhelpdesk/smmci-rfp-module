@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import InputAmount from '@/components/ui/input-amount';
 import DateTimePicker from '@/components/ui/date-time-picker';
-import { formatDate } from '@/lib/formatters';
+import { formatDate, supplierNameOf } from '@/lib/formatters';
 import {
     Card,
     CardContent,
@@ -349,10 +349,23 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
 
     const getSupplierLabel = (code: string | null | undefined, name: string | null | undefined): string => {
         if (!code) return 'N/A';
-        const found = suppliers.find(s => s.value === code);
-        if (found) return found.label;
         return name ? `${code} - ${name}` : code;
     };
+
+    // Keep the stored supplier name in step with SAP. When a supplier is
+    // renamed at the source the code stays the same, so nothing would look
+    // "changed" and the record would keep showing the old name forever.
+    useEffect(() => {
+        if (data.payee_type !== 'supplier' || !data.supplier_code) return;
+
+        const live = suppliers.find(s => s.value === data.supplier_code);
+        if (live) {
+            const liveName = supplierNameOf(live);
+            if (liveName && liveName !== data.supplier_name) {
+                setData('supplier_name', liveName);
+            }
+        }
+    }, [suppliers, data.supplier_code, data.supplier_name, data.payee_type]);
 
     useEffect(() => {
         const changes: ChangeLog[] = [];
@@ -393,9 +406,12 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
         );
         checkField('vendor_ref', 'Vendor Ref', rfp_record.vendor_ref, data.vendor_ref);
 
+        // Compare code *and* name — a supplier renamed in SAP keeps its code,
+        // and that rename still has to be logged and saved.
         checkField(
             'supplier_code', 'Supplier',
-            rfp_record.supplier_code, data.supplier_code,
+            rfp_record.supplier_code ? `${rfp_record.supplier_code}|${rfp_record.supplier_name ?? ''}` : '',
+            data.supplier_code ? `${data.supplier_code}|${data.supplier_name ?? ''}` : '',
             getSupplierLabel(rfp_record.supplier_code, rfp_record.supplier_name),
             getSupplierLabel(data.supplier_code, data.supplier_name),
         );
@@ -579,11 +595,22 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
             toast.error('Checked and Reviewed By is required.');
             return;
         }
-        if (detectedChanges.length > 0) {
+        // A supplier renamed in SAP is not the user's edit, so it is logged
+        // with its own remark instead of prompting them to explain it.
+        const isSupplierRenameOnly =
+            detectedChanges.length > 0
+            && detectedChanges.every(c => c.field === 'Supplier')
+            && rfp_record.supplier_code === data.supplier_code;
+
+        if (detectedChanges.length > 0 && !isSupplierRenameOnly) {
             setShowLogDialog(true);
         } else {
             const signs = buildSigns();
-            transform(d => buildTransformPayload(d, signs));
+            transform(d => buildTransformPayload(
+                d,
+                signs,
+                isSupplierRenameOnly ? 'SUPPLIER NAME UPDATED FROM SAP.' : undefined,
+            ));
             put(`/rfp/records/${rfp_record.id}`, { preserveScroll: true });
         }
     };
@@ -750,7 +777,7 @@ export default function Edit({ rfp_record, categories, currencies, users, scopeO
                                                 setData({
                                                     ...data,
                                                     supplier_code: opt?.value || null,
-                                                    supplier_name: opt?.label ? opt.label.split(' - ')[1] : null,
+                                                    supplier_name: supplierNameOf(opt),
                                                 } as any);
                                             }}
                                             onMenuOpen={() => !suppliers.length && loadSuppliers()}

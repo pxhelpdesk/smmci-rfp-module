@@ -34,7 +34,7 @@ class RfpRecord extends Model
     ];
 
     protected $casts = [
-        'due_date' => 'date',
+        'due_date' => 'date:Y-m-d',
         'subtotal_details_amount' => 'decimal:2',
     ];
 

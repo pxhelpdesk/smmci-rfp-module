@@ -135,6 +135,8 @@ export type SapAccountOption = {
 
 export type SapSupplierOption = {
     value: string;
+    /** Current card_name in SAP, without the code prefix. */
+    name?: string;
     label: string;
 };
 

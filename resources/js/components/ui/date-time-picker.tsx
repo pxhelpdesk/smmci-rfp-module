@@ -5,6 +5,7 @@ import * as React from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { parseDateValue } from "@/lib/formatters"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
@@ -36,8 +37,10 @@ export default function DateTimePicker({
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false)
 
-  // Parse existing datetime value
-  const selectedDate = value ? new Date(value) : undefined
+  // Parse existing datetime value. A date-only value is a calendar date, so
+  // it must be read in local time — the default parse treats it as UTC
+  // midnight and lands on the previous day west of UTC.
+  const selectedDate = value ? parseDateValue(value) : undefined
   const [time, setTime] = React.useState(
     selectedDate ? format(selectedDate, "HH:mm") : "00:00"
   )

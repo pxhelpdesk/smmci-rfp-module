@@ -26,16 +26,27 @@ class UpdateRfpRecordRequest extends FormRequest
             ->exists();
     }
 
+    /**
+     * Reduce any incoming date value to the calendar date it lands on in
+     * Manila. Dates round-trip to the client as UTC instants (Aug 25 in
+     * Manila serializes as "2026-08-24T16:00:00Z"), so parsing one without
+     * converting first lands on the previous day.
+     */
+    private static function toManilaDate($value): string
+    {
+        return \Carbon\Carbon::parse($value)->setTimezone('Asia/Manila')->format('Y-m-d');
+    }
+
     public function rules(): array
     {
         $rfpRecord = $this->route('record');
         $isAdvance = $this->hasAdvanceCategory();
 
         $existingDueDate = $rfpRecord?->due_date
-            ? \Carbon\Carbon::parse($rfpRecord->due_date)->format('Y-m-d')
+            ? self::toManilaDate($rfpRecord->due_date)
             : null;
         $incomingDueDate = $this->due_date
-            ? \Carbon\Carbon::parse($this->due_date)->format('Y-m-d')
+            ? self::toManilaDate($this->due_date)
             : null;
 
         $dueDateChanged = $incomingDueDate && $incomingDueDate !== $existingDueDate;
@@ -49,10 +60,9 @@ class UpdateRfpRecordRequest extends FormRequest
                         return;
                     }
 
-                    $today = \Carbon\Carbon::now('Asia/Manila')->startOfDay();
-                    $dueDate = \Carbon\Carbon::parse($value, 'Asia/Manila')->startOfDay();
+                    $today = \Carbon\Carbon::now('Asia/Manila')->format('Y-m-d');
 
-                    if ($dueDate->lt($today)) {
+                    if (self::toManilaDate($value) < $today) {
                         $fail('The due date must be today or a future date.');
                     }
                 },
